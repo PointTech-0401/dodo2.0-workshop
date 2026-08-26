@@ -10,7 +10,7 @@
 ## 專案內容
 
 - 一個共用瀏覽器客端：兩堂課、文字與語音都從同一個畫面進入。
-- 第一堂：分開調整 Model instructions 與 Realtime 回合設定，執行 5 項設定預演。
+- 第一堂：分開調整 Model instructions 與 Realtime 回合設定，並實際套用到同一個 Realtime session。
 - 第二堂：完成三層記憶分類，調整主動規則並執行 6 個固定情境。
 - 一個作品檔 `my-dodo.json`：第一堂下載，第二堂可直接匯入延續。
 - Workshop 2 starter：只參加第二堂者會載入講師準備的第一堂完成版。
@@ -55,7 +55,7 @@
 
 找不到初始化設定時，不直接進入聊天畫面，而是依序顯示：
 
-1. **OpenAI API**：輸入個人 Key，先按「測試」；測試通過後「儲存設定」才可按。Key 只留在本機後端記憶體，也可改用 `.env` 預先設定。
+1. **OpenAI API**：輸入個人 Key，可按「測試」先確認有效。儲存由畫面最下方的按鈕統一處理（沒測試過的 Key 會在儲存時自動先測一次）。Key 只留在本機後端記憶體，也可改用 `.env` 預先設定。
 2. **輸入方式**：選擇「打字」或「語音」。
 3. **輸出方式**：獨立選擇「文字」或「語音」。
 4. **裝置檢查**：只有語音輸入才要求麥克風權限；語音輸出建議使用耳機。
@@ -116,7 +116,7 @@ uv sync --extra dev
 Copy-Item .env.example .env
 ```
 
-可直接在首次啟動畫面分別輸入 OpenAI API Key 與 OpenWeatherMap API Key；兩者都要先測試，通過後才能儲存。Key 只保存到這次 Python 程式的記憶體，重啟後需重新輸入。講師也可以預先在 `.env` 填入：
+可直接在首次啟動畫面分別輸入 OpenAI API Key 與 OpenWeatherMap API Key；每個 Key 只有「測試」按鈕，儲存統一交給最下方的按鈕（未測試的 Key 會在儲存時自動先測試）。完成初次設定後，「API 設定」視窗可用右上角「×」或 Esc 關閉。Key 只保存到這次 Python 程式的記憶體，重啟後需重新輸入。講師也可以預先在 `.env` 填入：
 
 ```text
 OPENAI_API_KEY=你的金鑰
@@ -167,16 +167,18 @@ uv run pytest
 
 右側分成兩個明確層次：
 
-- A「模型怎麼回答」：名稱、使用者稱呼與五個 Prompt 分塊會即時組成完整 System Prompt。學生只能編輯「角色與身分、個性與聲音、對話方式、語言、邊界與安全」分塊；完整 Prompt 僅提供唯讀預覽。按「套用 5 個 Prompt 區塊」後，同一份組裝結果會立即送進目前的 Realtime session。`max_response_output_tokens` 是實際 API 上限，不是句數保證。
-- B「何時算說完」：`semantic_vad`、`server_vad`、`silence_duration_ms`、`interrupt_response` 或 Push-to-talk 會真正送進 Realtime `session.update`。
+- A「模型怎麼回答」：名稱、使用者稱呼與五個 Prompt 分塊會即時組成完整 System Prompt。學生只能編輯「角色與身分、個性與聲音、對話方式、語言、邊界與安全」分塊；完整 Prompt 僅提供唯讀預覽。這份組裝結果在**建立連線時就隨 SDP offer 送給 OpenAI**，所以第一句話就已經是豆豆；按「套用」會再用 `session.update` 更新一次。回覆長度不設 API 上限，由「對話方式」分塊描述。
+- B「何時算說完」：`semantic_vad`、`server_vad`、`silence_duration_ms`、`interrupt_response` 或 Push-to-talk 會真正送進 Realtime session（mint 與 `session.update` 都會帶）。
 
-Realtime 預設使用 `gpt-realtime-2` 與 `sage`，並對齊正式 dodo 的低 reasoning effort、`gpt-4o-transcribe`、`near_field` 收音降噪和臺灣繁體中文虛擬孫女提示。轉錄服務也另有臺灣繁體中文 prompt，避免使用者語音逐字稿混入簡體。音訊 `speed` 固定為較慢的 `0.82`；聲音表現由「個性與聲音」分塊以具體指令描述，不以「沉重」等關鍵字觸發程式分支。
+Realtime 預設使用 `gpt-realtime-2` 與 `sage`（A 區可改成其他 10 種內建聲線，並附三組現成人格範例：溫柔陪伴／神經模式／啦啦隊長，各自配一個聲線）。OpenAI 不允許在同一個 session 換聲線，所以按「套用」改聲線時客端會自動重新連線。其餘設定對齊正式 dodo 的低 reasoning effort、`gpt-4o-transcribe`、`near_field` 收音降噪和臺灣繁體中文虛擬孫女提示。轉錄服務也另有臺灣繁體中文 prompt，避免使用者語音逐字稿混入簡體。**不設定音訊 `speed`，也不設 `max_output_tokens`** —— 兩者都與正式 dodo 一致：語速與長度都由「個性與聲音」「對話方式」分塊以具體指令描述，不以「沉重」等關鍵字觸發程式分支，也不用 API 參數硬切。
+
+Realtime 若回報設定錯誤（例如送出 GA 不接受的欄位），聊天室會直接顯示錯誤，瀏覽器 console 也會印出 `[realtime error]`。這類錯誤過去是靜默的：session 會退回 OpenAI 預設人格，豆豆就會用英文、用預設語調回答。
 
 打字輸入／文字輸出同樣走 Realtime，只是鍵盤送出不會經過 VAD。有耳麥者可選語音輸入，實際驗證句中停頓、回合結束與插話；也可只選語音輸出，用打字聽豆豆回答。設定會保存到瀏覽器內的 `dodo-workshop.project`，下載後的檔名固定為 `my-dodo.json`；API Key 不會寫入作品。
 
 ### 沿用 Workshop 1.0 工具
 
-Realtime session 會註冊 1.0 的 `get_weather`、`read_memory`、`update_memory`。模型決定查天氣後，瀏覽器呼叫本機 `/api/tools/weather`，後端使用 OpenWeatherMap 查詢，再以 `function_call_output` 放回同一段 Realtime 對話。可在首次啟動畫面輸入 1.0 使用的天氣 API Key，或由講師預先設定 `WEATHER_API_KEY`；設定完成後即可詢問「臺北今天天氣如何？」。Key 不會寫入 localStorage 或 `my-dodo.json`。
+Realtime session 會註冊 1.0 的 `get_weather`、`read_memory`、`update_memory`。模型決定查天氣後，瀏覽器呼叫本機 `/api/tools/weather`，後端使用 OpenWeatherMap 查詢，再以 `function_call_output` 放回同一段 Realtime 對話。可在首次啟動畫面輸入 1.0 使用的天氣 API Key，或由講師預先設定 `WEATHER_API_KEY`；設定完成後即可詢問「臺北今天天氣如何？」—— 中文城市名會先由 `dodo_workshop/weather.py` 的 `CITY_ALIASES` 對應成 OpenWeatherMap 認得的英文名稱（OpenWeatherMap 查不到「臺北」）。工具執行狀態會以 `TOOL` 標籤獨立顯示，不會混進豆豆的對話泡泡。Key 不會寫入 localStorage 或 `my-dodo.json`。
 
 記憶工具直接讀寫 2.0 的 `workspace.memory`，因此會跟著自動保存與 `my-dodo.json` 匯出，在兩堂課之間延續。`update_memory` 會拒絕密碼、API Key、金融帳號與驗證碼等敏感資料。
 

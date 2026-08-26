@@ -26,17 +26,6 @@
   </header>
 
   <main class="app-shell">
-    <aside class="signal-rail" aria-label="Dodo 狀態">
-      <p class="rail-label">LIVE STATE</p>
-      <div class="dodo-orbit" aria-hidden="true"><span>d</span></div>
-      <ol class="state-list">
-        <li class="is-current" data-state="listening"><span></span>收聽中</li>
-        <li data-state="thinking"><span></span>思考中</li>
-        <li data-state="speaking"><span></span>回應中</li>
-      </ol>
-      <p id="connectionNote" class="connection-note">打字輸入／文字輸出已就緒</p>
-    </aside>
-
     <section class="conversation-panel" aria-labelledby="conversationTitle">
       <div class="panel-heading">
         <div>
@@ -45,9 +34,17 @@
           <p id="modelStatus" class="model-status">尚未連接 Realtime</p>
         </div>
       </div>
+      <div class="state-bar" aria-label="Dodo 狀態">
+        <ol class="state-list">
+          <li class="is-current" data-state="listening"><span></span>收聽中</li>
+          <li data-state="thinking"><span></span>思考中</li>
+          <li data-state="speaking"><span></span>回應中</li>
+        </ol>
+        <p id="connectionNote" class="connection-note">打字輸入／文字輸出已就緒</p>
+      </div>
       <div id="messages" class="messages" aria-live="polite">
-        <article class="message assistant">
-          <span class="speaker">DODO</span>
+        <article class="message system">
+          <span class="speaker">SYSTEM</span>
           <p>先完成 API 設定，再用同一句話比較 Prompt 與回合控制各自改變了什麼。</p>
         </article>
       </div>
@@ -80,6 +77,11 @@
 
         <div class="lab-block">
           <div class="block-heading"><span class="layer-number">A</span><div><h3>用分塊設計回答方式</h3><p>只編輯分塊；系統會組成一份 Prompt，送進同一個 Realtime model。</p></div></div>
+          <div class="preset-row">
+            <p class="preset-label">快速套用範例人格</p>
+            <div id="promptPresets" class="preset-buttons"></div>
+            <small>會覆蓋下方 5 個區塊與聲線，但保留你的 Dodo 名稱與稱呼。按「套用」才會生效。</small>
+          </div>
           <div class="prompt-variables" aria-label="Prompt 變數">
             <label>Dodo 名稱<input id="agentName"><small>會取代分塊中的 <code>{AGENT_NAME}</code></small></label>
             <label>使用者名字／稱呼<input id="agentAddress"><small>會取代分塊中的 <code>{USER_ADDRESS}</code></small></label>
@@ -107,19 +109,18 @@
             </article>
           </div>
           <details class="prompt-preview-panel" open>
-            <summary><span>VIEW</span><strong>完整 System Prompt</strong><small>由上方 5 個區塊即時組裝，只能檢視。</small></summary>
+            <summary><span>VIEW</span><strong>完整 System Prompt</strong><small>由上方 5 個區塊即時組裝，只能檢視；清空某個區塊會把整段從 Prompt 移除。</small></summary>
             <pre id="agentSystemPrompt" class="prompt-preview" tabindex="0" aria-label="完整 System Prompt 唯讀預覽"></pre>
           </details>
-          <p class="voice-fact"><strong>實際 Realtime 聲線：<code id="realtimeVoiceName">sage</code></strong><span>與正式 dodo 相同，語速固定為較慢的 0.82 倍；聲音表現由「個性與聲音」分塊描述，不使用關鍵字判斷。</span></p>
-          <p class="voice-fact"><strong>沿用 Workshop 1.0 工具：<code>get_weather</code>、<code>read_memory</code>、<code>update_memory</code></strong><span id="weatherToolStatus">正在檢查 WEATHER_API_KEY…</span></p>
-          <label>輸出 token 上限
-            <input id="maxOutputTokens" type="number" min="32" max="1024" step="16">
-            <small>這是 API 的硬上限，但不是「最多幾句」的保證。</small>
+          <label>Dodo 的聲線
+            <select id="agentVoice"></select>
+            <small>Realtime 不允許在同一個 session 中換聲線，所以按「套用」改聲線時會自動重新連線。</small>
           </label>
+          <p class="voice-fact"><strong>沿用 Workshop 1.0 工具：<code>get_weather</code>、<code>read_memory</code>、<code>update_memory</code></strong><span id="weatherToolStatus">正在檢查 WEATHER_API_KEY…</span></p>
         </div>
 
         <div class="lab-block">
-          <div class="block-heading"><span class="layer-number">B</span><div><h3>何時算說完</h3><p>以下內容會送進 Realtime session.update。</p></div></div>
+          <div class="block-heading"><span class="layer-number">B</span><div><h3>何時算說完</h3><p>以下內容在建立連線時就送進 Realtime session，按「套用」會再更新一次。</p></div></div>
           <label>回合判定方式
             <select id="turnDetectionMode">
               <option value="semantic_vad">Semantic VAD：依語意判斷</option>
@@ -142,17 +143,15 @@
           <p id="turnModeNotice" class="mode-explanation"></p>
         </div>
         <div class="lab-actions">
-          <button id="saveWorkshop1" class="secondary-button">套用 5 個 Prompt 區塊</button>
-          <button id="runTurnTests" class="primary-button">執行 5 項設定預演</button>
+          <button id="saveWorkshop1" class="primary-button">套用</button>
         </div>
-        <div id="turnResults" class="test-results" aria-live="polite"></div>
       </section>
 
       <section id="workshop2Panel" class="lab-section" hidden>
         <p class="eyebrow">WORKSHOP 02</p>
         <h2>讓它記得，也知道何時安靜</h2>
         <label>長者稱呼<input id="elderAddress"></label>
-        <label>興趣（用逗號分隔）<input id="elderInterests"></label>
+        <label>興趣（用「、」分隔，逗號也可以）<input id="elderInterests"></label>
         <div class="memory-block">
           <h3>實作一：記憶分類</h3>
           <p>A 重要事實 · B 近期事件 · C 跨日摘要 · X 不保存</p>
@@ -182,6 +181,7 @@
 
   <section id="onboarding" class="onboarding" hidden aria-labelledby="onboardingTitle">
     <div class="onboarding-sheet">
+      <button id="closeOnboarding" type="button" class="sheet-close" aria-label="關閉設定" title="關閉設定（Esc）" hidden>×</button>
       <p class="eyebrow">FIRST RUN</p>
       <h2 id="onboardingTitle">用你現場擁有的設備，完成同一個 Dodo</h2>
       <p class="lead">先設定 OpenAI 與天氣服務，再分別選擇怎麼輸入、Dodo 怎麼回覆。語音輸入需要麥克風；語音輸出建議使用耳機。</p>
@@ -191,7 +191,6 @@
           <label for="apiKeyInput">API Key</label>
           <input id="apiKeyInput" type="password" autocomplete="off" placeholder="sk-...">
           <button id="testApiKey" type="button" class="secondary-button">測試</button>
-          <button id="saveApiKey" type="button" class="primary-button" disabled>儲存設定</button>
         </div>
         <p id="apiKeyStatus" class="api-status">尚未設定。Key 只保存在這次本機程式的記憶體中。</p>
       </fieldset>
@@ -201,7 +200,6 @@
           <label for="weatherApiKeyInput">OpenWeatherMap API Key</label>
           <input id="weatherApiKeyInput" type="password" autocomplete="off" placeholder="輸入天氣 API Key">
           <button id="testWeatherApiKey" type="button" class="secondary-button">測試</button>
-          <button id="saveWeatherApiKey" type="button" class="primary-button" disabled>儲存設定</button>
         </div>
         <p id="weatherApiKeyStatus" class="api-status">若要使用即時天氣查詢，請輸入 Workshop 1.0 使用的天氣 API Key。</p>
       </fieldset>

@@ -94,3 +94,36 @@ def test_workshop2_starter_contains_completed_workshop1() -> None:
 
     assert workspace["progress"]["workshop_1_completed"] is True
     assert workspace["progress"]["workshop_2_completed"] is False
+
+
+def test_emptied_prompt_block_is_dropped_but_missing_key_still_defaults() -> None:
+    """Mirrors the browser rule so a saved project round-trips identically."""
+
+    from dodo_workshop.profile import (
+        DEFAULT_PROMPT_BLOCKS,
+        compose_agent_prompt,
+        prompt_blocks_for,
+    )
+
+    # Emptied on purpose → section omitted.
+    agent = {
+        "name": "豆豆",
+        "address": "王奶奶",
+        "prompt_blocks": {**DEFAULT_PROMPT_BLOCKS, "language": "", "safety": "   "},
+    }
+    prompt = compose_agent_prompt(agent)
+    assert "# 語言" not in prompt
+    assert "# 邊界與安全" not in prompt
+    assert "# 角色與身分" in prompt
+    assert prompt_blocks_for(agent)["language"] == ""
+
+    # Key absent (older project file) → default fills in.
+    legacy = {"name": "豆豆", "address": "王奶奶", "prompt_blocks": {"identity": "自訂"}}
+    blocks = prompt_blocks_for(legacy)
+    assert blocks["identity"] == "自訂"
+    assert blocks["language"] == DEFAULT_PROMPT_BLOCKS["language"]
+    assert "# 語言" in compose_agent_prompt(legacy)
+
+    # Every block cleared → empty prompt, which the UI warns about.
+    blank = {"name": "豆豆", "address": "王奶奶", "prompt_blocks": dict.fromkeys(DEFAULT_PROMPT_BLOCKS, "")}
+    assert compose_agent_prompt(blank) == ""

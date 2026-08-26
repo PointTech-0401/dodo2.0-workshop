@@ -3,11 +3,11 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from openai import OpenAI
@@ -20,12 +20,24 @@ from dodo_workshop.lesson2 import (
     compose_fallback,
 )
 from dodo_workshop.llm import TextModel
-from dodo_workshop.profile import normalize_workspace, workshop2_starter
+from dodo_workshop.profile import (
+    REALTIME_VOICES,
+    normalize_workspace,
+    resolve_voice,
+    workshop2_starter,
+)
 from dodo_workshop.weather import get_weather
 
 
 WEB_DIR = ROOT / "web"
 load_dotenv(ROOT / ".env")
+
+# Pinning the STT language stops the transcriber from free-guessing and
+# translating short Mandarin utterances into English — the same reason the main
+# dodo project pins `language` + a zh-Hant prompt at mint time.
+STT_TRANSCRIPTION_PROMPT = (
+    "請使用臺灣繁體中文記錄逐字稿，採用臺灣慣用詞，不要使用簡體字。"
+)
 
 app = FastAPI(title="dodo 2.0 Workshop")
 app.mount("/assets", StaticFiles(directory=WEB_DIR), name="assets")
@@ -61,9 +73,25 @@ class ChatRequest(BaseModel):
     workspace: dict[str, Any] | None = None
 
 
-class RealtimeCheckRequest(BaseModel):
-    realtime: dict[str, Any]
-    max_output_tokens: int
+class RealtimeSessionRequest(BaseModel):
+    """Mint-time Realtime session config.
+
+    `instructions` travels with the SDP offer instead of arriving in a later
+    `session.update`, so the very first turn already speaks as 豆豆. This is the
+    same contract as the main dodo project (everything in the mint call, no
+    session.update round-trip at connect).
+    """
+
+    sdp: str = Field(min_length=1)
+    output_mode: Literal["text", "voice"] = "text"
+    instructions: str = ""
+    # `None` disables VAD entirely (push-to-talk). The key is always sent so
+    # OpenAI never falls back to its default server_vad + auto create_response.
+    turn_detection: dict[str, Any] | None = None
+    tools: list[dict[str, Any]] = Field(default_factory=list)
+    # A voice cannot be swapped mid-session once the model has produced audio,
+    # so the chosen voice has to be baked in here at mint time.
+    voice: str = ""
 
 
 class ApiKeyRequest(BaseModel):
@@ -95,6 +123,7 @@ def bootstrap() -> dict[str, Any]:
         "api_key_source": "session" if _runtime_api_key else ("environment" if api_key else None),
         "realtime_model": os.getenv("OPENAI_REALTIME_MODEL", "gpt-realtime-2"),
         "realtime_voice": selected_realtime_voice(),
+        "realtime_voices": list(REALTIME_VOICES),
         "weather_configured": bool(active_weather_api_key()),
         "weather_key_source": (
             "session"
@@ -177,55 +206,6 @@ async def configure_weather_api_key(payload: ApiKeyRequest) -> dict[str, Any]:
     return {"configured": True, "source": "session"}
 
 
-@app.post("/api/turn-check")
-def turn_check(payload: RealtimeCheckRequest) -> dict[str, Any]:
-    turn = payload.realtime.get("turn_detection", {})
-    mode = turn.get("type", "semantic_vad")
-    silence_ms = int(turn.get("silence_duration_ms", 800))
-    eagerness = turn.get("eagerness", "auto")
-    if mode == "server_vad":
-        mid_pause_passed = silence_ms > 300
-        finish_passed = silence_ms <= 1500
-        finish_detail = f"server_vad 會在約 {silence_ms} ms 靜音後切回合。"
-    elif mode == "semantic_vad":
-        mid_pause_passed = eagerness in {"low", "auto", "medium"}
-        finish_passed = eagerness in {"low", "auto", "medium", "high"}
-        finish_detail = f"semantic_vad 依語意判斷，eagerness={eagerness}。"
-    else:
-        mid_pause_passed = True
-        finish_passed = True
-        finish_detail = "push-to-talk 只有放開按鈕才提交回合。"
-
-    checks = [
-        {
-            "name": "文字輸入不套用 VAD",
-            "detail": "按下送出會建立 Realtime 文字回合；停頓設定只屬於語音輸入層。",
-            "passed": True,
-        },
-        {
-            "name": "300 ms 中途停頓不搶答",
-            "detail": "此項是設定預演；真實結果仍需用麥克風驗證。",
-            "passed": mid_pause_passed,
-        },
-        {
-            "name": "完成發言後能提交回合",
-            "detail": finish_detail,
-            "passed": finish_passed,
-        },
-        {
-            "name": "插話會中止目前回覆",
-            "detail": "由 Realtime interrupt_response／response.cancel 控制，不是 Prompt。",
-            "passed": bool(turn.get("interrupt_response", True)),
-        },
-        {
-            "name": "輸出上限使用 API 參數",
-            "detail": f"max_output_tokens={payload.max_output_tokens}，這是 token 上限，不是句數保證。",
-            "passed": 32 <= payload.max_output_tokens <= 1024,
-        },
-    ]
-    return {"checks": checks, "passed": all(item["passed"] for item in checks), "mode": mode}
-
-
 @app.post("/api/proactive-check")
 def proactive_check(payload: ProactiveCheckRequest) -> dict[str, Any]:
     policy = payload.policy
@@ -283,19 +263,12 @@ async def weather_tool(payload: WeatherRequest) -> dict[str, Any]:
 
 
 @app.post("/api/realtime/session")
-async def realtime_session(request: Request) -> Response:
+async def realtime_session(payload: RealtimeSessionRequest) -> Response:
     api_key = active_api_key()
     if not api_key:
         raise HTTPException(status_code=503, detail="尚未設定 OPENAI_API_KEY，請先完成 API 設定。")
 
-    sdp = (await request.body()).decode("utf-8")
-    if not sdp.strip():
-        raise HTTPException(status_code=400, detail="缺少 WebRTC SDP。")
-    output_mode = request.headers.get("X-Dodo-Output-Mode", "text")
-    if output_mode not in {"text", "voice"}:
-        raise HTTPException(status_code=400, detail="不支援的輸出方式。")
-
-    session = {
+    session: dict[str, Any] = {
         "type": "realtime",
         "model": os.getenv("OPENAI_REALTIME_MODEL", "gpt-realtime-2"),
         "reasoning": {"effort": "low"},
@@ -305,15 +278,27 @@ async def realtime_session(request: Request) -> Response:
                 "transcription": {
                     "model": "gpt-4o-transcribe",
                     "language": "zh",
-                    "prompt": "請使用臺灣繁體中文記錄逐字稿，採用臺灣慣用詞，不要使用簡體字。",
+                    "prompt": STT_TRANSCRIPTION_PROMPT,
                 },
+                "turn_detection": payload.turn_detection,
             },
-            "output": {"voice": selected_realtime_voice(), "speed": 0.82},
+            # No `speed`: the main dodo project leaves it at 1.0 and lets the
+            # 「個性與聲音」prompt block carry the slower delivery. Setting both
+            # would slow the voice twice over.
+            "output": {"voice": resolve_voice(payload.voice, selected_realtime_voice())},
         },
-        "output_modalities": ["audio" if output_mode == "voice" else "text"],
+        # No `max_output_tokens`: reply length is a Prompt concern, not an API
+        # cap — again matching dodo, which sets no ceiling.
+        "output_modalities": ["audio" if payload.output_mode == "voice" else "text"],
     }
+    if payload.instructions.strip():
+        session["instructions"] = payload.instructions
+    if payload.tools:
+        session["tools"] = payload.tools
+        session["tool_choice"] = "auto"
+
     files = {
-        "sdp": (None, sdp, "application/sdp"),
+        "sdp": (None, payload.sdp, "application/sdp"),
         "session": (None, json.dumps(session), "application/json"),
     }
     async with httpx.AsyncClient(timeout=30) as client:

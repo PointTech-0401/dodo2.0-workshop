@@ -28,6 +28,32 @@ DEFAULT_PROMPT_BLOCKS: dict[str, str] = {
 遇到可能危及安全的狀況，先用簡短、清楚的方式確認當下安全，並建議尋求真人或專業協助。""",
 }
 
+# The built-in Realtime voices. OpenAI's own docs recommend marin/cedar for
+# quality; `sage` stays the default because that is what the main dodo project
+# uses. Note: a voice cannot be swapped mid-session once the model has produced
+# audio, so changing it requires reconnecting.
+REALTIME_VOICES: tuple[str, ...] = (
+    "alloy",
+    "ash",
+    "ballad",
+    "cedar",
+    "coral",
+    "echo",
+    "marin",
+    "sage",
+    "shimmer",
+    "verse",
+)
+DEFAULT_VOICE = "sage"
+
+
+def resolve_voice(value: Any, fallback: str = DEFAULT_VOICE) -> str:
+    """Accept only known built-in voices; anything else falls back."""
+
+    candidate = str(value or "").strip().lower()
+    return candidate if candidate in REALTIME_VOICES else fallback
+
+
 PROMPT_BLOCK_TITLES: tuple[tuple[str, str], ...] = (
     ("identity", "角色與身分"),
     ("personality_tone", "個性與聲音"),
@@ -38,13 +64,18 @@ PROMPT_BLOCK_TITLES: tuple[tuple[str, str], ...] = (
 
 
 def prompt_blocks_for(agent: dict[str, Any]) -> dict[str, str]:
-    """Return all editable prompt blocks, including defaults for legacy projects."""
+    """Return all editable prompt blocks, including defaults for legacy projects.
+
+    A *missing* key means a project file that predates the block, so the default
+    fills in. An *empty* value means the student deleted that block on purpose
+    and it stays empty — `compose_agent_prompt` then omits the whole section.
+    """
 
     supplied = agent.get("prompt_blocks")
     if not isinstance(supplied, dict):
         supplied = {}
     return {
-        key: str(supplied.get(key, default)).strip() or default
+        key: (str(supplied[key]).strip() if key in supplied else default)
         for key, default in DEFAULT_PROMPT_BLOCKS.items()
     }
 
@@ -60,6 +91,8 @@ def compose_agent_prompt(agent: dict[str, Any]) -> str:
     sections: list[str] = []
     for key, title in PROMPT_BLOCK_TITLES:
         content = blocks[key]
+        if not content:
+            continue  # student cleared this block — drop the whole section
         for placeholder, value in replacements.items():
             content = content.replace(placeholder, value)
         sections.append(f"# {title}\n{content}")
@@ -74,6 +107,7 @@ DEFAULT_WORKSPACE: dict[str, Any] = {
             "address": "王奶奶",
             "prompt_blocks": copy.deepcopy(DEFAULT_PROMPT_BLOCKS),
             "system_prompt": "",
+            "voice": DEFAULT_VOICE,
             "max_output_tokens": 180,
         },
         "realtime": {
@@ -151,6 +185,7 @@ def normalize_workspace(value: dict[str, Any] | None) -> dict[str, Any]:
     agent = workspace["profile"]["agent"]
     agent["prompt_blocks"] = prompt_blocks_for(agent)
     agent["system_prompt"] = compose_agent_prompt(agent)
+    agent["voice"] = resolve_voice(agent.get("voice"))
     return workspace
 
 
