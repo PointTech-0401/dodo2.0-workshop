@@ -11,7 +11,7 @@
 
 - 一個共用瀏覽器客端：兩堂課、文字與語音都從同一個畫面進入。
 - 第一堂：分開調整 Model instructions 與 Realtime 回合設定，並實際套用到同一個 Realtime session。
-- 第二堂：完成三層記憶分類，調整主動規則並執行 6 個固定情境。
+- 第二堂：完成三層記憶分類與紅隊挑戰，寫自己的記憶／主動 Prompt，調整主動規則後跑 6 個固定情境與一整天模擬，並實際觸發一次主動關心。
 - 一個作品檔 `my-dodo.json`：第一堂下載，第二堂可直接匯入延續。
 - Workshop 2 starter：只參加第二堂者會載入講師準備的第一堂完成版。
 - 真實模型回覆：沒有 API Key 時會明確停用聊天，不用固定回聲假裝成 AI。
@@ -25,7 +25,8 @@
 - 對話 session 與逐字稿
 - 主動事件、安全規則與課堂情境
 - `listening`、`thinking`、`speaking` 等狀態顯示
-- 桌面版可拖曳聊天區與右側 Prompt 設定區之間的分隔線；分隔線取得焦點後也可用左右方向鍵調整
+- 桌面版預設左右各半（1:1），可拖曳聊天區與右側 Prompt 設定區之間的分隔線；分隔線取得焦點後也可用左右方向鍵調整，拖過的寬度會記在瀏覽器裡
+- 重新整理（F5）會留在原本那一堂，不會因為按過「套用」就跳到 Workshop 2
 - 聊天輸入框按 Enter 送出、Shift+Enter 換行；右側設定區統一使用 14px Microsoft JhengHei
 
 差異只在輸入與輸出介面：
@@ -167,7 +168,7 @@ uv run pytest
 
 右側分成兩個明確層次：
 
-- A「模型怎麼回答」：名稱、使用者稱呼與五個 Prompt 分塊會即時組成完整 System Prompt。學生只能編輯「角色與身分、個性與聲音、對話方式、語言、邊界與安全」分塊；完整 Prompt 僅提供唯讀預覽。這份組裝結果在**建立連線時就隨 SDP offer 送給 OpenAI**，所以第一句話就已經是豆豆；按「套用」會再用 `session.update` 更新一次。回覆長度不設 API 上限，由「對話方式」分塊描述。
+- A「用分塊設計回答方式」：名稱、使用者稱呼與五個 Prompt 分塊會即時組成完整 System Prompt。學生只能編輯「角色與身分、個性與聲音、對話方式、語言、邊界與安全」分塊；完整 Prompt 僅提供唯讀預覽。這份組裝結果在**建立連線時就隨 SDP offer 送給 OpenAI**，所以第一句話就已經是豆豆；按「套用」會再用 `session.update` 更新一次。回覆長度不設 API 上限，由「對話方式」分塊描述。
 - B「何時算說完」：`semantic_vad`、`server_vad`、`silence_duration_ms`、`interrupt_response` 或 Push-to-talk 會真正送進 Realtime session（mint 與 `session.update` 都會帶）。
 
 Realtime 預設使用 `gpt-realtime-2` 與 `sage`（A 區可改成其他 10 種內建聲線，並附三組現成人格範例：溫柔陪伴／神經模式／啦啦隊長，各自配一個聲線）。OpenAI 不允許在同一個 session 換聲線，所以按「套用」改聲線時客端會自動重新連線。其餘設定對齊正式 dodo 的低 reasoning effort、`gpt-4o-transcribe`、`near_field` 收音降噪和臺灣繁體中文虛擬孫女提示。轉錄服務也另有臺灣繁體中文 prompt，避免使用者語音逐字稿混入簡體。**不設定音訊 `speed`，也不設 `max_output_tokens`** —— 兩者都與正式 dodo 一致：語速與長度都由「個性與聲音」「對話方式」分塊以具體指令描述，不以「沉重」等關鍵字觸發程式分支，也不用 API 參數硬切。
@@ -180,25 +181,54 @@ Realtime 若回報設定錯誤（例如送出 GA 不接受的欄位），聊天�
 
 Realtime session 會註冊 1.0 的 `get_weather`、`read_memory`、`update_memory`。模型決定查天氣後，瀏覽器呼叫本機 `/api/tools/weather`，後端使用 OpenWeatherMap 查詢，再以 `function_call_output` 放回同一段 Realtime 對話。可在首次啟動畫面輸入 1.0 使用的天氣 API Key，或由講師預先設定 `WEATHER_API_KEY`；設定完成後即可詢問「臺北今天天氣如何？」—— 中文城市名會先由 `dodo_workshop/weather.py` 的 `CITY_ALIASES` 對應成 OpenWeatherMap 認得的英文名稱（OpenWeatherMap 查不到「臺北」）。工具執行狀態會以 `TOOL` 標籤獨立顯示，不會混進豆豆的對話泡泡。Key 不會寫入 localStorage 或 `my-dodo.json`。
 
-記憶工具直接讀寫 2.0 的 `workspace.memory`，因此會跟著自動保存與 `my-dodo.json` 匯出，在兩堂課之間延續。`update_memory` 會拒絕密碼、API Key、金融帳號與驗證碼等敏感資料。
+記憶工具直接讀寫 2.0 的 `workspace.memory`，因此會跟著自動保存與 `my-dodo.json` 匯出，在兩堂課之間延續。`update_memory` 帶 `layer` 參數（A／B／C），決定寫進 `memory.facts`、`memory.events` 還是 `memory.summaries` —— 這就是第二堂記憶分類的實際用途；密碼、API Key、金融帳號與驗證碼屬於 X，一律拒絕保存。
+
+### preamble 與正式回答會分開顯示
+
+模型在呼叫工具前可以先說一句「我幫您查一下臺北的天氣」，這句就是 preamble。Realtime API 沒有 preamble 這種 item type，它的判斷方式是結構性的：**同一個 response 裡同時有 message item 與 function_call item，那個 message 就是 preamble**；工具查完之後的正式回答，是我們送回 `function_call_output` 後建立的下一個 response。客端因此把這種泡泡標成 `DODO · PREAMBLE（工具前的開場）`並改用虛線框，第一次出現時另外說明一次。預設「對話方式」分塊也要求豆豆查資料前先說一句，否則學生不一定看得到。
 
 ## Workshop 2：會記得、會主動的 Dodo
 
-學生先完成 8 題記憶分類，再調整長者興趣、安靜時段、冷卻時間與每日主動訊息上限。所有設定都延續在同一份 `my-dodo.json`。
+第二堂有自己的 Prompt 層，不是只有表單：
 
-建議比較：
+- 兩個可編輯分塊：「記憶使用規則」與「主動關心規則」。
+- 三個自動生成段落：`# 長者資料`、`# 目前記得的事（三層記憶）`、`# 主動訊息的程式規則`，內容直接來自長者欄位、`workspace.memory` 與主動規則，記憶最多列出最近 8 筆。
+- 一個唯讀的「完整 System Prompt（Workshop 1 + 2）」可以 View —— 這就是實際送進 Realtime 的 `instructions`。第一堂的 5 個分塊 + 第二堂這幾段會合併成同一份，送進同一個 session。
 
-- 安靜時段是否應為 22:00–08:00？
+在這之前，長者資料、三層記憶與主動規則從來沒有進入模型，只有在它剛好呼叫 `read_memory` 時才看得到一部分。
+
+### 實作一：記憶分類、記憶檢視器、紅隊挑戰
+
+8 題記憶分類，按「檢查」會顯示每一題的建議分類與理由。層級標題帶著保存期限（A 保存 365 天、B 保存 30 天），那正是兩層的差別。
+
+下面是 `workspace.memory` 的真實內容，**每一筆都可以由人刪除** —— 刪除會同時更新 Prompt 與正在進行的 session，所以可以立刻回頭問豆豆確認它真的忘了。在這之前只有模型能寫記憶、沒有人能改，這和課程自己問的「誰能寫入或修改？衝突時誰確認？」互相矛盾。超出每層 8 筆上限的舊記錄會標成「未進入 Prompt」。
+
+再往下是紅隊挑戰四句話（含「我卡片的後四碼是 1234」這種繞過關鍵字的說法）。刻意不自動判定成敗：能自動判定就等於已經有那個完美分類器，而這一節要說的正是它不存在。結論是三件事一起做：拒絕高風險類別、不主動複誦、人隨時可以刪。
+
+### 實作二：主動規則的三層
+
+1. **6 個固定情境**驗證規則（`choose_event`，純程式判斷，不呼叫模型）。
+2. **「跑一整天」** 用學生自己的規則跑完 `scenarios/day_timeline.json` 的 13 個事件（06:40–23:40），冷卻與每日額度一路累積，回報兩個互相拉扯的數字：漏掉重要事／打擾次數。預設規則是 0 漏掉、1 次打擾；收緊到 21–09／60 分／3 則會漏掉早上八點的血壓藥；放寬到全天無限制則變成一天打擾 8 次。時間軸每一列都寫出是哪一條規則決定的，第二次跑會顯示與上一次的差異。**沒有滿分答案是刻意的** —— `test_lesson2.py::test_one_day_has_no_perfect_policy` 把這個取捨寫成測試。
+3. **「現在觸發一次主動關心」** 讓豆豆真的先開口：填事件類型、事件內容、模擬時間、距上次主動訊息、今日已發送與是否剛被拒絕，送到 `/api/proactive-decide` 用同一套規則判斷；通過才在聊天室建立一個帶 `response.instructions` 的 response（response 層的 instructions 會**取代** session 的，所以完整人格會一起送出），被擋下來就只顯示理由。成功觸發後會把「距上次」歸零、「今日已發送」加一，下一次就會真的撞到冷卻與每日上限。
+
+程式決定「說不說」，模型只決定「怎麼說」—— 這是實作二真正要教的分工。
+
+建議比較（都可以用「跑一整天」直接看到代價）：
+
+- 安靜時段是否應為 22:00–08:00？改成 21:00–09:00 會漏掉什麼？
 - 主動訊息冷卻時間應是 10、30 還是 60 分鐘？
 - reminder、health、weather、news 的優先順序如何安排？
+- 每日 4 則額度，早上花在閒聊上，晚上還夠用嗎？
 - 緊急事件是否能被「使用者剛拒絕聊天」擋住？
 
 ## 兩堂課如何銜接
 
 ```text
-Workshop 1：agent + realtime.turn_detection
+Workshop 1：agent.prompt_blocks + realtime.turn_detection
               ↓ 下載 / 自動保存
-Workshop 2：elder_profile + memory_policy + proactive_policy
+Workshop 2：workshop2_blocks + elder_profile + memory_policy + proactive_policy
+              ↓
+instructions = Workshop 1 的 5 個分塊 + Workshop 2 的 2 個分塊與 3 個生成段落
 ```
 
 - 同一台電腦：第二堂啟動後會自動讀取上次成果。

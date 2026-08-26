@@ -36,7 +36,10 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .mode-badge { padding: 7px 10px; border-radius: 999px; background: var(--sky); font-size: 13px; }
 .quiet-button:hover { color: var(--blue); }
 
-.app-shell { --lab-width: 430px; display: grid; grid-template-columns: minmax(360px, 1fr) 10px var(--lab-width); min-height: calc(100vh - 77px); }
+/* Default is an exact 1:1 split: the resizer takes 10px, so half of what is
+   left is `50% - 5px` and the 1fr chat column resolves to the same width. Kept
+   as a percentage so it follows the window until the student drags it. */
+.app-shell { --lab-width: calc(50% - 5px); display: grid; grid-template-columns: minmax(360px, 1fr) 10px var(--lab-width); min-height: calc(100vh - 77px); }
 .eyebrow { margin: 0 0 12px; font-size: 11px; font-weight: 800; letter-spacing: .16em; }
 /* Dodo's live state now sits above the transcript instead of in a left rail. */
 .state-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 22px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
@@ -68,6 +71,11 @@ h3 { margin: 0 0 8px; font-size: 18px; }
 .message.system .speaker { color: var(--ink-soft); }
 .message.tool p, .message.system p { padding: 9px 13px; font-size: 13px; line-height: 1.55; color: var(--ink-soft); background: transparent; border: 1px dashed var(--line); border-radius: 4px; }
 .message.system p { border-style: solid; background: var(--paper); }
+/* A preamble is a message item that shares a response with a function_call —
+   豆豆 saying what it is about to look up, not the answer. Same bubble shape so
+   it still reads as speech, but visibly not the reply. */
+.message.assistant.is-preamble p { background: transparent; border: 1px dashed var(--mint); }
+.message.assistant.is-preamble .speaker { color: #287653; }
 .composer { display: flex; align-items: flex-end; gap: 10px; border-top: 1px solid var(--line); padding-top: 18px; }
 .composer textarea, .lab-section input, .lab-section textarea, .lab-section select { width: 100%; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); padding: 11px 12px; }
 .composer textarea { flex: 1 1 auto; width: 100%; min-height: 48px; max-height: 128px; resize: vertical; overflow-wrap: anywhere; white-space: pre-wrap; line-height: 1.5; }
@@ -144,6 +152,44 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .memory-card p { margin: 0 0 6px; font-size: 13px; line-height: 1.45; }
 .memory-card select { width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
 .single-result { margin-top: 12px; font-weight: 700; }
+.block-purpose { margin: 0 0 14px; padding: 11px 12px; border-left: 4px solid var(--blue); background: var(--white); color: var(--ink-soft); line-height: 1.6; }
+.block-purpose code { color: var(--blue); }
+.memory-explanations { display: grid; gap: 8px; margin-top: 12px; }
+.memory-explanations div { padding: 9px 11px; border: 1px solid var(--line); border-left: 3px solid var(--line); border-radius: 4px; background: var(--white); line-height: 1.55; }
+.memory-explanations .is-pass { border-left-color: var(--mint); }
+.memory-explanations .is-fail { border-left-color: var(--danger); }
+.memory-explanations strong { display: block; margin-bottom: 3px; }
+.sub-heading { margin: 26px 0 8px; font-size: 15px; }
+.link-button { border: 0; background: transparent; color: var(--danger); font-weight: 700; text-decoration: underline; padding: 2px 4px; }
+.link-button:hover { color: var(--ink); }
+
+/* Memory viewer — the model writes, but a human has to be able to delete. */
+.memory-viewer { display: grid; gap: 10px; }
+.memory-layer { padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--white); }
+.memory-layer h4 { margin: 0 0 6px; font-size: 13px; color: var(--blue); }
+.memory-layer ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 5px; }
+.memory-layer li { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: baseline; line-height: 1.5; }
+.memory-layer li.is-empty, .memory-layer li.is-outside span { color: var(--ink-soft); }
+.memory-layer li.is-outside { opacity: .7; }
+.memory-layer em { font-size: 11px; font-style: normal; color: var(--ink-soft); white-space: nowrap; }
+.redteam-list { margin: 0 0 14px; padding-left: 22px; display: grid; gap: 8px; line-height: 1.55; }
+.redteam-list small { display: block; color: var(--ink-soft); }
+
+/* One simulated day. Two competing numbers, never one grade. */
+.day-summary { margin-top: 14px; }
+.day-score { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--white); }
+.day-score b { font-size: 17px; }
+.is-better { color: #287653; }
+.is-worse { color: var(--danger); }
+.day-delta { margin: 8px 0 0; padding: 9px 12px; background: var(--sky); line-height: 1.55; }
+.day-hint { margin: 8px 0 0; color: var(--ink-soft); line-height: 1.55; }
+.day-timeline { margin-top: 12px; display: grid; gap: 2px; }
+.day-row { display: grid; grid-template-columns: 46px 84px minmax(0, 1fr); gap: 4px 8px; padding: 7px 9px; border-left: 3px solid var(--line); background: var(--white); line-height: 1.45; }
+.day-row.is-spoken { border-left-color: var(--blue); }
+.day-row.is-blocked { background: transparent; color: var(--ink-soft); }
+.day-row.is-critical .day-kind { color: var(--danger); font-weight: 700; }
+.day-row time { font-variant-numeric: tabular-nums; color: var(--ink-soft); }
+.day-row .day-verdict { grid-column: 2 / -1; color: var(--ink-soft); font-size: 13px !important; }
 .lab-panel, .lab-panel * { font-family: "Microsoft JhengHei", sans-serif !important; }
 .lab-panel :where(p, label, small, input, textarea, select, button, code, em, span, pre, summary, strong) { font-size: 14px !important; }
 
@@ -180,7 +226,7 @@ legend { margin-bottom: 10px; font-weight: 800; }
   .conversation-panel { min-height: 0; }
   .lab-panel { height: 100%; max-height: none; }
 }
-@media (max-width: 1100px) { .app-shell { --lab-width: 340px; grid-template-columns: minmax(320px, 1fr) 10px var(--lab-width); } .conversation-panel { padding-inline: 28px; } .lab-section { padding-inline: 22px; } }
+@media (max-width: 1100px) { .app-shell { --lab-width: calc(50% - 5px); grid-template-columns: minmax(320px, 1fr) 10px var(--lab-width); } .conversation-panel { padding-inline: 28px; } .lab-section { padding-inline: 22px; } }
 @media (max-width: 860px) {
   .topbar { grid-template-columns: 1fr auto; }
   .stage-nav { grid-column: 1 / -1; grid-row: 2; }

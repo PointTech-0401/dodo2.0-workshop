@@ -1,6 +1,9 @@
 from dodo_workshop.profile import (
     DEFAULT_PROMPT_BLOCKS,
+    WORKSHOP2_PROMPT_BLOCKS,
     compose_agent_prompt,
+    compose_full_instructions,
+    compose_workshop2_prompt,
     normalize_workspace,
     workshop2_starter,
 )
@@ -127,3 +130,92 @@ def test_emptied_prompt_block_is_dropped_but_missing_key_still_defaults() -> Non
     # Every block cleared → empty prompt, which the UI warns about.
     blank = {"name": "豆豆", "address": "王奶奶", "prompt_blocks": dict.fromkeys(DEFAULT_PROMPT_BLOCKS, "")}
     assert compose_agent_prompt(blank) == ""
+
+
+def test_workshop2_prompt_carries_elder_memory_and_proactive_rules() -> None:
+    """Workshop 2's data used to reach the model only through a read_memory call.
+
+    It is now a second half of the instructions: two editable blocks plus three
+    sections generated from the fields the student edits.
+    """
+
+    workspace = normalize_workspace(
+        {
+            "schema_version": 1,
+            "profile": {"elder_profile": {"address": "陳阿公", "city": "台南"}},
+            "memory": {
+                "facts": [{"key": "花生", "value": "嚴重過敏"}],
+                "events": [{"key": "睡眠", "value": "昨晚沒睡好"}],
+                "summaries": [],
+            },
+        }
+    )
+    prompt = compose_workshop2_prompt(workspace)
+
+    assert "# 記憶使用規則" in prompt and "# 主動關心規則" in prompt
+    # {USER_ADDRESS} resolves to the elder's 稱呼 in this half.
+    assert "陳阿公" in prompt and "{USER_ADDRESS}" not in prompt
+    assert "# 長者資料" in prompt and "台南" in prompt
+    # Retention rides in the heading: `memory_policy` was dead schema, and
+    # 「保存 365 天」vs「保存 30 天」is what makes A and B different at all.
+    assert "A 重要事實（保存 365 天）：\n- 花生：嚴重過敏" in prompt
+    assert "B 近期事件（保存 30 天）：\n- 睡眠：昨晚沒睡好" in prompt
+    assert "C 跨日摘要（由多次對話整理）：（目前沒有任何記錄）" in prompt
+    # The rules the program enforces are stated, not left implicit.
+    assert "安靜時段：22:00–08:00" in prompt
+    assert "主動訊息冷卻：30 分鐘" in prompt
+    assert "每日主動訊息上限：4 則" in prompt
+    assert "emergency(100)" in prompt and prompt.index("emergency(100)") < prompt.index("news(20)")
+
+
+def test_memory_dump_in_instructions_is_bounded() -> None:
+    workspace = normalize_workspace(
+        {
+            "schema_version": 1,
+            "memory": {
+                "facts": [{"key": f"項目{index}", "value": "內容"} for index in range(12)],
+                "events": [],
+                "summaries": [],
+            },
+        }
+    )
+    prompt = compose_workshop2_prompt(workspace)
+
+    assert "另有 4 筆較舊記錄未列出" in prompt
+    assert "項目11" in prompt  # newest kept
+    assert "項目0：" not in prompt  # oldest dropped
+
+
+def test_full_instructions_are_workshop1_then_workshop2() -> None:
+    workspace = normalize_workspace(None)
+    instructions = compose_full_instructions(workspace)
+
+    assert instructions.index("# 角色與身分") < instructions.index("# 記憶使用規則")
+    # Stored `system_prompt` stays Workshop 1 only — the Workshop 2 half depends
+    # on live memory and is composed at send time.
+    assert workspace["profile"]["agent"]["system_prompt"] == compose_agent_prompt(
+        workspace["profile"]["agent"]
+    )
+    assert "# 記憶使用規則" not in workspace["profile"]["agent"]["system_prompt"]
+
+
+def test_emptied_workshop2_block_is_dropped_but_missing_key_defaults() -> None:
+    cleared = normalize_workspace(
+        {"schema_version": 1, "profile": {"workshop2_blocks": {"proactive": ""}}}
+    )
+
+    prompt = compose_workshop2_prompt(cleared)
+    assert "# 主動關心規則" not in prompt
+    # Missing key → default fills in, same rule as Workshop 1's blocks.
+    assert cleared["profile"]["workshop2_blocks"]["memory_use"] == WORKSHOP2_PROMPT_BLOCKS["memory_use"]
+    assert "# 記憶使用規則" in prompt
+    # Generated sections never disappear: they are the data, not prose.
+    assert "# 長者資料" in prompt and "# 主動訊息的程式規則" in prompt
+
+
+def test_workshop2_starter_includes_the_new_prompt_layer() -> None:
+    workspace = workshop2_starter()
+
+    assert workspace["profile"]["workshop2_blocks"] == WORKSHOP2_PROMPT_BLOCKS
+    # The preamble instruction is synced into the starter's Workshop 1 blocks.
+    assert "preamble" in workspace["profile"]["agent"]["prompt_blocks"]["conversation_style"]

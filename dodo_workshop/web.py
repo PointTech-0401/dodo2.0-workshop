@@ -14,12 +14,7 @@ from openai import OpenAI
 from pydantic import BaseModel, Field
 
 from dodo_workshop.config import ROOT, load_json
-from dodo_workshop.lesson2 import (
-    build_proactive_instructions,
-    choose_event,
-    compose_fallback,
-)
-from dodo_workshop.llm import TextModel
+from dodo_workshop.lesson2 import choose_event, simulate_day
 from dodo_workshop.profile import (
     REALTIME_VOICES,
     normalize_workspace,
@@ -67,12 +62,6 @@ async def validate_weather_api_key(api_key: str) -> None:
     await get_weather("Taipei", api_key)
 
 
-class ChatRequest(BaseModel):
-    message: str
-    event: str = "normal"
-    workspace: dict[str, Any] | None = None
-
-
 class RealtimeSessionRequest(BaseModel):
     """Mint-time Realtime session config.
 
@@ -99,6 +88,28 @@ class ApiKeyRequest(BaseModel):
 
 
 class ProactiveCheckRequest(BaseModel):
+    policy: dict[str, Any]
+
+
+class ProactiveDecideRequest(BaseModel):
+    """One ad-hoc scenario, so the classroom can trigger 主動關心 for real.
+
+    The 6 fixed scenarios only ever proved the rules on paper; this runs the very
+    same `choose_event` on a situation the student describes, and the browser then
+    lets 豆豆 speak first when the rules allow it.
+    """
+
+    policy: dict[str, Any]
+    scenario: dict[str, Any]
+
+
+class DaySimulationRequest(BaseModel):
+    """Replay one scripted 24 hours through the student's own rules.
+
+    The feed stays server-side: the point is to change the *policy* and see the
+    same day come out differently, not to edit the day until it scores well.
+    """
+
     policy: dict[str, Any]
 
 
@@ -231,19 +242,48 @@ def proactive_check(payload: ProactiveCheckRequest) -> dict[str, Any]:
     return {"results": results, "passed": all(item["passed"] for item in results)}
 
 
-@app.post("/api/proactive-message")
-def proactive_message(payload: ChatRequest) -> dict[str, str]:
-    workspace = normalize_workspace(payload.workspace)
-    profile = workspace["profile"]["elder_profile"]
-    policy = workspace["profile"]["proactive_policy"]
-    event = {"type": payload.event, "topic": payload.message}
-    model = TextModel(offline=not bool(os.getenv("OPENAI_API_KEY")))
-    reply = model.generate(
-        build_proactive_instructions(profile, policy),
-        f"事件資料：{event}",
-        compose_fallback(event, profile),
-    )
-    return {"reply": reply}
+@app.post("/api/proactive-decide")
+def proactive_decide(payload: ProactiveDecideRequest) -> dict[str, Any]:
+    """Decide a single, student-described situation with the classroom rules.
+
+    Returns the decision only. Wording is the model's job in the live Realtime
+    session — keeping the two apart is the whole point of Workshop 2's 實作二.
+    """
+
+    scenario = {
+        "time": "12:00",
+        "minutes_since_last_message": 999,
+        "messages_today": 0,
+        "user_declined": False,
+        "events": [],
+        **payload.scenario,
+    }
+    if not scenario["events"]:
+        raise HTTPException(status_code=400, detail="請至少提供一個主動事件。")
+    try:
+        decision = choose_event(scenario, payload.policy)
+    except ValueError as exc:  # bad HH:MM — strptime raises here
+        raise HTTPException(status_code=400, detail="時間格式必須是 HH:MM。") from exc
+    except (KeyError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail="主動規則不完整，請重新保存設定。") from exc
+    return {
+        "should_speak": decision.should_speak,
+        "reason": decision.reason,
+        "event": decision.event,
+    }
+
+
+@app.post("/api/proactive-simulate")
+def proactive_simulate(payload: DaySimulationRequest) -> dict[str, Any]:
+    """One day, the student's rules, two numbers that pull against each other."""
+
+    feed = load_json("scenarios/day_timeline.json")
+    try:
+        return simulate_day(feed, payload.policy)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="時間格式必須是 HH:MM。") from exc
+    except (KeyError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail="主動規則不完整，請重新套用設定。") from exc
 
 
 @app.post("/api/tools/weather")

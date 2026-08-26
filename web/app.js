@@ -1,5 +1,11 @@
 const SETUP_KEY = "dodo-workshop.setup";
 const PROJECT_KEY = "dodo-workshop.project";
+// Which stage the student is actually on. Progress flags used to decide this,
+// which meant 套用 in Workshop 1 + F5 threw them into Workshop 2.
+const STAGE_KEY = "dodo-workshop.stage";
+// Only written when the student drags or arrow-keys the divider. With nothing
+// stored the CSS default wins, and that default is an exact 1:1 split.
+const LAB_WIDTH_KEY = "dodo-workshop.labWidth";
 const LAB_WIDTH_MIN = 320;
 const PANEL_MOBILE_BREAKPOINT = 860;
 const DEFAULT_PROMPT_BLOCKS = {
@@ -10,7 +16,8 @@ const DEFAULT_PROMPT_BLOCKS = {
 保持溫暖、耐心、咬字清楚與音調平穩；不要刻意裝可愛，也不要把對方當成小孩。`,
   conversation_style: `自然地聊天、傾聽與回應，不要像客服或問卷。
 先回應對方真正關心的事；資訊不足時先簡短確認，不自行猜測。
-一次只問一件事，避免連續追問；回答要適合直接朗讀，不使用表格。`,
+一次只問一件事，避免連續追問；回答要適合直接朗讀，不使用表格。
+需要查天氣或讀寫記憶之前，先用一句話說明你正要做什麼，再去查（這句開場叫 preamble）。`,
   language: `中文（繁體／國語）為主要語言。
 不要主動把整段回答切換成英文、日文或其他語言；即使工具內容或專有名詞夾雜其他語言，回答仍以臺灣國語與繁體中文為主。
 如果 {USER_ADDRESS} 明確詢問某個詞的外語說法，可以用國語解釋並附上該詞。避免中國大陸用語與年輕世代網路用語。`,
@@ -50,18 +57,33 @@ const REALTIME_TOOLS = [
   {
     type: "function",
     name: "update_memory",
-    description: "保存或更新使用者主動提供的非敏感個人資訊。不得保存密碼、API Key、金融帳號或驗證碼。",
+    description: "保存或更新使用者主動提供的非敏感個人資訊。不得保存密碼、API Key、金融帳號或驗證碼（X 類一律不保存）。",
     parameters: {
       type: "object",
       properties: {
         key: { type: "string", description: "資訊類別，例如：姓名、興趣、居住地、喜歡的食物。" },
         value: { type: "string", description: "要保存的臺灣繁體中文內容。" },
+        // Workshop 2's A/B/C classification, decided by the model as it saves.
+        // Optional with an A fallback: a model that omits it must still succeed.
+        layer: {
+          type: "string",
+          enum: ["A", "B", "C"],
+          description: "記憶層級：A 重要事實（長期、需真人確認）、B 近期事件（幾天內可能改變）、C 跨日摘要（多次對話整理出的趨勢）。不確定時用 A。",
+        },
       },
       required: ["key", "value"],
       additionalProperties: false,
     },
   },
 ];
+// A/B/C maps onto the three lists in `workspace.memory`, which is what makes the
+// Workshop 2 classification quiz do something instead of just scoring itself.
+const MEMORY_LAYERS = [
+  ["A", "facts", "A 重要事實"],
+  ["B", "events", "B 近期事件"],
+  ["C", "summaries", "C 跨日摘要"],
+];
+const MEMORY_PREVIEW_LIMIT = 8;
 // Labels are hints, not guarantees — the point of the lesson is that students
 // listen and judge for themselves. OpenAI recommends marin/cedar for quality.
 const REALTIME_VOICES = [
@@ -144,6 +166,13 @@ const PROMPT_BLOCKS = [
   ["conversation_style", "對話方式", "#promptConversationStyle"],
   ["language", "語言", "#promptLanguage"],
   ["safety", "邊界與安全", "#promptSafety"],
+];
+// Workshop 2's own editable blocks. Their default text lives only in
+// profile.py's DEFAULT_WORKSPACE and arrives via /api/bootstrap, so there is no
+// second copy to keep in sync.
+const WORKSHOP2_BLOCKS = [
+  ["memory_use", "記憶使用規則", "#promptMemoryUse"],
+  ["proactive", "主動關心規則", "#promptProactive"],
 ];
 
 const $ = (selector) => document.querySelector(selector);
@@ -259,9 +288,11 @@ function buildSystemPrompt(agent) {
 function rebuildSystemPrompt() {
   const prompt = buildSystemPrompt(agentFromFields());
   const preview = $("#agentSystemPrompt");
-  // The preview must always show exactly what gets sent, including "nothing".
+  // This is exactly the Workshop 1 half of what gets sent, including "nothing".
+  // Workshop 2 appends its own sections; its VIEW panel shows the whole thing.
   preview.textContent = prompt || EMPTY_PROMPT_NOTICE;
   preview.classList.toggle("is-empty", !prompt);
+  rebuildWorkshop2Prompt();
 }
 
 function migrateAgent(agent) {
@@ -302,11 +333,13 @@ function needsRealtime() {
   return Boolean(setup?.completed);
 }
 
-function responseCreateEvent() {
-  return {
-    type: "response.create",
-    response: { output_modalities: [setup?.outputMode === "voice" ? "audio" : "text"] },
-  };
+function responseCreateEvent(instructions) {
+  const response = { output_modalities: [setup?.outputMode === "voice" ? "audio" : "text"] };
+  // Response-level instructions replace the session's for this turn only. Used
+  // by the Workshop 2 proactive trigger, which needs the persona plus a one-off
+  // brief; a normal reply passes nothing and keeps the session instructions.
+  if (instructions) response.instructions = instructions;
+  return { type: "response.create", response };
 }
 
 function deepMerge(defaultValue, suppliedValue) {
@@ -326,23 +359,35 @@ function panelWidthBounds() {
   const resizerWidth = $("#panelResizer").getBoundingClientRect().width;
   const minimumChatWidth = window.innerWidth <= 1100 ? 320 : 360;
   const usableWidth = shell.getBoundingClientRect().width - resizerWidth;
-  // Half the usable width is a 1:1 split with the chat area — the widest
-  // setting worth allowing. On narrow screens the chat floor wins instead.
-  const availableMaximum = Math.min(usableWidth / 2, usableWidth - minimumChatWidth);
+  // The chat floor is the only ceiling now. It used to be half the usable
+  // width, but 1:1 is the *default* since this change — capping there would
+  // leave the divider unable to move right of where it starts.
   return {
     min: LAB_WIDTH_MIN,
-    max: Math.max(LAB_WIDTH_MIN, availableMaximum),
+    max: Math.max(LAB_WIDTH_MIN, usableWidth - minimumChatWidth),
   };
+}
+
+function syncResizerBounds() {
+  const bounds = panelWidthBounds();
+  const resizer = $("#panelResizer");
+  resizer.setAttribute("aria-valuemin", String(bounds.min));
+  resizer.setAttribute("aria-valuemax", String(Math.round(bounds.max)));
+  resizer.setAttribute("aria-valuenow", String(Math.round($(".lab-panel").getBoundingClientRect().width)));
 }
 
 function setLabPanelWidth(width) {
   const bounds = panelWidthBounds();
   const nextWidth = Math.round(Math.min(bounds.max, Math.max(bounds.min, width)));
   $(".app-shell").style.setProperty("--lab-width", `${nextWidth}px`);
-  const resizer = $("#panelResizer");
-  resizer.setAttribute("aria-valuemin", String(bounds.min));
-  resizer.setAttribute("aria-valuemax", String(Math.round(bounds.max)));
-  resizer.setAttribute("aria-valuenow", String(nextWidth));
+  syncResizerBounds();
+}
+
+/** Remember an explicit divider position so F5 keeps it. Only the drag and
+ *  keyboard handlers call this — persisting from the resize/clamp path would
+ *  freeze the 1:1 CSS default into a pixel value on first load. */
+function persistLabPanelWidth() {
+  localStorage.setItem(LAB_WIDTH_KEY, String(Math.round($(".lab-panel").getBoundingClientRect().width)));
 }
 
 function resizePanelsFromPointer(clientX) {
@@ -370,6 +415,7 @@ function stopPanelResize(event) {
   panelResizePointerId = null;
   event.currentTarget.classList.remove("is-dragging");
   document.body.classList.remove("is-resizing-panels");
+  persistLabPanelWidth();
 }
 
 function resizePanelsFromKeyboard(event) {
@@ -384,11 +430,28 @@ function resizePanelsFromKeyboard(event) {
   };
   if (!(event.key in widths)) return;
   setLabPanelWidth(widths[event.key]);
+  persistLabPanelWidth();
   event.preventDefault();
+}
+
+/** Restore a remembered divider position. With none, the CSS default stands —
+ *  `calc(50% - 5px)` against a 10px resizer, i.e. an exact 1:1 split that keeps
+ *  following the window instead of being pinned to pixels. */
+function restoreLabPanelWidth() {
+  if (window.innerWidth <= PANEL_MOBILE_BREAKPOINT) return;
+  const stored = Number(localStorage.getItem(LAB_WIDTH_KEY));
+  if (stored > 0) setLabPanelWidth(stored);
+  else syncResizerBounds();
 }
 
 function clampPanelWidths() {
   if (window.innerWidth <= PANEL_MOBILE_BREAKPOINT) return;
+  // Nothing stored → still on the responsive 1:1 default; let CSS handle the
+  // resize and only refresh the announced values.
+  if (!localStorage.getItem(LAB_WIDTH_KEY)) {
+    syncResizerBounds();
+    return;
+  }
   setLabPanelWidth($(".lab-panel").getBoundingClientRect().width);
 }
 
@@ -417,6 +480,54 @@ function addMessage(role, text, id = null) {
   }
   article.querySelector("p").textContent = text;
   $("#messages").scrollTop = $("#messages").scrollHeight;
+  return article;
+}
+
+// --- Preambles ------------------------------------------------------------
+// The Realtime API has no "preamble" item type. What it does have: a response
+// whose output holds BOTH a message item and a function_call item. That message
+// is the preamble — 豆豆 narrating what it is about to look up — and the real
+// answer arrives in the *next* response, the one we create after handing back
+// function_call_output. So the distinction is structural, per response, and can
+// only be made once the function_call shows up: the text streams first.
+let activeResponseBubbles = [];
+let activeResponseIsPreamble = false;
+let preambleExplained = false;
+
+function startResponseTracking() {
+  activeResponseBubbles = [];
+  activeResponseIsPreamble = false;
+}
+
+/** Remember a bubble so it can be re-labelled if this response turns out to
+ *  contain a tool call. A response may hold several message items. */
+function trackResponseBubble(bubble) {
+  if (!bubble) return;
+  if (!activeResponseBubbles.includes(bubble)) activeResponseBubbles.push(bubble);
+  if (activeResponseIsPreamble) markPreamble(bubble);
+}
+
+function markPreamble(bubble) {
+  if (!bubble || bubble.classList.contains("is-preamble")) return;
+  bubble.classList.add("is-preamble");
+  bubble.querySelector(".speaker").textContent = "DODO · PREAMBLE（工具前的開場）";
+}
+
+function markResponseAsPreamble() {
+  if (activeResponseIsPreamble) return;
+  activeResponseIsPreamble = true;
+  activeResponseBubbles.forEach(markPreamble);
+  if (activeResponseBubbles.length && !preambleExplained) {
+    preambleExplained = true;
+    addMessage(
+      "system",
+      "上面那格是 preamble：它和 function_call 在同一個 response 裡，屬於「我先說我要去查什麼」；工具查完後的正式回答會是另一個 response。",
+    );
+  }
+}
+
+function responseHasFunctionCall(response) {
+  return (response?.output || []).some((item) => item.type === "function_call");
 }
 
 function loadFields() {
@@ -428,17 +539,24 @@ function loadFields() {
     $(selector).value = agent.prompt_blocks[key];
   });
   $("#agentVoice").value = agent.voice || "sage";
-  rebuildSystemPrompt();
   $("#turnDetectionMode").value = turn.type;
   $("#semanticEagerness").value = turn.eagerness;
   $("#silenceDuration").value = turn.silence_duration_ms;
   $("#interruptResponse").checked = turn.interrupt_response;
   $("#elderAddress").value = elder.address;
+  $("#elderCity").value = elder.city || "";
   $("#elderInterests").value = elder.interests.join("、");
+  WORKSHOP2_BLOCKS.forEach(([key, , selector]) => {
+    $(selector).value = workspace.profile.workshop2_blocks?.[key] ?? "";
+  });
   $("#quietStart").value = proactive.quiet_hours.start;
   $("#quietEnd").value = proactive.quiet_hours.end;
   $("#cooldown").value = proactive.cooldown_minutes;
   $("#dailyLimit").value = proactive.daily_message_limit;
+  $("#maxSentences").value = proactive.max_message_sentences;
+  // Last: both previews read every field above, Workshop 2's included.
+  rebuildSystemPrompt();
+  renderMemoryViewer();
   updateTurnFields();
 }
 
@@ -479,18 +597,202 @@ function updateTurnFields() {
   $("#turnModeNotice").textContent = explanations[mode];
 }
 
+function workshop2BlocksFromFields() {
+  return Object.fromEntries(WORKSHOP2_BLOCKS.map(([key, , selector]) => [
+    key,
+    $(selector).value.trim(),
+  ]));
+}
+
+function elderProfileFromFields() {
+  return {
+    ...workspace.profile.elder_profile,
+    address: $("#elderAddress").value.trim() || "王奶奶",
+    city: $("#elderCity").value.trim(),
+    interests: $("#elderInterests").value
+      .split(/[、,，]/)
+      .map((item) => item.trim())
+      .filter(Boolean),
+  };
+}
+
+function proactivePolicyFromFields() {
+  return {
+    ...workspace.profile.proactive_policy,
+    quiet_hours: { start: Number($("#quietStart").value), end: Number($("#quietEnd").value) },
+    cooldown_minutes: Number($("#cooldown").value),
+    daily_message_limit: Number($("#dailyLimit").value),
+    max_message_sentences: Math.max(1, Number($("#maxSentences").value) || 2),
+  };
+}
+
 function collectWorkshop2() {
-  workspace.profile.elder_profile.address = $("#elderAddress").value.trim() || "王奶奶";
-  workspace.profile.elder_profile.interests = $("#elderInterests").value
-    .split(/[、,，]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-  const policy = workspace.profile.proactive_policy;
-  policy.quiet_hours.start = Number($("#quietStart").value);
-  policy.quiet_hours.end = Number($("#quietEnd").value);
-  policy.cooldown_minutes = Number($("#cooldown").value);
-  policy.daily_message_limit = Number($("#dailyLimit").value);
+  workspace.profile.elder_profile = elderProfileFromFields();
+  workspace.profile.workshop2_blocks = workshop2BlocksFromFields();
+  workspace.profile.proactive_policy = proactivePolicyFromFields();
   saveProject();
+}
+
+function memoryEntryText(entry) {
+  if (entry && typeof entry === "object") {
+    const key = String(entry.key || "").trim();
+    const value = String(entry.value || "").trim();
+    return key && value ? `${key}：${value}` : key || value;
+  }
+  return String(entry ?? "").trim();
+}
+
+/** Layer titles carrying their retention window. `memory_policy` was dead
+ *  schema until now; nothing ages during a 165-minute class, so retention is a
+ *  label rather than a simulation —「保存 365 天」next to「保存 30 天」is what
+ *  makes A and B different at all. Mirrors `memory_layer_headings`. */
+function memoryLayerHeadings(memoryPolicy) {
+  const policy = memoryPolicy || {};
+  return {
+    facts: `A 重要事實（保存 ${policy.fact_retention_days ?? 365} 天）`,
+    events: `B 近期事件（保存 ${policy.event_retention_days ?? 30} 天）`,
+    summaries: "C 跨日摘要（由多次對話整理）",
+  };
+}
+
+/** Render the three memory layers exactly as the model receives them. Capped:
+ *  these instructions are re-sent on every 套用. Mirrors
+ *  `compose_memory_context` in dodo_workshop/profile.py. */
+function buildMemoryContext(memory, memoryPolicy) {
+  const headings = memoryLayerHeadings(memoryPolicy);
+  const lines = [];
+  MEMORY_LAYERS.forEach(([, field]) => {
+    const title = headings[field];
+    const texts = (memory?.[field] || []).map(memoryEntryText).filter(Boolean);
+    if (!texts.length) {
+      lines.push(`${title}：（目前沒有任何記錄）`);
+      return;
+    }
+    const shown = texts.slice(-MEMORY_PREVIEW_LIMIT);
+    const omitted = texts.length - shown.length;
+    lines.push(`${title}：${omitted ? `（另有 ${omitted} 筆較舊記錄未列出）` : ""}`);
+    shown.forEach((text) => lines.push(`- ${text}`));
+  });
+  return lines.join("\n");
+}
+
+/** Workshop 2's half of the instructions: two editable blocks plus three
+ *  generated sections. Without this, 長者資料、三層記憶 and the proactive rules
+ *  never reached the model — they only existed for the CLI and for whatever
+ *  read_memory happened to return. Mirrors `compose_workshop2_prompt`. */
+function buildWorkshop2Prompt(source) {
+  const { agent, elder_profile: elder, proactive_policy: policy } = source.profile;
+  const address = elder.address || agent.address || "王奶奶";
+  const replacements = { "{AGENT_NAME}": agent.name || "豆豆", "{USER_ADDRESS}": address };
+  const blocks = source.profile.workshop2_blocks || {};
+  const sections = WORKSHOP2_BLOCKS.map(([key, title]) => {
+    let content = String(blocks[key] ?? "").trim();
+    if (!content) return null; // cleared on purpose — drop the whole section
+    Object.entries(replacements).forEach(([placeholder, value]) => {
+      content = content.replaceAll(placeholder, value);
+    });
+    return `# ${title}\n${content}`;
+  }).filter(Boolean);
+
+  const interests = (elder.interests || []).filter(Boolean);
+  sections.push([
+    "# 長者資料",
+    `稱呼：${address}`,
+    `居住城市：${elder.city || "未提供"}（問天氣沒有指定城市時用這個）`,
+    `興趣：${interests.length ? interests.join("、") : "未提供"}`,
+  ].join("\n"));
+  sections.push(
+    `# 目前記得的事（三層記憶）\n${buildMemoryContext(source.memory, source.profile.memory_policy)}`,
+  );
+
+  const pad = (value) => String(value).padStart(2, "0");
+  const order = Object.entries(policy.priorities || {})
+    .sort((left, right) => right[1] - left[1])
+    .map(([name, score]) => `${name}(${score})`)
+    .join("、");
+  sections.push([
+    "# 主動訊息的程式規則",
+    `安靜時段：${pad(policy.quiet_hours.start)}:00–${pad(policy.quiet_hours.end)}:00（緊急事件除外）`,
+    `主動訊息冷卻：${policy.cooldown_minutes} 分鐘`,
+    `每日主動訊息上限：${policy.daily_message_limit} 則`,
+    `每則主動訊息最多 ${policy.max_message_sentences} 句`,
+    `事件優先權：${order || "未設定"}`,
+    "這些條件由程式先判斷；你收到主動事件時才開口，措辭仍要符合上面的規則。",
+  ].join("\n"));
+  return sections.join("\n\n");
+}
+
+/** A workspace-shaped snapshot of the current fields, so the Workshop 2 preview
+ *  shows unsaved edits the same way Workshop 1's does. */
+function workshop2Draft() {
+  return {
+    profile: {
+      agent: agentFromFields(),
+      workshop2_blocks: workshop2BlocksFromFields(),
+      elder_profile: elderProfileFromFields(),
+      // Not editable in the UI, but it decides the retention labels.
+      memory_policy: workspace.profile.memory_policy,
+      proactive_policy: proactivePolicyFromFields(),
+    },
+    memory: workspace.memory,
+  };
+}
+
+function composeInstructions(source) {
+  return [buildSystemPrompt(source.profile.agent), buildWorkshop2Prompt(source)]
+    .filter((part) => part.trim())
+    .join("\n\n");
+}
+
+function rebuildWorkshop2Prompt() {
+  $("#workshop2SystemPrompt").textContent = composeInstructions(workshop2Draft());
+}
+
+const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => (
+  { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]
+));
+
+/** Show every stored memory with a way for a *human* to delete it.
+ *  Until now only the model could write memory and nobody could correct it,
+ *  which quietly contradicted the lesson's own question:「誰能寫入或修改？」
+ *  Entries outside the prompt window are marked, or deleting one would look
+ *  like it changed nothing. */
+function renderMemoryViewer() {
+  const headings = memoryLayerHeadings(workspace.profile.memory_policy);
+  $("#memoryViewer").innerHTML = MEMORY_LAYERS.map(([layer, field]) => {
+    const entries = workspace.memory?.[field] || [];
+    const firstShown = Math.max(0, entries.length - MEMORY_PREVIEW_LIMIT);
+    const rows = entries.length
+      ? entries.map((entry, index) => `
+          <li class="${index < firstShown ? "is-outside" : ""}">
+            <span>${escapeHtml(memoryEntryText(entry)) || "（空白）"}</span>
+            ${index < firstShown ? "<em>未進入 Prompt</em>" : ""}
+            <button type="button" class="link-button" data-memory-layer="${layer}" data-memory-entry="${index}">刪除</button>
+          </li>`).join("")
+      : '<li class="is-empty">（目前沒有任何記錄）</li>';
+    return `<div class="memory-layer"><h4>${escapeHtml(headings[field])}</h4><ul>${rows}</ul></div>`;
+  }).join("");
+}
+
+/** Delete one memory entry on the human's behalf, and push the change into the
+ *  live session — the baked instructions still hold the deleted fact until a
+ *  session.update replaces them, which would make「刪除」look broken. */
+function deleteMemoryEntry(layer, index) {
+  const found = MEMORY_LAYERS.find(([id]) => id === layer);
+  if (!found) return;
+  const [, field, title] = found;
+  const entries = workspace.memory?.[field];
+  if (!Array.isArray(entries) || !entries[index]) return;
+  const removed = memoryEntryText(entries[index]);
+  workspace.memory[field] = entries.filter((_, position) => position !== index);
+  saveProject();
+  renderMemoryViewer();
+  rebuildWorkshop2Prompt();
+  if (dataChannel?.readyState === "open") {
+    pendingRealtimeApply = true;
+    dataChannel.send(JSON.stringify({ type: "session.update", session: realtimeSessionUpdate() }));
+  }
+  addMessage("system", `已從 ${title} 刪除「${removed}」，並更新豆豆的記憶。人可以覆寫 AI 記得的事。`);
 }
 
 function renderMemoryCards() {
@@ -514,6 +816,14 @@ function switchStage(stage) {
   $("#workshop2Panel").hidden = isFirst;
   $$(".stage-button").forEach((button) => button.classList.toggle("is-active", Number(button.dataset.stage) === Number(stage)));
   $("#conversationTitle").textContent = isFirst ? "讓 Dodo 聽完，再回答" : "再讓它記得你，適時主動關心";
+  // Every entry point routes through here, so remembering the stage here is what
+  // makes F5 keep the student where they were.
+  localStorage.setItem(STAGE_KEY, isFirst ? "1" : "2");
+}
+
+function storedStage() {
+  const stage = Number(localStorage.getItem(STAGE_KEY));
+  return stage === 1 || stage === 2 ? stage : null;
 }
 
 function applyMode() {
@@ -790,19 +1100,37 @@ async function finishOnboarding() {
   $("#onboarding").hidden = true;
   history.replaceState({}, "", location.pathname);
   applyMode();
-  switchStage(startStage);
+  // Only when the entry choice was actually offered. Reopening this sheet from
+  // 「API 設定」 hides that fieldset, and switching there would drag a Workshop 2
+  // student back to Workshop 1 — and now also persist stage 1 over their place.
+  if (!forced) switchStage(startStage);
   await connectRealtime();
 }
 
+const MEMORY_LAYER_LABELS = {
+  A: "A 重要事實",
+  B: "B 近期事件",
+  C: "C 跨日摘要",
+  X: "X 不保存",
+};
+
 function checkMemory() {
   let score = 0;
-  bootstrapData.memory_cards.forEach((card, index) => {
-    if ($(`[data-memory-index="${index}"]`).value === card.answer) score += 1;
+  // The cards always carried an `explanation`; the browser used to throw it away
+  // and show only a score, which left 「為什麼」 —— the actual lesson —— invisible.
+  const rows = bootstrapData.memory_cards.map((card, index) => {
+    const passed = $(`[data-memory-index="${index}"]`).value === card.answer;
+    if (passed) score += 1;
+    return `<div class="${passed ? "is-pass" : "is-fail"}">
+      <strong>${index + 1}. ${passed ? "✓" : "×"} 建議分類：${MEMORY_LAYER_LABELS[card.answer]}</strong>
+      ${card.explanation}
+    </div>`;
   });
   memoryPassed = score === bootstrapData.memory_cards.length;
   $("#memoryResult").textContent = memoryPassed
     ? `✓ ${score}/${bootstrapData.memory_cards.length}，記憶分類完成`
     : `${score}/${bootstrapData.memory_cards.length}，修改後再檢查一次`;
+  $("#memoryExplanations").innerHTML = rows.join("");
 }
 
 async function runProactiveTests() {
@@ -830,6 +1158,162 @@ async function runProactiveTests() {
   setState("listening", result.passed ? "Workshop 2：主動情境 6/6" : "調整規則後再試一次");
 }
 
+// Kept so a re-run can say what got better and what got worse. A student who
+// only sees the latest numbers cannot tell a trade from an improvement.
+let lastDayRun = null;
+
+const DAY_EVENT_LABELS = {
+  reminder: "提醒",
+  health: "健康",
+  weather: "天氣",
+  news: "新聞",
+  reverse_mentor: "反向請教",
+  emergency: "緊急",
+};
+
+function renderDayDelta(result) {
+  if (!lastDayRun) return "";
+  const describe = (label, before, after, lowerIsBetter = true) => {
+    const change = after - before;
+    if (!change) return `${label} 不變（${after}）`;
+    const better = lowerIsBetter ? change < 0 : change > 0;
+    const arrow = change > 0 ? `+${change}` : `${change}`;
+    return `<b class="${better ? "is-better" : "is-worse"}">${label} ${arrow}（${before} → ${after}）</b>`;
+  };
+  return `<p class="day-delta">和上一次比較：${[
+    describe("漏掉重要事", lastDayRun.missed_critical, result.missed_critical),
+    describe("打擾", lastDayRun.noise, result.noise),
+  ].join("、")}</p>`;
+}
+
+/** Replay one scripted day through the student's rules. Deterministic and
+ *  API-free, so the whole class can run it. Deliberately reports two numbers
+ *  and no single grade: tightening the rules trades noise for misses, and there
+ *  is no 6/6 to converge on. */
+async function runDaySimulation() {
+  collectWorkshop2();
+  const button = $("#runDaySimulation");
+  button.disabled = true;
+  try {
+    const response = await fetch("/api/proactive-simulate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ policy: workspace.profile.proactive_policy }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || "模擬失敗。");
+    $("#daySummary").innerHTML = `
+      <div class="day-score">
+        <span>說出 <b>${result.spoken}</b> 則</span>
+        <span>擋下 <b>${result.blocked}</b> 則</span>
+        <span class="${result.missed_critical ? "is-worse" : "is-better"}">漏掉重要事 <b>${result.missed_critical}</b>／${result.critical_total}</span>
+        <span class="${result.noise > 2 ? "is-worse" : ""}">打擾 <b>${result.noise}</b>／${result.optional_total}</span>
+      </div>
+      ${renderDayDelta(result)}
+      <p class="day-hint">兩個數字會互相拉扯：規則放寬，打擾變多；規則收緊，重要的事會被漏掉。沒有滿分答案。</p>`;
+    $("#dayTimeline").innerHTML = result.steps.map((step) => `
+      <div class="day-row ${step.spoke ? "is-spoken" : "is-blocked"} ${step.importance === "critical" ? "is-critical" : ""}">
+        <time>${step.time}</time>
+        <span class="day-kind">${DAY_EVENT_LABELS[step.event_type] || step.event_type}${step.importance === "critical" ? "・重要" : ""}</span>
+        <span class="day-topic">${escapeHtml(step.topic)}</span>
+        <span class="day-verdict">${step.spoke ? "說出" : "擋下"}：${escapeHtml(step.reason)}</span>
+      </div>`).join("");
+    lastDayRun = result;
+  } catch (error) {
+    $("#daySummary").textContent = error.message || "無法連接本機服務。";
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function applyWorkshop2() {
+  collectWorkshop2();
+  await connectRealtime();
+  if (dataChannel?.readyState === "open") {
+    pendingRealtimeApply = true;
+    dataChannel.send(JSON.stringify({ type: "session.update", session: realtimeSessionUpdate() }));
+    addMessage("system", "第二堂設定已套用：長者資料、三層記憶與主動規則都寫進了同一份 instructions，正在確認更新…");
+    return;
+  }
+  addMessage("system", "第二堂設定已保存（尚未連線，下次連線時生效）。");
+}
+
+/** The brief for one proactive turn. Response-level `instructions` *replace* the
+ *  session instructions, so the whole composed prompt has to travel with it —
+ *  otherwise 豆豆 would open its mouth as OpenAI's default assistant. */
+function proactiveTurnInstructions(event, time, policy) {
+  return [
+    realtimeInstructions(),
+    [
+      "# 這一次主動開口",
+      `現在是 ${time}。你要「主動」開啟對話，不是回答問題 —— 對方還沒說話。`,
+      `事件類型：${event.type}`,
+      `事件內容：${event.topic || "（未填寫）"}`,
+      `最多 ${policy.max_message_sentences} 句，直接說出口，不要說明你為什麼現在開口。`,
+      event.type === "emergency"
+        ? "這是緊急事件：先確認對方當下是否安全，並明確說你會請真人照護者介入。"
+        : "不要製造壓力，也不要連續追問。",
+    ].join("\n"),
+  ].filter((part) => part.trim()).join("\n\n");
+}
+
+async function triggerProactive() {
+  collectWorkshop2();
+  const policy = workspace.profile.proactive_policy;
+  const time = $("#proactiveNow").value || "12:00";
+  const event = {
+    type: $("#proactiveEventType").value,
+    topic: $("#proactiveTopic").value.trim(),
+  };
+  const scenario = {
+    time,
+    minutes_since_last_message: Number($("#proactiveSinceLast").value) || 0,
+    messages_today: Number($("#proactiveSentToday").value) || 0,
+    user_declined: $("#proactiveDeclined").checked,
+    events: [event],
+  };
+
+  let decision;
+  try {
+    const response = await fetch("/api/proactive-decide", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ policy, scenario }),
+    });
+    decision = await response.json();
+    if (!response.ok) throw new Error(decision.detail || "主動決策失敗。");
+  } catch (error) {
+    $("#proactiveDecision").textContent = error.message || "無法連接本機服務。";
+    return;
+  }
+
+  $("#proactiveDecision").textContent = decision.should_speak
+    ? `✓ 主動開口：${decision.reason}`
+    : `× 保持安靜：${decision.reason}`;
+  addMessage(
+    "tool",
+    `主動決策（${event.type} @ ${time}）：${decision.should_speak ? "主動開口" : "保持安靜"} — ${decision.reason}`,
+  );
+  if (!decision.should_speak) return;
+
+  if (!apiConfigured) {
+    addMessage("system", "規則允許主動開口，但還沒有連接 OpenAI，所以豆豆說不出話。請先完成 API 設定。");
+    return;
+  }
+  if (!(await connectRealtime())) return;
+  // A proactive message must not talk over 豆豆's current sentence.
+  if (isDodoSpeaking()) {
+    addMessage("system", "豆豆正在說話，等它說完再觸發主動關心。");
+    return;
+  }
+  setState("thinking", "豆豆正在主動開口");
+  sendProactiveResponse(proactiveTurnInstructions(event, time, policy));
+  // The rules only mean something if the trigger feeds them: the next attempt
+  // now runs into the cooldown and the daily budget, exactly as it would live.
+  $("#proactiveSinceLast").value = 0;
+  $("#proactiveSentToday").value = scenario.messages_today + 1;
+}
+
 async function sendText(message) {
   if (!apiConfigured) {
     addMessage("system", "目前沒有連接 OpenAI 模型。請先點右上角「API 設定」。");
@@ -852,6 +1336,13 @@ async function sendText(message) {
 
 function sendResponseCreate() {
   dataChannel.send(JSON.stringify(responseCreateEvent()));
+  responseActive = true;
+}
+
+/** Same send, with one-off instructions for a proactive turn. Kept separate so
+ *  the normal path stays parameterless. */
+function sendProactiveResponse(instructions) {
+  dataChannel.send(JSON.stringify(responseCreateEvent(instructions)));
   responseActive = true;
 }
 
@@ -890,13 +1381,15 @@ function finalizeVoiceDraft() {
 }
 
 function realtimeInstructions() {
-  // Rebuilt from the blocks rather than read from the stored `system_prompt`.
-  // The onboarding paths assign `workspace` without running migrateAgent, so a
-  // stale stored string could win the deepMerge — and now that instructions ride
-  // along at mint time, that would hand OpenAI the wrong persona (which is
-  // exactly how 豆豆 ended up replying in English). Can legitimately be empty if
-  // the student cleared every block; the preview says so before they apply.
-  return buildSystemPrompt(workspace.profile.agent);
+  // Workshop 1 (persona) + Workshop 2 (memory rules, elder data, proactive
+  // rules), rebuilt from the blocks rather than read from the stored
+  // `system_prompt`. The onboarding paths assign `workspace` without running
+  // migrateAgent, so a stale stored string could win the deepMerge — and now
+  // that instructions ride along at mint time, that would hand OpenAI the wrong
+  // persona (which is exactly how 豆豆 ended up replying in English). The
+  // Workshop 1 half can legitimately be empty if the student cleared every
+  // block; the preview says so before they apply.
+  return composeInstructions(workspace);
 }
 
 function realtimeTurnDetection() {
@@ -990,9 +1483,10 @@ async function executeRealtimeTool(call) {
   const statusId = `tool-${call.call_id}`;
 
   if (call.name === "read_memory") {
-    const facts = workspace.memory.facts.length;
-    const events = workspace.memory.events.length;
-    addMessage("tool", `read_memory：讀取記憶（${facts} 筆事實、${events} 筆事件）`, statusId);
+    const counts = MEMORY_LAYERS
+      .map(([, field, title]) => `${title} ${(workspace.memory[field] || []).length} 筆`)
+      .join("、");
+    addMessage("tool", `read_memory：讀取三層記憶（${counts}）`, statusId);
     return workspace.memory;
   }
 
@@ -1004,19 +1498,29 @@ async function executeRealtimeTool(call) {
       return { error: "key 與 value 都不可空白。" };
     }
     if (/(密碼|password|api.?key|金鑰|帳號|信用卡|驗證碼)/i.test(`${key} ${value}`)) {
-      addMessage("tool", `update_memory 已拒絕：「${key}」屬於敏感資料，不會保存`, statusId);
+      // This is X in the Workshop 2 classification: refused, never stored.
+      addMessage("tool", `update_memory 已拒絕（X 不保存）：「${key}」屬於敏感資料`, statusId);
       return { error: "基於安全規則，這類敏感資料不會保存。" };
     }
-    const fact = workspace.memory.facts.find((item) => item && typeof item === "object" && item.key === key);
-    if (fact) {
-      fact.value = value;
-      fact.updated_at = new Date().toISOString();
+    // A/B/C decides which list the value lands in, which is what turns the
+    // classification exercise into behaviour instead of a score. The model may
+    // omit `layer`, so A is the fallback.
+    const requested = String(args.layer || "").trim().toUpperCase();
+    const [layer, field, layerTitle] = MEMORY_LAYERS.find(([id]) => id === requested) || MEMORY_LAYERS[0];
+    if (!Array.isArray(workspace.memory[field])) workspace.memory[field] = [];
+    const entries = workspace.memory[field];
+    const existing = entries.find((item) => item && typeof item === "object" && item.key === key);
+    if (existing) {
+      existing.value = value;
+      existing.updated_at = new Date().toISOString();
     } else {
-      workspace.memory.facts.push({ key, value, updated_at: new Date().toISOString() });
+      entries.push({ key, value, updated_at: new Date().toISOString() });
     }
     saveProject();
-    addMessage("tool", `update_memory：已${fact ? "更新" : "新增"}「${key}」＝「${value}」`, statusId);
-    return { saved: true, key, value };
+    rebuildWorkshop2Prompt();
+    renderMemoryViewer();
+    addMessage("tool", `update_memory：已${existing ? "更新" : "新增"} ${layerTitle}「${key}」＝「${value}」`, statusId);
+    return { saved: true, key, value, layer };
   }
 
   if (call.name !== "get_weather") return { error: `不支援工具：${call.name}` };
@@ -1077,6 +1581,12 @@ async function handleRealtimeEvent(event) {
     document.getElementById("userVoiceDraft")?.removeAttribute("id");
     userVoiceDraft = "";
   }
+  if (event.type === "response.created") startResponseTracking();
+  // Ordering between the message item and the function_call item is not
+  // guaranteed, so mark here AND sweep response.output at response.done.
+  if (event.type === "response.output_item.added" && event.item?.type === "function_call") {
+    markResponseAsPreamble();
+  }
   if (["response.created", "response.output_item.added"].includes(event.type)) {
     // VAD fires responses we never asked for (create_response: true), so track
     // those too or a typed barge-in would not know there is anything to cancel.
@@ -1086,27 +1596,28 @@ async function handleRealtimeEvent(event) {
   if (["response.output_audio_transcript.delta", "response.audio_transcript.delta"].includes(event.type)) {
     voiceDraft += event.delta || "";
     setState("speaking", "Dodo 正在用耳機回應");
-    addMessage("assistant", voiceDraft, "voiceDraft");
+    trackResponseBubble(addMessage("assistant", voiceDraft, "voiceDraft"));
   }
   if (["response.output_audio_transcript.done", "response.audio_transcript.done"].includes(event.type)) {
     const finalText = event.transcript || voiceDraft;
-    if (finalText) addMessage("assistant", finalText, "voiceDraft");
+    if (finalText) trackResponseBubble(addMessage("assistant", finalText, "voiceDraft"));
     document.getElementById("voiceDraft")?.removeAttribute("id");
     voiceDraft = "";
   }
   if (event.type === "response.output_text.delta") {
     voiceDraft += event.delta || "";
     setState("speaking", "Dodo 正在顯示文字回答");
-    addMessage("assistant", voiceDraft, "voiceDraft");
+    trackResponseBubble(addMessage("assistant", voiceDraft, "voiceDraft"));
   }
   if (event.type === "response.output_text.done") {
     const finalText = event.text || voiceDraft;
-    if (finalText) addMessage("assistant", finalText, "voiceDraft");
+    if (finalText) trackResponseBubble(addMessage("assistant", finalText, "voiceDraft"));
     document.getElementById("voiceDraft")?.removeAttribute("id");
     voiceDraft = "";
   }
   if (event.type === "response.done") {
     responseActive = false;
+    if (responseHasFunctionCall(event.response)) markResponseAsPreamble();
     const calls = (event.response?.output || []).filter((item) => item.type === "function_call");
     if (calls.length) {
       setState("thinking", "Dodo 正在使用天氣工具");
@@ -1137,6 +1648,7 @@ function disconnectRealtime() {
   responseActive = false;
   audioPlaying = false;
   connectedVoice = "";
+  startResponseTracking();
   if (dataChannel) dataChannel.close();
   dataChannel = undefined;
   if (peerConnection) {
@@ -1338,12 +1850,20 @@ async function initialize() {
   renderMemoryCards();
   applyMode();
   refreshApiUi();
-  clampPanelWidths();
+  restoreLabPanelWidth();
+  $("#proactiveNow").value = new Date().toTimeString().slice(0, 5);
+
+  // Restore the stage the student was last on. The old rule read the progress
+  // flags instead, and 套用 in Workshop 1 sets workshop_1_completed — so a plain
+  // F5 in Workshop 1 threw them straight into Workshop 2. Progress is now only
+  // the first-visit default, for a returning student who never picked a stage.
+  const stage = storedStage()
+    ?? (workspace.progress.workshop_1_completed && !workspace.progress.workshop_2_completed ? 2 : 1);
+  switchStage(stage);
 
   const forceInit = new URLSearchParams(location.search).has("init");
   if (forceInit || !setup?.completed) showOnboarding(forceInit);
   else if (apiConfigured) await connectRealtime();
-  if (workspace.progress.workshop_1_completed && !workspace.progress.workshop_2_completed) switchStage(2);
 }
 
 $$('input[name="inputMode"], input[name="outputMode"]').forEach((input) => input.addEventListener("change", updateVoiceCheck));
@@ -1374,8 +1894,24 @@ $("#turnDetectionMode").addEventListener("change", updateTurnFields);
 $$(".stage-button").forEach((button) => button.addEventListener("click", () => switchStage(button.dataset.stage)));
 $("#saveWorkshop1").addEventListener("click", applyWorkshop1);
 $("#checkMemory").addEventListener("click", checkMemory);
-$("#saveWorkshop2").addEventListener("click", () => { collectWorkshop2(); addMessage("system", "第二堂設定已保存。"); });
+$("#saveWorkshop2").addEventListener("click", applyWorkshop2);
 $("#runProactiveTests").addEventListener("click", runProactiveTests);
+$("#runDaySimulation").addEventListener("click", runDaySimulation);
+$("#triggerProactive").addEventListener("click", triggerProactive);
+// Delegated: the viewer is re-rendered after every write and delete.
+$("#memoryViewer").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-memory-layer]");
+  if (button) deleteMemoryEntry(button.dataset.memoryLayer, Number(button.dataset.memoryEntry));
+});
+// Workshop 2 fields feed the composed instructions, so the VIEW panel has to
+// follow them live the same way Workshop 1's does.
+[
+  "#elderAddress", "#elderCity", "#elderInterests",
+  "#quietStart", "#quietEnd", "#cooldown", "#dailyLimit", "#maxSentences",
+  ...WORKSHOP2_BLOCKS.map(([, , selector]) => selector),
+].forEach((selector) => {
+  $(selector).addEventListener("input", rebuildWorkshop2Prompt);
+});
 $("#chatInput").addEventListener("keydown", (event) => {
   if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
   event.preventDefault();

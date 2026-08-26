@@ -185,7 +185,11 @@ def test_persona_rides_along_at_mint_time_and_errors_are_never_swallowed() -> No
     assert "instructions: realtimeInstructions()" in script
     assert 'session["instructions"] = payload.instructions' in server
     # Built from the blocks, so a stale stored system_prompt can never blank it.
-    assert "return buildSystemPrompt(workspace.profile.agent);" in script
+    # Workshop 2 now appends its own sections, so the assembly moved into
+    # composeInstructions — still from the blocks, never from the stored string.
+    assert "return composeInstructions(workspace);" in script
+    assert "buildSystemPrompt(source.profile.agent)" in script
+    assert "workspace.profile.agent.system_prompt" not in script
 
     # 2. No beta-era field name, and no output cap on either payload. Scoped to
     #    the payload builder with comments stripped, so the explanatory notes
@@ -344,13 +348,14 @@ def test_chat_and_prompt_panels_have_an_accessible_drag_resizer() -> None:
     assert 'role="separator"' in page
     assert 'aria-orientation="vertical"' in page
     assert 'tabindex="0"' in page
-    # The left LIVE STATE rail is gone, so the grid is chat + resizer + lab, and
-    # the lab panel can be dragged out to a 1:1 split with the chat area.
+    # The left LIVE STATE rail is gone, so the grid is chat + resizer + lab.
     assert "grid-template-columns: minmax(360px, 1fr) 10px var(--lab-width)" in styles
     assert "signal-rail" not in styles and "signal-rail" not in page
     assert "LIVE STATE" not in page
     assert "LAB_WIDTH_MAX" not in script
-    assert "usableWidth / 2" in script
+    # 1:1 is the default now, so the ceiling is the chat floor rather than half
+    # the shell — a max of half would pin the divider at its starting position.
+    assert "max: Math.max(LAB_WIDTH_MIN, usableWidth - minimumChatWidth)" in script
     assert ".signal-rail" not in script
     # Dodo's live state moved into the chat panel, reusing setState's hooks.
     assert 'class="state-bar"' in page
@@ -537,3 +542,256 @@ def test_interest_label_matches_the_separator_actually_used() -> None:
     assert "興趣（用逗號分隔）" not in page
     assert "split(/[、,，]/)" in script
     assert 'interests.join("、")' in script
+
+
+def test_every_element_the_client_touches_exists_in_the_page() -> None:
+    """A mistyped id fails silently in the browser ($(...) returns null and the
+    next property access throws mid-handler), so it is worth checking here."""
+
+    import re
+
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+
+    declared = set(re.findall(r'id="([A-Za-z0-9_-]+)"', page))
+    used = set(re.findall(r'\$\("#([A-Za-z0-9_-]+)"\)', script))
+    used |= set(re.findall(r'getElementById\("([A-Za-z0-9_-]+)"\)', script))
+    # The two streaming-draft bubbles are created at runtime, not in the page.
+    runtime_only = {"voiceDraft", "userVoiceDraft"}
+
+    assert used - declared == runtime_only
+
+
+def test_refresh_keeps_the_student_on_the_stage_they_were_on() -> None:
+    """套用 in Workshop 1 sets `workshop_1_completed`, and the old initialize()
+    read that flag to pick the stage — so a plain F5 in Workshop 1 jumped to
+    Workshop 2. The stage is now remembered where every entry point funnels."""
+
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+
+    assert 'const STAGE_KEY = "dodo-workshop.stage"' in script
+    switch_stage = script.split("function switchStage(stage) {")[1].split("\n}")[0]
+    assert 'localStorage.setItem(STAGE_KEY, isFirst ? "1" : "2")' in switch_stage
+    assert "function storedStage()" in script
+    # Progress survives only as the first-visit default, never as an override.
+    assert "const stage = storedStage()" in script
+    # Reopening the sheet from 「API 設定」 hides the entry choice, so saving there
+    # must not switch (and persist) a stage the student never picked.
+    assert "if (!forced) switchStage(startStage);" in script
+    assert (
+        "if (workspace.progress.workshop_1_completed && !workspace.progress.workshop_2_completed) switchStage(2);"
+        not in script
+    )
+
+
+def test_panels_open_at_a_one_to_one_split_and_remember_manual_drags() -> None:
+    styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+
+    # 10px resizer, so half of what is left is `50% - 5px` on both columns.
+    assert ".app-shell { --lab-width: calc(50% - 5px);" in styles
+    assert "--lab-width: 430px" not in styles
+    assert "--lab-width: 340px" not in styles
+    # A drag is remembered; the responsive default is never frozen into pixels.
+    assert 'const LAB_WIDTH_KEY = "dodo-workshop.labWidth"' in script
+    assert "function persistLabPanelWidth()" in script
+    assert "function restoreLabPanelWidth()" in script
+    stop_resize = script.split("function stopPanelResize(event) {")[1].split("\n}")[0]
+    assert "persistLabPanelWidth();" in stop_resize
+    clamp = script.split("function clampPanelWidths() {")[1].split("\n}")[0]
+    assert "if (!localStorage.getItem(LAB_WIDTH_KEY))" in clamp
+    assert "persistLabPanelWidth" not in clamp
+
+
+def test_preamble_is_separated_from_the_answer_in_the_transcript() -> None:
+    """Realtime has no preamble item type: a preamble is a message item sharing a
+    response with a function_call, and the answer arrives in the next response."""
+
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
+
+    assert "function markPreamble(bubble)" in script
+    assert "function markResponseAsPreamble()" in script
+    assert "function trackResponseBubble(bubble)" in script
+    # Reset per response, so a preamble label never leaks into the next answer.
+    assert 'if (event.type === "response.created") startResponseTracking();' in script
+    # Marked when the function_call item shows up...
+    assert 'event.type === "response.output_item.added" && event.item?.type === "function_call"' in script
+    # ...and swept at response.done, because item ordering is not guaranteed.
+    assert "if (responseHasFunctionCall(event.response)) markResponseAsPreamble();" in script
+    assert "PREAMBLE" in script
+    assert ".message.assistant.is-preamble p" in styles
+    # Every streamed bubble is tracked, or a late function_call cannot relabel it.
+    assert script.count('trackResponseBubble(addMessage("assistant"') == 4
+    # The default prompt asks for a preamble, or students would never see one.
+    assert "這句開場叫 preamble" in script
+
+
+def test_workshop2_has_its_own_viewable_editable_prompt_layer() -> None:
+    """長者資料、三層記憶 and the proactive rules used to reach the model only if
+    it happened to call read_memory — Workshop 2 had no instructions of its own."""
+
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+
+    # Editable blocks, plus the same read-only full-prompt VIEW as Workshop 1.
+    assert '<textarea id="promptMemoryUse"' in page
+    assert '<textarea id="promptProactive"' in page
+    assert "完整 System Prompt（Workshop 1 + 2）" in page
+    assert '<pre id="workshop2SystemPrompt"' in page
+    assert '<textarea id="workshop2SystemPrompt"' not in page
+    assert 'id="elderCity"' in page and 'id="maxSentences"' in page
+    assert "function buildWorkshop2Prompt(source)" in script
+    assert "function rebuildWorkshop2Prompt()" in script
+    assert "workshop2_blocks: workshop2BlocksFromFields()" in script
+    # The generated sections are what actually carry the Workshop 2 data.
+    for section in ("# 長者資料", "# 目前記得的事（三層記憶）", "# 主動訊息的程式規則"):
+        assert section in script
+    # 套用 sends it into the live session instead of only saving to localStorage.
+    apply_two = script.split("async function applyWorkshop2() {")[1].split("\n}")[0]
+    assert '"session.update"' in apply_two
+    # Bounded: instructions are re-sent on every 套用.
+    assert "MEMORY_PREVIEW_LIMIT" in script
+
+
+def test_memory_classification_drives_storage_and_shows_its_reasoning() -> None:
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+
+    # A/B/C picks the list the value lands in, X is refused outright.
+    assert 'enum: ["A", "B", "C"]' in script
+    assert '["A", "facts", "A 重要事實"]' in script
+    assert '["B", "events", "B 近期事件"]' in script
+    assert '["C", "summaries", "C 跨日摘要"]' in script
+    assert "update_memory 已拒絕（X 不保存）" in script
+    # The quiz explains itself now instead of only scoring.
+    assert 'id="memoryExplanations"' in page
+    assert "card.explanation" in script
+
+
+def test_one_simulated_day_is_reachable_from_the_client() -> None:
+    from dodo_workshop.web import DaySimulationRequest, proactive_simulate
+
+    policy = bootstrap()["workshop2_starter"]["profile"]["proactive_policy"]
+    result = proactive_simulate(DaySimulationRequest(policy=policy))
+
+    assert result["spoken"] + result["blocked"] == len(result["steps"])
+    assert result["missed_critical"] == 0 and result["noise"] >= 1
+    # Every step says which rule decided it — the timeline is the lesson.
+    assert all(step["reason"] for step in result["steps"])
+
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
+
+    assert 'id="runDaySimulation"' in page
+    assert 'id="dayTimeline"' in page and 'id="daySummary"' in page
+    assert 'fetch("/api/proactive-simulate"' in script
+    # Two competing numbers, never combined into one grade.
+    assert "漏掉重要事" in script and "打擾" in script
+    assert "沒有滿分答案" in script
+    # A re-run has to say what got better AND what got worse.
+    assert "function renderDayDelta(result)" in script
+    assert "let lastDayRun = null;" in script
+    assert ".day-row.is-blocked" in styles
+
+
+def test_humans_can_delete_what_the_agent_remembered() -> None:
+    """Only the model could write memory and nobody could correct it, which
+    contradicted the lesson's own question 「誰能寫入或修改？」"""
+
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+
+    assert 'id="memoryViewer"' in page
+    assert "function renderMemoryViewer()" in script
+    assert "function deleteMemoryEntry(layer, index)" in script
+    delete_fn = script.split("function deleteMemoryEntry(layer, index) {")[1].split("\n}")[0]
+    # Deleting has to reach the live session, or the baked instructions still
+    # hold the deleted fact and 「刪除」 looks broken.
+    assert "saveProject();" in delete_fn
+    assert "rebuildWorkshop2Prompt();" in delete_fn
+    assert '"session.update"' in delete_fn
+    # Entries beyond the prompt window are marked, or a delete looks like a no-op.
+    assert "未進入 Prompt" in script
+    # Memory values come from the model, so they are escaped before innerHTML.
+    assert "const escapeHtml =" in script
+    assert "escapeHtml(memoryEntryText(entry))" in script
+    # Retention was dead schema; it is now a visible label on both sides.
+    assert "function memoryLayerHeadings(memoryPolicy)" in script
+    assert "保存 ${policy.fact_retention_days ?? 365} 天" in script
+    # The red-team prompts are in the page, unautomated on purpose.
+    assert "紅隊挑戰" in page
+    assert "後四碼" in page
+
+
+def test_proactive_can_actually_speak_first() -> None:
+    import pytest
+    from fastapi import HTTPException
+
+    from dodo_workshop.web import ProactiveDecideRequest, proactive_decide
+
+    policy = bootstrap()["workshop2_starter"]["profile"]["proactive_policy"]
+    reminder = {"type": "reminder", "topic": "16:00 回診"}
+
+    allowed = proactive_decide(
+        ProactiveDecideRequest(
+            policy=policy,
+            scenario={
+                "time": "15:30",
+                "minutes_since_last_message": 90,
+                "messages_today": 1,
+                "events": [reminder],
+            },
+        )
+    )
+    assert allowed["should_speak"]
+    assert allowed["event"]["type"] == "reminder"
+
+    # Quiet hours still win for anything that is not an emergency.
+    quiet = proactive_decide(
+        ProactiveDecideRequest(policy=policy, scenario={"time": "23:30", "events": [reminder]})
+    )
+    assert not quiet["should_speak"]
+
+    emergency = proactive_decide(
+        ProactiveDecideRequest(
+            policy=policy,
+            scenario={
+                "time": "02:20",
+                "minutes_since_last_message": 1,
+                "messages_today": 9,
+                "user_declined": True,
+                "events": [{"type": "emergency", "topic": "跌倒"}],
+            },
+        )
+    )
+    assert emergency["should_speak"]
+
+    with pytest.raises(HTTPException):
+        proactive_decide(ProactiveDecideRequest(policy=policy, scenario={"events": []}))
+    with pytest.raises(HTTPException):
+        proactive_decide(
+            ProactiveDecideRequest(policy=policy, scenario={"time": "晚上", "events": [reminder]})
+        )
+
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    server = (Path(__file__).resolve().parents[1] / "dodo_workshop" / "web.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'id="triggerProactive"' in page
+    assert 'fetch("/api/proactive-decide"' in script
+    assert "async function triggerProactive()" in script
+    # Response-level instructions REPLACE the session's, so the persona has to
+    # travel with the proactive brief.
+    assert "function proactiveTurnInstructions(event, time, policy)" in script
+    assert "if (instructions) response.instructions = instructions;" in script
+    # A proactive message must not talk over 豆豆's current sentence.
+    trigger = script.split("async function triggerProactive() {")[1].split("\n}\n")[0]
+    assert "if (isDodoSpeaking())" in trigger
+    assert "sendProactiveResponse(proactiveTurnInstructions(" in trigger
+    # The dead endpoint nothing ever called is gone.
+    assert "/api/proactive-message" not in server
+    assert "/api/proactive-message" not in script

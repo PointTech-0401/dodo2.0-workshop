@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import datetime
 
 from dodo_workshop.config import load_json
@@ -47,6 +47,77 @@ def choose_event(scenario: dict, policy: dict) -> Decision:
     if scenario["messages_today"] >= policy["daily_message_limit"]:
         return Decision(False, "今日主動訊息已達上限。", event)
     return Decision(True, f"通過規則，選擇最高優先事件：{event['type']}。", event)
+
+
+@dataclass(frozen=True)
+class DayStep:
+    time: str
+    event_type: str
+    topic: str
+    importance: str
+    spoke: bool
+    reason: str
+
+
+def _minutes_of_day(time_text: str) -> int:
+    hour, _, minute = time_text.partition(":")
+    return int(hour) * 60 + int(minute)
+
+
+def simulate_day(feed: list[dict], policy: dict) -> dict:
+    """Walk one scripted day, letting `choose_event` decide event by event.
+
+    The 6 fixed scenarios each start from a clean slate; a real day does not.
+    Cooldown and the daily budget carry forward, so an optional message spent at
+    10:15 is a message the evening 睡前藥 reminder no longer has. That carry-over
+    is what the classroom cannot see in the per-scenario test.
+
+    Returns two numbers that pull against each other on purpose —
+    `missed_critical` and `noise`. Loosening the rules trades one for the other,
+    so there is no single grade and no 6/6 to converge on.
+    """
+
+    steps: list[DayStep] = []
+    spoken_at: int | None = None
+    messages_today = 0
+    for entry in sorted(feed, key=lambda item: _minutes_of_day(item["time"])):
+        event = entry["event"]
+        now = _minutes_of_day(entry["time"])
+        scenario = {
+            "time": entry["time"],
+            # Nothing said yet must not look like "just said something".
+            "minutes_since_last_message": 24 * 60 if spoken_at is None else now - spoken_at,
+            "messages_today": messages_today,
+            "user_declined": bool(entry.get("user_declined")),
+            "events": [event],
+        }
+        decision = choose_event(scenario, policy)
+        if decision.should_speak:
+            messages_today += 1
+            spoken_at = now
+        steps.append(
+            DayStep(
+                time=entry["time"],
+                event_type=event["type"],
+                topic=event.get("topic", ""),
+                importance=entry.get("importance", "optional"),
+                spoke=decision.should_speak,
+                reason=decision.reason,
+            )
+        )
+
+    spoken = [step for step in steps if step.spoke]
+    return {
+        "steps": [asdict(step) for step in steps],
+        "spoken": len(spoken),
+        "blocked": len(steps) - len(spoken),
+        "missed_critical": sum(
+            1 for step in steps if step.importance == "critical" and not step.spoke
+        ),
+        "noise": sum(1 for step in steps if step.importance == "optional" and step.spoke),
+        "critical_total": sum(1 for step in steps if step.importance == "critical"),
+        "optional_total": sum(1 for step in steps if step.importance == "optional"),
+    }
 
 
 def build_proactive_instructions(profile: dict, policy: dict) -> str:
