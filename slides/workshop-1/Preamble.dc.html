@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&amp;family=Noto+Serif+TC:wght@500;700;900&amp;display=swap">
+  <style>
+    body { margin: 0; background: #f7f2e8; }
+    a { color: #397d9f; } a:hover { color: #15324a; }
+  </style>
+</helmet>
+<div style="position: relative; width: 1600px; height: 900px; overflow: hidden; background: #fffdf8; font-family: 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; color: #15324a;">
+  <div style="position: absolute; left: 0; top: 0; width: 12px; height: 900px; background: #397d9f;"></div>
+  <div style="position: absolute; inset: 0; display: flex; flex-direction: column; gap: 30px; padding: 58px 88px 52px 108px;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 32px; padding-bottom: 18px; border-bottom: 1px solid #cfd9dc;">
+      <span style="color: #397d9f; font: 800 16px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .18em;">WORKSHOP 01 · 讓 DODO 聽完，再回答</span>
+      <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">13 / 16</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 13px;">
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">preamble 是哪一段？</h1>
+      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">流程圖右下角那兩個 response，在畫面上長這樣。</p>
+    </div>
+    <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
+      <div style="display: flex; gap: 34px; align-items: stretch;"><div style="flex: 0 0 600px; display: flex; flex-direction: column; gap: 20px;">
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <span style="color: #287653; font: 800 14px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .14em;">DODO · PREAMBLE（工具前的開場）</span>
+        <div style="padding: 18px 22px; border: 1px dashed #aad4bf; border-radius: 4px 18px 18px 18px; color: #15324a; font: 23px/1.65 'Noto Sans TC','Microsoft JhengHei UI',sans-serif;">我幫您看一下臺北現在的天氣。</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <span style="color: #397d9f; font: 800 14px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .14em;">DODO</span>
+        <div style="padding: 18px 22px; border-radius: 4px 18px 18px 18px; background: #d9edf7; color: #15324a; font: 23px/1.65 'Noto Sans TC','Microsoft JhengHei UI',sans-serif;">臺北現在 26 度，有一點雲，出門帶件薄外套就好。</div>
+      </div>
+    </div>
+<div style="display: flex; flex-direction: column; gap: 22px;"><ul style="display: flex; flex-direction: column; gap: 16px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #287653;"></span>
+      <span style="color: #15324a; font: 22px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">Realtime API 沒有 preamble 這種 item type。</span>
+    </li>
+<li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #287653;"></span>
+      <span style="color: #15324a; font: 22px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">客端靠結構判斷：同一個 response 裡同時出現 message item 與 function_call item，那個 message 就是 preamble。</span>
+    </li>
+<li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #287653;"></span>
+      <span style="color: #15324a; font: 22px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">工具結果送回去之後建立的<strong>下一個</strong> response 才是正式回答。</span>
+    </li></ul>
+<div style="display: flex; align-items: center; gap: 20px; padding: 26px 32px; border-radius: 4px 18px 18px 4px; background: #d9edf7;">
+    <div style="flex-shrink: 0; width: 6px; align-self: stretch; border-radius: 3px; background: #f1b879;"></div>
+    <p style="margin: 0; color: #15324a; font: 700 28px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">把那句要求從「對話方式」刪掉再按「套用」，preamble 就會消失。</p>
+  </div></div></div>
+    </div>
+    
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

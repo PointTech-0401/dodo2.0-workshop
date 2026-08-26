@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&amp;family=Noto+Serif+TC:wght@500;700;900&amp;display=swap">
+  <style>
+    body { margin: 0; background: #f7f2e8; }
+    a { color: #287653; } a:hover { color: #15324a; }
+  </style>
+</helmet>
+<div style="position: relative; width: 1600px; height: 900px; overflow: hidden; background: #fffdf8; font-family: 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; color: #15324a;">
+  <div style="position: absolute; left: 0; top: 0; width: 12px; height: 900px; background: #287653;"></div>
+  <div style="position: absolute; inset: 0; display: flex; flex-direction: column; gap: 30px; padding: 58px 88px 52px 108px;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 32px; padding-bottom: 18px; border-bottom: 1px solid #cfd9dc;">
+      <span style="color: #287653; font: 800 16px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .18em;">WORKSHOP 02 · 會記得、會主動，也知道何時閉嘴</span>
+      <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">06 / 17</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 13px;">
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">三層記憶，加上一層「絕不保存」</h1>
+      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;"><span style="padding: 2px 7px; border-radius: 4px; background: #d9edf7; color: #397d9f; font: 700 21px/1.5 Consolas,'Noto Sans TC',monospace;">update_memory</span> 帶 <span style="padding: 2px 7px; border-radius: 4px; background: #d9edf7; color: #397d9f; font: 700 21px/1.5 Consolas,'Noto Sans TC',monospace;">layer</span> 參數 —— 分類直接決定資料寫進哪一層、保存多久。</p>
+    </div>
+    <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
+      <div style="display: flex; gap: 18px; align-items: stretch;"><div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #287653; border-radius: 0 0 4px 4px; background: #f7f2e8;">
+    <span style="color: #287653; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">LAYER A</span>
+    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">重要事實</h3>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">保存 365 天。例：我對花生過敏。</p>
+    <span style="margin-top: 2px; color: #287653; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">memory.facts</span>
+  </div>
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #397d9f; border-radius: 0 0 4px 4px; background: #f7f2e8;">
+    <span style="color: #397d9f; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">LAYER B</span>
+    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">近期事件</h3>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">保存 30 天。例：我昨晚沒睡好。</p>
+    <span style="margin-top: 2px; color: #397d9f; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">memory.events</span>
+  </div>
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #f1b879; border-radius: 0 0 4px 4px; background: #f7f2e8;">
+    <span style="color: #f1b879; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">LAYER C</span>
+    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">跨日摘要</h3>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">把散落的對話收斂成一句。</p>
+    <span style="margin-top: 2px; color: #f1b879; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">memory.summaries</span>
+  </div>
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #a84a42; border-radius: 0 0 4px 4px; background: #f7f2e8;">
+    <span style="color: #a84a42; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">X · 不保存</span>
+    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">直接被拒絕</h3>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">密碼、金鑰、帳號、驗證碼 —— 由程式擋下，不進任何一層。</p>
+    <span style="margin-top: 2px; color: #a84a42; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">（不寫入）</span>
+  </div></div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 14px; padding-top: 16px; border-top: 1px solid #cfd9dc;">
+      <span style="flex-shrink: 0; width: 9px; height: 9px; border-radius: 50%; background: #f1b879;"></span>
+      <span style="color: #4d6475; font: 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">層級標題會帶上保存期限（A 保存 365 天、B 保存 30 天），這正是兩層的差別所在。</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

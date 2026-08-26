@@ -1,0 +1,135 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1600,
+      "h": 900,
+      "title": "01 · 封面"
+    },
+    {
+      "file": "ThreeLayers.dc.html",
+      "x": 1760,
+      "y": 0,
+      "w": 1600,
+      "h": 900,
+      "title": "02 · 三個層次"
+    },
+    {
+      "file": "ProjectMap.dc.html",
+      "x": 3520,
+      "y": 0,
+      "w": 1600,
+      "h": 900,
+      "title": "03 · 專案架構"
+    },
+    {
+      "file": "TurnFlow.dc.html",
+      "x": 5280,
+      "y": 0,
+      "w": 1600,
+      "h": 900,
+      "title": "04 · 系統流程"
+    },
+    {
+      "file": "Outcomes.dc.html",
+      "x": 0,
+      "y": 1140,
+      "w": 1600,
+      "h": 900,
+      "title": "05 · 學習成果"
+    },
+    {
+      "file": "Timetable.dc.html",
+      "x": 1760,
+      "y": 1140,
+      "w": 1600,
+      "h": 900,
+      "title": "06 · 時間表"
+    },
+    {
+      "file": "OutputLength.dc.html",
+      "x": 3520,
+      "y": 1140,
+      "w": 1600,
+      "h": 900,
+      "title": "07 · 長度為什麼交給 Prompt"
+    },
+    {
+      "file": "WhenInstructions.dc.html",
+      "x": 5280,
+      "y": 1140,
+      "w": 1600,
+      "h": 900,
+      "title": "08 · instructions 何時送出"
+    },
+    {
+      "file": "TurnModes.dc.html",
+      "x": 0,
+      "y": 2280,
+      "w": 1600,
+      "h": 900,
+      "title": "09 · 三種回合方式"
+    },
+    {
+      "file": "ApiKeys.dc.html",
+      "x": 1760,
+      "y": 2280,
+      "w": 1600,
+      "h": 900,
+      "title": "10 · 連接真正模型"
+    },
+    {
+      "file": "LabOne.dc.html",
+      "x": 3520,
+      "y": 2280,
+      "w": 1600,
+      "h": 900,
+      "title": "11 · 實作一"
+    },
+    {
+      "file": "VoiceVsPrompt.dc.html",
+      "x": 5280,
+      "y": 2280,
+      "w": 1600,
+      "h": 900,
+      "title": "12 · 聲線與 Prompt"
+    },
+    {
+      "file": "Preamble.dc.html",
+      "x": 0,
+      "y": 3420,
+      "w": 1600,
+      "h": 900,
+      "title": "13 · preamble"
+    },
+    {
+      "file": "LabTwo.dc.html",
+      "x": 1760,
+      "y": 3420,
+      "w": 1600,
+      "h": 900,
+      "title": "14 · 實作二"
+    },
+    {
+      "file": "DoneCriteria.dc.html",
+      "x": 3520,
+      "y": 3420,
+      "w": 1600,
+      "h": 900,
+      "title": "15 · 完成標準"
+    },
+    {
+      "file": "FieldNotes.dc.html",
+      "x": 5280,
+      "y": 3420,
+      "w": 1600,
+      "h": 900,
+      "title": "16 · 講師現場提醒"
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

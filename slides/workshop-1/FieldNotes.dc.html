@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&amp;family=Noto+Serif+TC:wght@500;700;900&amp;display=swap">
+  <style>
+    body { margin: 0; background: #f7f2e8; }
+    a { color: #397d9f; } a:hover { color: #15324a; }
+  </style>
+</helmet>
+<div style="position: relative; width: 1600px; height: 900px; overflow: hidden; background: #fffdf8; font-family: 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; color: #15324a;">
+  <div style="position: absolute; left: 0; top: 0; width: 12px; height: 900px; background: #397d9f;"></div>
+  <div style="position: absolute; inset: 0; display: flex; flex-direction: column; gap: 30px; padding: 58px 88px 52px 108px;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 32px; padding-bottom: 18px; border-bottom: 1px solid #cfd9dc;">
+      <span style="color: #397d9f; font: 800 16px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .18em;">WORKSHOP 01 · 讓 DODO 聽完，再回答</span>
+      <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">16 / 16</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 13px;">
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">講師現場提醒</h1>
+      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">全班以「打字輸入／文字輸出」完成主線；輸入與輸出可獨立設定。</p>
+    </div>
+    <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
+      <div style="display: flex; flex-direction: column; gap: 26px;"><div style="display: flex; gap: 32px; align-items: stretch;"><div style="flex: 1 1 0;"><ul style="display: flex; flex-direction: column; gap: 15px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #397d9f;"></span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">鍵盤按「送出」會在同一個 session 建立文字回合，但不會使用 VAD 或靜音門檻。</span>
+    </li>
+<li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #397d9f;"></span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">A 區是模型 instructions，不設 token 上限；Prompt 不負責偵測使用者是否說完。</span>
+    </li>
+<li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #397d9f;"></span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">instructions 在建立連線時就隨 SDP offer 送出，按「套用」才會再 session.update。</span>
+    </li></ul></div>
+<div style="flex: 1 1 0;"><ul style="display: flex; flex-direction: column; gap: 15px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #f1b879;"></span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">從語音輸入切成打字時，麥克風音軌會立即停止，不需等待儲存設定。</span>
+    </li>
+<li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #f1b879;"></span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">語音連線失敗時會保留作品；可將輸入改成打字、輸出改成文字。</span>
+    </li>
+<li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #f1b879;"></span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">查天氣或讀寫記憶前那一句「我幫您看一下」會標成 PREAMBLE。</span>
+    </li></ul></div></div>
+<div style="display: flex; align-items: center; gap: 20px; padding: 26px 32px; border-radius: 4px 18px 18px 4px; background: #15324a;">
+    <div style="flex-shrink: 0; width: 6px; align-self: stretch; border-radius: 3px; background: #f1b879;"></div>
+    <p style="margin: 0; color: #fffdf8; font: 700 28px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">收尾：下載 my-dodo.json，第二堂用同一份作品繼續升級。</p>
+  </div></div>
+    </div>
+    
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

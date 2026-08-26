@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&amp;family=Noto+Serif+TC:wght@500;700;900&amp;display=swap">
+  <style>
+    body { margin: 0; background: #f7f2e8; }
+    a { color: #397d9f; } a:hover { color: #15324a; }
+  </style>
+</helmet>
+<div style="position: relative; width: 1600px; height: 900px; overflow: hidden; background: #fffdf8; font-family: 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; color: #15324a;">
+  <div style="position: absolute; left: 0; top: 0; width: 12px; height: 900px; background: #397d9f;"></div>
+  <div style="position: absolute; inset: 0; display: flex; flex-direction: column; gap: 30px; padding: 58px 88px 52px 108px;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 32px; padding-bottom: 18px; border-bottom: 1px solid #cfd9dc;">
+      <span style="color: #397d9f; font: 800 16px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .18em;">WORKSHOP 01 · 讓 DODO 聽完，再回答</span>
+      <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">15 / 16</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 13px;">
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">完成標準</h1>
+      
+    </div>
+    <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
+      <ul style="display: flex; flex-direction: column; gap: 20px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #287653;"></span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">打字與語音訊息都來自真正的 OpenAI Realtime API，不是本地固定回聲或另一個文字模型。</span>
+    </li>
+<li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #287653;"></span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">問「你叫什麼？我叫什麼？」時，能依「角色與身分」分塊回答 Dodo 名稱與使用者稱呼。</span>
+    </li>
+<li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #287653;"></span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">能指出 A 區是 Prompt（角色、聲音、長度都在這裡描述），B 區是 Realtime 回合控制。</span>
+    </li>
+<li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #287653;"></span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">按過「套用」，且 my-dodo.json 的 <span style="padding: 2px 7px; border-radius: 4px; background: #d9edf7; color: #397d9f; font: 700 24px/1.5 Consolas,'Noto Sans TC',monospace;">progress.workshop_1_completed</span> 為 <span style="padding: 2px 7px; border-radius: 4px; background: #d9edf7; color: #397d9f; font: 700 24px/1.5 Consolas,'Noto Sans TC',monospace;">true</span>。</span>
+    </li>
+<li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #287653;"></span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">下載的 my-dodo.json 包含 profile.agent 與 profile.realtime，但<strong>不包含</strong> API Key。</span>
+    </li></ul>
+    </div>
+    <div style="display: flex; align-items: center; gap: 14px; padding-top: 16px; border-top: 1px solid #cfd9dc;">
+      <span style="flex-shrink: 0; width: 9px; height: 9px; border-radius: 50%; background: #f1b879;"></span>
+      <span style="color: #4d6475; font: 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">官方依據：OpenAI Realtime 文件中的文字輸入、mint 時的 instructions、output_modalities、function calling、server_vad、semantic_vad、silence_duration_ms 與 interrupt_response。</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

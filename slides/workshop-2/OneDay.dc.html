@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&amp;family=Noto+Serif+TC:wght@500;700;900&amp;display=swap">
+  <style>
+    body { margin: 0; background: #f7f2e8; }
+    a { color: #287653; } a:hover { color: #15324a; }
+  </style>
+</helmet>
+<div style="position: relative; width: 1600px; height: 900px; overflow: hidden; background: #fffdf8; font-family: 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; color: #15324a;">
+  <div style="position: absolute; left: 0; top: 0; width: 12px; height: 900px; background: #287653;"></div>
+  <div style="position: absolute; inset: 0; display: flex; flex-direction: column; gap: 30px; padding: 58px 88px 52px 108px;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 32px; padding-bottom: 18px; border-bottom: 1px solid #cfd9dc;">
+      <span style="color: #287653; font: 800 16px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .18em;">WORKSHOP 02 · 會記得、會主動，也知道何時閉嘴</span>
+      <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">14 / 17</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 13px;">
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">實作二之二：把一整天壓縮成三分鐘</h1>
+      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">day_timeline.json 的 13 個事件（06:40 到 23:40），冷卻與每日額度一路累積下去。</p>
+    </div>
+    <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
+      <div style="display: flex; flex-direction: column; gap: 24px;"><div style="display: grid; grid-template-columns: 380px 200px 160px 1fr; column-gap: 28px; align-items: start;">
+    <div style="padding: 0 0 12px; color: #287653; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .14em; text-align: left;">規則</div>
+    <div style="padding: 0 0 12px; color: #287653; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .14em; text-align: center;">漏掉重要事</div>
+    <div style="padding: 0 0 12px; color: #287653; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .14em; text-align: center;">打擾</div>
+    <div style="padding: 0 0 12px; color: #287653; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .14em; text-align: left;">你會看到</div>
+    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #15324a; font: 700 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">預設　22–08 ／ 30 分 ／ 4 則</div>
+    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: center; text-wrap: pretty;">0 / 4</div>
+    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: center; text-wrap: pretty;">1 / 9</div>
+    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">重要的都送到了，只閒聊一次</div>
+    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #15324a; font: 700 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">收緊　21–09 ／ 60 分 ／ 3 則</div>
+    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: center; text-wrap: pretty;"><strong style="color: #a84a42;">1 / 4</strong></div>
+    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: center; text-wrap: pretty;">1 / 9</div>
+    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">早上八點的血壓藥被安靜時段擋掉</div>
+    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #15324a; font: 700 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">放寬　全天 ／ 0 分 ／ 20 則</div>
+    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: center; text-wrap: pretty;">0 / 4</div>
+    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: center; text-wrap: pretty;"><strong style="color: #a84a42;">8 / 9</strong></div>
+    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">一天被打擾八次，額度全花在新聞上</div>
+  </div>
+<div style="display: flex; gap: 22px; align-items: stretch;"><div style="flex: 1 1 0;"><div style="display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #397d9f; border-radius: 0 0 4px 4px; background: #f7f2e8;">
+    <span style="color: #397d9f; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">額度的排擠效果</span>
+    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">10:15 花掉第 2 則，21:20 就被擋下</h3>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">早上「起來走一走」用掉額度，晚上「請教醃筍」撞上今日上限 —— 但重要的三件事都已經送出去了。</p>
+    
+  </div></div>
+<div style="flex: 1 1 0;"><div style="display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #f1b879; border-radius: 0 0 4px 4px; background: #f7f2e8;">
+    <span style="color: #f1b879; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">怎麼跑這一節</span>
+    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">先自己預測，再按下去</h3>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">先猜會漏幾件、打擾幾次，再跑一次對照。時間軸每一列都寫出是哪一條規則決定的，第二次跑還會顯示與上一次的差異。</p>
+    
+  </div></div></div></div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 14px; padding-top: 16px; border-top: 1px solid #cfd9dc;">
+      <span style="flex-shrink: 0; width: 9px; height: 9px; border-radius: 50%; background: #f1b879;"></span>
+      <span style="color: #4d6475; font: 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">test_lesson2.py::test_one_day_has_no_perfect_policy 把上面三行結果寫成測試 —— 如果哪天預設變成 0 打擾，就表示事件表需要重新調整。</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

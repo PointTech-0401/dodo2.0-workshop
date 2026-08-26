@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&amp;family=Noto+Serif+TC:wght@500;700;900&amp;display=swap">
+  <style>
+    body { margin: 0; background: #f7f2e8; }
+    a { color: #397d9f; } a:hover { color: #15324a; }
+  </style>
+</helmet>
+<div style="position: relative; width: 1600px; height: 900px; overflow: hidden; background: #fffdf8; font-family: 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; color: #15324a;">
+  <div style="position: absolute; left: 0; top: 0; width: 12px; height: 900px; background: #397d9f;"></div>
+  <div style="position: absolute; inset: 0; display: flex; flex-direction: column; gap: 30px; padding: 58px 88px 52px 108px;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 32px; padding-bottom: 18px; border-bottom: 1px solid #cfd9dc;">
+      <span style="color: #397d9f; font: 800 16px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .18em;">WORKSHOP 01 · 讓 DODO 聽完，再回答</span>
+      <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">04 / 16</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 13px;">
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">一句話從送出到回答，中間走過哪裡</h1>
+      
+    </div>
+    <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
+      <figure style="margin: 0; display: flex; flex-direction: column; gap: 14px;">
+  <svg viewBox="0 0 1400 470" role="img" aria-label="系統流程圖：連線只發生一次，之後每個回合視需不需要工具，產生一個或兩個 response" style="display: block; width: 100%; height: auto; font-family: 'Noto Sans TC','Microsoft JhengHei UI',sans-serif;">
+    <defs>
+      <marker id="w1flow-ink" viewBox="0 0 12 12" refX="10.6" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+        <path d="M 1.6 1.4 L 11 6 L 1.6 10.6 Z" fill="#3f5a70"></path>
+      </marker>
+      <marker id="w1flow-apricot" viewBox="0 0 12 12" refX="10.6" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+        <path d="M 1.6 1.4 L 11 6 L 1.6 10.6 Z" fill="#c07f2c"></path>
+      </marker>
+      <marker id="w1flow-danger" viewBox="0 0 12 12" refX="10.6" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+        <path d="M 1.6 1.4 L 11 6 L 1.6 10.6 Z" fill="#a84a42"></path>
+      </marker>
+      <marker id="w1flow-green" viewBox="0 0 12 12" refX="10.6" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+        <path d="M 1.6 1.4 L 11 6 L 1.6 10.6 Z" fill="#287653"></path>
+      </marker>
+    </defs>
+    <text x="0" y="30" text-anchor="start" fill="#4d6475" font-size="14" font-weight="800">連線 · 只發生一次</text>
+    <g>
+    <rect x="8" y="48" width="286" height="112" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
+    <circle cx="36" cy="78" r="15" fill="#397d9f"></circle>
+    <text x="36" y="84" text-anchor="middle" fill="#fffdf8" font-size="15" font-weight="800">1</text>
+    
+    <text x="62" y="85" fill="#15324a" font-size="19" font-weight="700">開啟畫面</text>
+    <text x="30" y="120" fill="#4d6475" font-size="15.5">app.js 建立 WebRTC offer</text>
+  </g>
+    <g>
+    <rect x="374" y="48" width="286" height="112" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
+    <circle cx="402" cy="78" r="15" fill="#397d9f"></circle>
+    <text x="402" y="84" text-anchor="middle" fill="#fffdf8" font-size="15" font-weight="800">2</text>
+    
+    <text x="428" y="85" fill="#15324a" font-size="19" font-weight="700">送到本機後端</text>
+    <text x="396" y="120" fill="#4d6475" font-size="15.5">offer 與 instructions 同行</text>
+  </g>
+    <g>
+    <rect x="740" y="48" width="286" height="112" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
+    <circle cx="768" cy="78" r="15" fill="#287653"></circle>
+    <text x="768" y="84" text-anchor="middle" fill="#fffdf8" font-size="15" font-weight="800">3</text>
+    
+    <text x="794" y="85" fill="#15324a" font-size="19" font-weight="700">後端補上 API Key</text>
+    <text x="762" y="120" fill="#4d6475" font-size="15.5">轉送 /v1/realtime/calls</text>
+  </g>
+    <g>
+    <rect x="1106" y="48" width="286" height="112" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
+    <circle cx="1134" cy="78" r="15" fill="#f1b879"></circle>
+    <text x="1134" y="84" text-anchor="middle" fill="#fffdf8" font-size="15" font-weight="800">4</text>
+    
+    <text x="1160" y="85" fill="#15324a" font-size="19" font-weight="700">連線建立</text>
+    <text x="1128" y="120" fill="#4d6475" font-size="15.5">第一句話就已經是豆豆</text>
+  </g>
+    <path d="M 302 104 L 366 104" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w1flow-ink)"></path>
+    <path d="M 668 104 L 732 104" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w1flow-ink)"></path>
+    <path d="M 1034 104 L 1098 104" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w1flow-ink)"></path>
+    <text x="0" y="216" text-anchor="start" fill="#4d6475" font-size="14" font-weight="800">之後 · 每一個回合</text>
+    <g>
+    <rect x="8" y="250" width="286" height="112" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
+    <circle cx="36" cy="280" r="15" fill="#397d9f"></circle>
+    <text x="36" y="286" text-anchor="middle" fill="#fffdf8" font-size="15" font-weight="800">5</text>
+    
+    <text x="62" y="287" fill="#15324a" font-size="19" font-weight="700">使用者說完</text>
+    <text x="30" y="322" fill="#4d6475" font-size="15.5">VAD 判定或按「送出」</text>
+  </g>
+    <g>
+    <rect x="374" y="250" width="286" height="112" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
+    <circle cx="402" cy="280" r="15" fill="#397d9f"></circle>
+    <text x="402" y="286" text-anchor="middle" fill="#fffdf8" font-size="15" font-weight="800">6</text>
+    
+    <text x="428" y="287" fill="#15324a" font-size="19" font-weight="700">模型建立 response</text>
+    <text x="396" y="322" fill="#4d6475" font-size="15.5">決定要不要用工具</text>
+  </g>
+    <g>
+    <rect x="740" y="190" width="286" height="104" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
+    
+    <text x="762" y="216" fill="#287653" font-size="13" font-weight="800" letter-spacing="1.6">不需要工具</text>
+    <text x="762" y="242" fill="#15324a" font-size="19" font-weight="700">一個 response 結束</text>
+    <text x="762" y="270" fill="#4d6475" font-size="15.5">直接就是正式回答</text>
+  </g>
+    <g>
+    <rect x="740" y="318" width="286" height="118" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
+    
+    <text x="762" y="344" fill="#f1b879" font-size="13" font-weight="800" letter-spacing="1.6">需要工具</text>
+    <text x="762" y="370" fill="#15324a" font-size="18" font-weight="700">preamble + function_call</text>
+    <text x="762" y="398" fill="#4d6475" font-size="15.5">兩者在同一個 response 裡</text>
+  </g>
+    <g>
+    <rect x="1106" y="318" width="286" height="118" rx="8" fill="#f7f2e8" stroke="#cfd9dc" stroke-width="1"></rect>
+    
+    <text x="1128" y="344" fill="#f1b879" font-size="13" font-weight="800" letter-spacing="1.6">工具結果回送後</text>
+    <text x="1128" y="370" fill="#15324a" font-size="19" font-weight="700">下一個 response</text>
+    <text x="1128" y="398" fill="#4d6475" font-size="15.5">才是正式回答</text>
+  </g>
+    <path d="M 302 306 L 366 306" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w1flow-ink)"></path>
+    <path d="M 668 306 L 700 306" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path>
+    <path d="M 700 306 L 700 256 Q 700 242 714 242 L 732 242" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w1flow-ink)"></path>
+    <path d="M 700 306 L 700 363 Q 700 377 714 377 L 732 377" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w1flow-ink)"></path>
+    <text x="699" y="288" text-anchor="middle" fill="#15324a" font-size="14" font-weight="600">依模型決定</text>
+    <path d="M 1034 377 L 1098 377" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w1flow-ink)"></path>
+  </svg>
+  <figcaption style="color: #4d6475; font: 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">instructions 在第 ① 步就隨 offer 送出，所以第一句話已經是豆豆。需要工具時，preamble 和 function_call 在同一個 response 裡，正式回答要等下一個。</figcaption>
+</figure>
+    </div>
+    
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

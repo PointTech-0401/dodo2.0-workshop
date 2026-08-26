@@ -1,0 +1,143 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1600,
+      "h": 900,
+      "title": "01 · 封面"
+    },
+    {
+      "file": "ThreeIdeas.dc.html",
+      "x": 1760,
+      "y": 0,
+      "w": 1600,
+      "h": 900,
+      "title": "02 · 三個核心觀念"
+    },
+    {
+      "file": "ProjectMap.dc.html",
+      "x": 3520,
+      "y": 0,
+      "w": 1600,
+      "h": 900,
+      "title": "03 · 專案架構"
+    },
+    {
+      "file": "MemoryFlow.dc.html",
+      "x": 5280,
+      "y": 0,
+      "w": 1600,
+      "h": 900,
+      "title": "04 · 系統流程"
+    },
+    {
+      "file": "NoPerfectScore.dc.html",
+      "x": 0,
+      "y": 1140,
+      "w": 1600,
+      "h": 900,
+      "title": "05 · 沒有滿分是刻意的"
+    },
+    {
+      "file": "MemoryLayers.dc.html",
+      "x": 1760,
+      "y": 1140,
+      "w": 1600,
+      "h": 900,
+      "title": "06 · 三層記憶"
+    },
+    {
+      "file": "Outcomes.dc.html",
+      "x": 3520,
+      "y": 1140,
+      "w": 1600,
+      "h": 900,
+      "title": "07 · 學習成果"
+    },
+    {
+      "file": "Timetable.dc.html",
+      "x": 5280,
+      "y": 1140,
+      "w": 1600,
+      "h": 900,
+      "title": "08 · 時間表"
+    },
+    {
+      "file": "PromptLayer.dc.html",
+      "x": 0,
+      "y": 2280,
+      "w": 1600,
+      "h": 900,
+      "title": "09 · 第二堂的 Prompt 層"
+    },
+    {
+      "file": "LabOneCards.dc.html",
+      "x": 1760,
+      "y": 2280,
+      "w": 1600,
+      "h": 900,
+      "title": "10 · 實作一：記憶分類"
+    },
+    {
+      "file": "MemoryViewer.dc.html",
+      "x": 3520,
+      "y": 2280,
+      "w": 1600,
+      "h": 900,
+      "title": "11 · 記憶檢視器"
+    },
+    {
+      "file": "RedTeam.dc.html",
+      "x": 5280,
+      "y": 2280,
+      "w": 1600,
+      "h": 900,
+      "title": "12 · 紅隊挑戰"
+    },
+    {
+      "file": "SixScenarios.dc.html",
+      "x": 0,
+      "y": 3420,
+      "w": 1600,
+      "h": 900,
+      "title": "13 · 實作二之一"
+    },
+    {
+      "file": "OneDay.dc.html",
+      "x": 1760,
+      "y": 3420,
+      "w": 1600,
+      "h": 900,
+      "title": "14 · 實作二之二"
+    },
+    {
+      "file": "LiveTrigger.dc.html",
+      "x": 3520,
+      "y": 3420,
+      "w": 1600,
+      "h": 900,
+      "title": "15 · 實作二之三"
+    },
+    {
+      "file": "KeyMatrix.dc.html",
+      "x": 5280,
+      "y": 3420,
+      "w": 1600,
+      "h": 900,
+      "title": "16 · 哪些練習需要 Key"
+    },
+    {
+      "file": "SafetyClose.dc.html",
+      "x": 0,
+      "y": 4560,
+      "w": 1600,
+      "h": 900,
+      "title": "17 · 安全示範與完成標準"
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

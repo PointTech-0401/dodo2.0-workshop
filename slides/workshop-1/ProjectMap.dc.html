@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&amp;family=Noto+Serif+TC:wght@500;700;900&amp;display=swap">
+  <style>
+    body { margin: 0; background: #f7f2e8; }
+    a { color: #397d9f; } a:hover { color: #15324a; }
+  </style>
+</helmet>
+<div style="position: relative; width: 1600px; height: 900px; overflow: hidden; background: #fffdf8; font-family: 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; color: #15324a;">
+  <div style="position: absolute; left: 0; top: 0; width: 12px; height: 900px; background: #397d9f;"></div>
+  <div style="position: absolute; inset: 0; display: flex; flex-direction: column; gap: 30px; padding: 58px 88px 52px 108px;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 32px; padding-bottom: 18px; border-bottom: 1px solid #cfd9dc;">
+      <span style="color: #397d9f; font: 800 16px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .18em;">WORKSHOP 01 · 讓 DODO 聽完，再回答</span>
+      <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">03 / 16</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 13px;">
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">這個專案長什麼樣</h1>
+      
+    </div>
+    <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
+      <figure style="margin: 0; display: flex; flex-direction: column; gap: 14px;">
+  <svg viewBox="0 0 1400 490" role="img" aria-label="專案架構圖：瀏覽器與本機 Python 後端在同一台電腦，建立連線經後端代理，之後的音訊與文字由瀏覽器直連 OpenAI" style="display: block; width: 100%; height: auto; font-family: 'Noto Sans TC','Microsoft JhengHei UI',sans-serif;">
+    <defs>
+      <marker id="w1arch-ink" viewBox="0 0 12 12" refX="10.6" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+        <path d="M 1.6 1.4 L 11 6 L 1.6 10.6 Z" fill="#3f5a70"></path>
+      </marker>
+      <marker id="w1arch-apricot" viewBox="0 0 12 12" refX="10.6" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+        <path d="M 1.6 1.4 L 11 6 L 1.6 10.6 Z" fill="#c07f2c"></path>
+      </marker>
+      <marker id="w1arch-danger" viewBox="0 0 12 12" refX="10.6" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+        <path d="M 1.6 1.4 L 11 6 L 1.6 10.6 Z" fill="#a84a42"></path>
+      </marker>
+      <marker id="w1arch-green" viewBox="0 0 12 12" refX="10.6" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+        <path d="M 1.6 1.4 L 11 6 L 1.6 10.6 Z" fill="#287653"></path>
+      </marker>
+    </defs>
+    <g>
+    <rect x="8" y="138" width="845" height="330" rx="12" fill="#f5f0e6" stroke="#4d6475" stroke-width="1" stroke-dasharray="8 7" opacity=".9"></rect>
+    <text x="8" y="125" fill="#4d6475" font-size="14" font-weight="800" letter-spacing="1.8">這台電腦</text>
+  </g>
+    <g>
+    <rect x="958" y="138" width="434" height="330" rx="12" fill="#edf3f6" stroke="#4d6475" stroke-width="1" stroke-dasharray="8 7" opacity=".9"></rect>
+    <text x="958" y="125" fill="#4d6475" font-size="14" font-weight="800" letter-spacing="1.8">外部服務</text>
+  </g>
+    <g>
+    <rect x="40" y="170" width="300" height="150" rx="8" fill="#d9edf7" stroke="#cfd9dc" stroke-width="1"></rect>
+    
+    <text x="62" y="196" fill="#397d9f" font-size="13" font-weight="800" letter-spacing="1.6">瀏覽器</text>
+    <text x="62" y="222" fill="#15324a" font-size="19" font-weight="700">web/app.js</text>
+    <text x="62" y="250" fill="#4d6475" font-size="15.5">index.html · styles.css</text>
+    <text x="62" y="272" fill="#4d6475" font-size="15.5">分塊組裝 · WebRTC</text>
+    <text x="62" y="294" fill="#4d6475" font-size="15.5">記憶工具</text>
+  </g>
+    <g>
+    <rect x="515" y="170" width="300" height="150" rx="8" fill="#fffdf8" stroke="#287653" stroke-width="1.6"></rect>
+    
+    <text x="537" y="196" fill="#287653" font-size="13" font-weight="800" letter-spacing="1.6">本機 PYTHON 後端</text>
+    <text x="537" y="222" fill="#15324a" font-size="19" font-weight="700">dodo_workshop/web.py</text>
+    <text x="537" y="250" fill="#4d6475" font-size="15.5">API Key 只留在這裡</text>
+    <text x="537" y="272" fill="#4d6475" font-size="15.5">profile.py 組 Prompt</text>
+    <text x="537" y="294" fill="#4d6475" font-size="15.5">lesson1／lesson2 判斷</text>
+  </g>
+    <g>
+    <rect x="515" y="372" width="220" height="76" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
+    
+    
+    <text x="537" y="408" fill="#15324a" font-size="16" font-weight="700">student/my-dodo.json</text>
+    <text x="537" y="436" fill="#4d6475" font-size="15.5">scenarios/*.json</text>
+  </g>
+    <g>
+    <rect x="990" y="170" width="300" height="150" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
+    
+    <text x="1012" y="196" fill="#f1b879" font-size="13" font-weight="800" letter-spacing="1.6">OPENAI REALTIME</text>
+    <text x="1012" y="222" fill="#15324a" font-size="19" font-weight="700">gpt-realtime-2</text>
+    <text x="1012" y="250" fill="#4d6475" font-size="15.5">gpt-4o-transcribe</text>
+    <text x="1012" y="272" fill="#4d6475" font-size="15.5">near_field · sage</text>
+  </g>
+    <g>
+    <rect x="990" y="372" width="300" height="76" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
+    
+    
+    <text x="1012" y="408" fill="#15324a" font-size="19" font-weight="700">OpenWeatherMap</text>
+    <text x="1012" y="436" fill="#4d6475" font-size="15.5">由後端代查</text>
+  </g>
+    <path d="M 350 245 L 505 245" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w1arch-ink)" marker-start="url(#w1arch-ink)"></path>
+    <text x="427" y="214" text-anchor="middle" fill="#15324a" font-size="15.5" font-weight="600">① SDP offer</text>
+    <text x="427" y="233" text-anchor="middle" fill="#15324a" font-size="15.5" font-weight="600">與 instructions</text>
+    <path d="M 825 245 L 980 245" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w1arch-ink)"></path>
+    <text x="902" y="214" text-anchor="middle" fill="#15324a" font-size="15.5" font-weight="600">② 補上 API Key</text>
+    <text x="902" y="233" text-anchor="middle" fill="#15324a" font-size="15.5" font-weight="600">後代理</text>
+    <path d="M 190 160 C 190 52, 1140 52, 1140 160" fill="none" stroke="#c07f2c" stroke-width="1.9" stroke-linecap="round" marker-end="url(#w1arch-apricot)" marker-start="url(#w1arch-apricot)"></path>
+    <text x="665" y="62" text-anchor="middle" fill="#a8722a" font-size="15.5" font-weight="700">③ WebRTC 音訊／文字：瀏覽器直連，不經後端</text>
+    <path d="M 625 330 L 625 362" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w1arch-ink)"></path>
+    <text x="643" y="352" text-anchor="start" fill="#15324a" font-size="15.5" font-weight="600">讀寫作品</text>
+    <path d="M 790 330 L 790 396 Q 790 410 804 410 L 980 410" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w1arch-ink)"></path>
+    <text x="808" y="400" text-anchor="start" fill="#15324a" font-size="15.5" font-weight="600">get_weather</text>
+  </svg>
+  <figcaption style="color: #4d6475; font: 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">API Key 只留在本機後端。建立連線那一次經後端代理，之後的音訊與文字由瀏覽器直連 OpenAI，不再經過後端。</figcaption>
+</figure>
+    </div>
+    
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&amp;family=Noto+Serif+TC:wght@500;700;900&amp;display=swap">
+  <style>
+    body { margin: 0; background: #f7f2e8; }
+    a { color: #287653; } a:hover { color: #15324a; }
+  </style>
+</helmet>
+<div style="position: relative; width: 1600px; height: 900px; overflow: hidden; background: #fffdf8; font-family: 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; color: #15324a;">
+  <div style="position: absolute; left: 0; top: 0; width: 12px; height: 900px; background: #287653;"></div>
+  <div style="position: absolute; inset: 0; display: flex; flex-direction: column; gap: 30px; padding: 58px 88px 52px 108px;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 32px; padding-bottom: 18px; border-bottom: 1px solid #cfd9dc;">
+      <span style="color: #287653; font: 800 16px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .18em;">WORKSHOP 02 · 會記得、會主動，也知道何時閉嘴</span>
+      <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">03 / 17</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 13px;">
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">第二堂會動到專案的哪些地方</h1>
+      
+    </div>
+    <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
+      <figure style="margin: 0; display: flex; flex-direction: column; gap: 14px;">
+  <svg viewBox="0 0 1400 490" role="img" aria-label="專案架構圖：第二堂所有判斷都在本機完成，只有讓豆豆開口那一條線離開這台電腦" style="display: block; width: 100%; height: auto; font-family: 'Noto Sans TC','Microsoft JhengHei UI',sans-serif;">
+    <defs>
+      <marker id="w2arch-ink" viewBox="0 0 12 12" refX="10.6" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+        <path d="M 1.6 1.4 L 11 6 L 1.6 10.6 Z" fill="#3f5a70"></path>
+      </marker>
+      <marker id="w2arch-apricot" viewBox="0 0 12 12" refX="10.6" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+        <path d="M 1.6 1.4 L 11 6 L 1.6 10.6 Z" fill="#c07f2c"></path>
+      </marker>
+      <marker id="w2arch-danger" viewBox="0 0 12 12" refX="10.6" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+        <path d="M 1.6 1.4 L 11 6 L 1.6 10.6 Z" fill="#a84a42"></path>
+      </marker>
+      <marker id="w2arch-green" viewBox="0 0 12 12" refX="10.6" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+        <path d="M 1.6 1.4 L 11 6 L 1.6 10.6 Z" fill="#287653"></path>
+      </marker>
+    </defs>
+    <g>
+    <rect x="8" y="138" width="845" height="330" rx="12" fill="#f5f0e6" stroke="#287653" stroke-width="1" stroke-dasharray="8 7" opacity=".9"></rect>
+    <text x="8" y="125" fill="#287653" font-size="14" font-weight="800" letter-spacing="1.8">本機 · 不需要 API KEY</text>
+  </g>
+    <g>
+    <rect x="958" y="138" width="434" height="330" rx="12" fill="#edf3f6" stroke="#4d6475" stroke-width="1" stroke-dasharray="8 7" opacity=".9"></rect>
+    <text x="958" y="125" fill="#4d6475" font-size="14" font-weight="800" letter-spacing="1.8">外部服務</text>
+  </g>
+    <g>
+    <rect x="40" y="170" width="300" height="150" rx="8" fill="#d9edf7" stroke="#cfd9dc" stroke-width="1"></rect>
+    
+    <text x="62" y="196" fill="#397d9f" font-size="13" font-weight="800" letter-spacing="1.6">瀏覽器</text>
+    <text x="62" y="222" fill="#15324a" font-size="19" font-weight="700">web/app.js</text>
+    <text x="62" y="250" fill="#4d6475" font-size="15.5">記憶分類</text>
+    <text x="62" y="272" fill="#4d6475" font-size="15.5">記憶檢視器</text>
+    <text x="62" y="294" fill="#4d6475" font-size="15.5">主動觸發表單</text>
+  </g>
+    <g>
+    <rect x="515" y="170" width="300" height="150" rx="8" fill="#fffdf8" stroke="#287653" stroke-width="1.6"></rect>
+    
+    <text x="537" y="196" fill="#287653" font-size="13" font-weight="800" letter-spacing="1.6">本機 PYTHON 後端</text>
+    <text x="537" y="222" fill="#15324a" font-size="19" font-weight="700">lesson2.py</text>
+    <text x="537" y="250" fill="#4d6475" font-size="15.5">choose_event 說不說</text>
+    <text x="537" y="272" fill="#4d6475" font-size="15.5">simulate_day 跑一整天</text>
+    <text x="537" y="294" fill="#4d6475" font-size="15.5">profile.py 組 Prompt</text>
+  </g>
+    <g>
+    <rect x="515" y="372" width="300" height="76" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
+    
+    
+    <text x="537" y="408" fill="#15324a" font-size="17" font-weight="700">scenarios/ · my-dodo.json</text>
+    <text x="537" y="436" fill="#4d6475" font-size="15.5">memory_cards · day_timeline</text>
+  </g>
+    <g>
+    <rect x="990" y="170" width="300" height="150" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
+    
+    <text x="1012" y="196" fill="#f1b879" font-size="13" font-weight="800" letter-spacing="1.6">唯一需要 KEY 的地方</text>
+    <text x="1012" y="222" fill="#15324a" font-size="19" font-weight="700">OpenAI Realtime</text>
+    <text x="1012" y="250" fill="#4d6475" font-size="15.5">紅隊挑戰</text>
+    <text x="1012" y="272" fill="#4d6475" font-size="15.5">讓豆豆真的開口</text>
+  </g>
+    <path d="M 350 245 L 505 245" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w2arch-ink)" marker-start="url(#w2arch-ink)"></path>
+    <text x="427" y="214" text-anchor="middle" fill="#15324a" font-size="15.5" font-weight="600">① 事件與你的規則</text>
+    <text x="427" y="233" text-anchor="middle" fill="#15324a" font-size="15.5" font-weight="600">proactive-decide</text>
+    <path d="M 190 160 C 190 52, 1140 52, 1140 160" fill="none" stroke="#c07f2c" stroke-width="1.9" stroke-linecap="round" marker-end="url(#w2arch-apricot)" marker-start="url(#w2arch-apricot)"></path>
+    <text x="665" y="62" text-anchor="middle" fill="#a8722a" font-size="15.5" font-weight="700">② 只有「開口」這一步出網路：response.instructions</text>
+    <path d="M 665 330 L 665 362" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w2arch-ink)"></path>
+    <text x="683" y="352" text-anchor="start" fill="#15324a" font-size="15.5" font-weight="600">讀取情境</text>
+  </svg>
+  <figcaption style="color: #4d6475; font: 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">記憶分類、6 個情境與「跑一整天」都由本機的 choose_event／simulate_day 判斷，不需要 API Key。只有讓豆豆真的開口才出網路（連線本身仍如第一堂由後端代理建立）。</figcaption>
+</figure>
+    </div>
+    
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

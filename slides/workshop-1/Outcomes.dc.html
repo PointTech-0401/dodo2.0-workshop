@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&amp;family=Noto+Serif+TC:wght@500;700;900&amp;display=swap">
+  <style>
+    body { margin: 0; background: #f7f2e8; }
+    a { color: #397d9f; } a:hover { color: #15324a; }
+  </style>
+</helmet>
+<div style="position: relative; width: 1600px; height: 900px; overflow: hidden; background: #fffdf8; font-family: 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; color: #15324a;">
+  <div style="position: absolute; left: 0; top: 0; width: 12px; height: 900px; background: #397d9f;"></div>
+  <div style="position: absolute; inset: 0; display: flex; flex-direction: column; gap: 30px; padding: 58px 88px 52px 108px;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 32px; padding-bottom: 18px; border-bottom: 1px solid #cfd9dc;">
+      <span style="color: #397d9f; font: 800 16px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .18em;">WORKSHOP 01 · 讓 DODO 聽完，再回答</span>
+      <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">05 / 16</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 13px;">
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">這堂課結束時，你可以做到</h1>
+      
+    </div>
+    <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
+      <ul style="display: flex; flex-direction: column; gap: 20px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #397d9f;"></span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">說明 Prompt、VAD 與 Push-to-talk 各自負責什麼，以及為什麼回覆長度留給 Prompt 而不是 token 上限。</span>
+    </li>
+<li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #397d9f;"></span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">透過真正的 OpenAI Realtime API，比較修改不同 Prompt 分塊後的回答差異。</span>
+    </li>
+<li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #397d9f;"></span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">比較 <span style="padding: 2px 7px; border-radius: 4px; background: #d9edf7; color: #397d9f; font: 700 21px/1.5 Consolas,'Noto Sans TC',monospace;">server_vad</span>、<span style="padding: 2px 7px; border-radius: 4px; background: #d9edf7; color: #397d9f; font: 700 21px/1.5 Consolas,'Noto Sans TC',monospace;">semantic_vad</span>、Push-to-talk 三種回合方式。</span>
+    </li>
+<li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #397d9f;"></span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">按「套用」把設定實際送進 Realtime session.update，並用同一句話比較前後差異。</span>
+    </li>
+<li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #397d9f;"></span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">把 Prompt 分塊、組裝結果與 Realtime 設定保存到 my-dodo.json，第二堂繼續使用。</span>
+    </li></ul>
+    </div>
+    
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
