@@ -1,0 +1,97 @@
+[
+  {
+    "name": "晚上新聞",
+    "time": "23:10",
+    "minutes_since_last_message": 120,
+    "messages_today": 1,
+    "user_declined": false,
+    "expected": {"should_speak": false, "event_type": "news"},
+    "events": [
+      {
+        "type": "news",
+        "topic": "花卉展開幕",
+        "suggested_message": "王奶奶，今天有一則花卉展的消息，明天您想聽我再跟您分享。"
+      }
+    ]
+  },
+  {
+    "name": "回診提醒與新聞同時出現",
+    "time": "15:30",
+    "minutes_since_last_message": 45,
+    "messages_today": 2,
+    "user_declined": false,
+    "expected": {"should_speak": true, "event_type": "reminder"},
+    "events": [
+      {
+        "type": "news",
+        "topic": "蘭花展",
+        "suggested_message": "王奶奶，今天有蘭花展的消息。"
+      },
+      {
+        "type": "reminder",
+        "topic": "16:00 回診",
+        "suggested_message": "王奶奶，四點有回診安排，出門前記得帶健保卡。"
+      }
+    ]
+  },
+  {
+    "name": "使用者剛拒絕聊天",
+    "time": "14:00",
+    "minutes_since_last_message": 90,
+    "messages_today": 1,
+    "user_declined": true,
+    "expected": {"should_speak": false, "event_type": "reverse_mentor"},
+    "events": [
+      {
+        "type": "reverse_mentor",
+        "topic": "請教蘭花照顧方式",
+        "suggested_message": "王奶奶，您種蘭花很有經驗，我想請教您一件事。"
+      }
+    ]
+  },
+  {
+    "name": "訊息太密集",
+    "time": "10:00",
+    "minutes_since_last_message": 10,
+    "messages_today": 2,
+    "user_declined": false,
+    "expected": {"should_speak": false, "event_type": "weather"},
+    "events": [
+      {
+        "type": "weather",
+        "topic": "午後有雨",
+        "suggested_message": "王奶奶，下午可能下雨，出門記得帶傘。"
+      }
+    ]
+  },
+  {
+    "name": "深夜緊急事件",
+    "time": "02:20",
+    "minutes_since_last_message": 5,
+    "messages_today": 5,
+    "user_declined": true,
+    "expected": {"should_speak": true, "event_type": "emergency"},
+    "events": [
+      {
+        "type": "emergency",
+        "topic": "使用者表示剛跌倒且無法站起",
+        "suggested_message": "王奶奶，先不要勉強站起來。我會請照護人員立刻來協助您。"
+      }
+    ]
+  },
+  {
+    "name": "今日主動訊息已達上限",
+    "time": "16:20",
+    "minutes_since_last_message": 80,
+    "messages_today": 4,
+    "user_declined": false,
+    "expected": {"should_speak": false, "event_type": "reverse_mentor"},
+    "events": [
+      {
+        "type": "reverse_mentor",
+        "topic": "請教滷肉做法",
+        "suggested_message": "王奶奶，您以前很會做菜，改天想請教您滷肉的訣竅。"
+      }
+    ]
+  }
+]

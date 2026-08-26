@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>dodo 2.0 Workshop</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="回到 dodo workshop 首頁">
+      <span class="brand-mark" aria-hidden="true">d</span>
+      <span><strong>dodo 2.0</strong><small>WORKSHOP LAB</small></span>
+    </a>
+    <nav class="stage-nav" aria-label="課程階段">
+      <button class="stage-button is-active" data-stage="1">01 Realtime Agent</button>
+      <button class="stage-button" data-stage="2">02 記憶與主動</button>
+    </nav>
+    <div class="top-actions">
+      <span id="modeBadge" class="mode-badge">輸入：打字 · 輸出：文字</span>
+      <button id="apiSettingsButton" class="quiet-button">API 設定</button>
+      <button id="importButton" class="quiet-button">匯入</button>
+      <button id="exportButton" class="quiet-button">下載我的 Dodo</button>
+      <input id="importFile" type="file" accept="application/json" hidden>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <aside class="signal-rail" aria-label="Dodo 狀態">
+      <p class="rail-label">LIVE STATE</p>
+      <div class="dodo-orbit" aria-hidden="true"><span>d</span></div>
+      <ol class="state-list">
+        <li class="is-current" data-state="listening"><span></span>收聽中</li>
+        <li data-state="thinking"><span></span>思考中</li>
+        <li data-state="speaking"><span></span>回應中</li>
+      </ol>
+      <p id="connectionNote" class="connection-note">打字輸入／文字輸出已就緒</p>
+    </aside>
+
+    <section class="conversation-panel" aria-labelledby="conversationTitle">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">同一個 Dodo，持續升級</p>
+          <h1 id="conversationTitle">讓 Dodo 聽完，再回答</h1>
+          <p id="modelStatus" class="model-status">尚未連接 Realtime</p>
+        </div>
+      </div>
+      <div id="messages" class="messages" aria-live="polite">
+        <article class="message assistant">
+          <span class="speaker">DODO</span>
+          <p>先完成 API 設定，再用同一句話比較 Prompt 與回合控制各自改變了什麼。</p>
+        </article>
+      </div>
+      <form id="chatForm" class="composer">
+        <label class="sr-only" for="chatInput">輸入要對 Dodo 說的話</label>
+        <textarea id="chatInput" rows="2" autocomplete="off" placeholder="輸入一句話，例如：臺北今天天氣如何？"></textarea>
+        <button id="pushToTalk" class="ptt-button" type="button" hidden>按住說話</button>
+        <button type="submit" class="send-button">送出</button>
+      </form>
+    </section>
+
+    <div
+      id="panelResizer"
+      class="panel-resizer"
+      role="separator"
+      aria-label="調整聊天區與 Prompt 設定區寬度"
+      aria-orientation="vertical"
+      aria-valuemin="320"
+      aria-valuemax="720"
+      aria-valuenow="430"
+      tabindex="0"
+      title="拖曳調整聊天區與 Prompt 設定區寬度"
+    ><span aria-hidden="true"></span></div>
+
+    <aside class="lab-panel">
+      <section id="workshop1Panel" class="lab-section">
+        <p class="eyebrow">WORKSHOP 01</p>
+        <h2>Prompt 與 Realtime 是兩層</h2>
+        <p class="layer-intro">Prompt 決定回答內容；VAD 與按鍵決定何時把聲音送給模型。兩者不能混為一談。</p>
+
+        <div class="lab-block">
+          <div class="block-heading"><span class="layer-number">A</span><div><h3>用分塊設計回答方式</h3><p>只編輯分塊；系統會組成一份 Prompt，送進同一個 Realtime model。</p></div></div>
+          <div class="prompt-variables" aria-label="Prompt 變數">
+            <label>Dodo 名稱<input id="agentName"><small>會取代分塊中的 <code>{AGENT_NAME}</code></small></label>
+            <label>使用者名字／稱呼<input id="agentAddress"><small>會取代分塊中的 <code>{USER_ADDRESS}</code></small></label>
+          </div>
+          <div class="prompt-stack" aria-label="可編輯的 Prompt 分塊">
+            <article class="prompt-block">
+              <header><span>01</span><div><h4 id="promptIdentityLabel">角色與身分</h4><p>定義「我是誰」和陪伴目標。</p></div><em>EDIT</em></header>
+              <textarea id="promptIdentity" rows="4" aria-labelledby="promptIdentityLabel" spellcheck="false"></textarea>
+            </article>
+            <article class="prompt-block">
+              <header><span>02</span><div><h4 id="promptPersonalityToneLabel">個性與聲音</h4><p>描述可被聽見的語速、音調和態度。</p></div><em>EDIT</em></header>
+              <textarea id="promptPersonalityTone" rows="5" aria-labelledby="promptPersonalityToneLabel" spellcheck="false"></textarea>
+            </article>
+            <article class="prompt-block">
+              <header><span>03</span><div><h4 id="promptConversationStyleLabel">對話方式</h4><p>控制回應節奏、追問方式與格式。</p></div><em>EDIT</em></header>
+              <textarea id="promptConversationStyle" rows="5" aria-labelledby="promptConversationStyleLabel" spellcheck="false"></textarea>
+            </article>
+            <article class="prompt-block">
+              <header><span>04</span><div><h4 id="promptLanguageLabel">語言</h4><p>用通則處理主要語言與合理例外。</p></div><em>EDIT</em></header>
+              <textarea id="promptLanguage" rows="6" aria-labelledby="promptLanguageLabel" spellcheck="false"></textarea>
+            </article>
+            <article class="prompt-block">
+              <header><span>05</span><div><h4 id="promptSafetyLabel">邊界與安全</h4><p>說清楚不能猜測、診斷或忽略的事。</p></div><em>EDIT</em></header>
+              <textarea id="promptSafety" rows="4" aria-labelledby="promptSafetyLabel" spellcheck="false"></textarea>
+            </article>
+          </div>
+          <details class="prompt-preview-panel" open>
+            <summary><span>VIEW</span><strong>完整 System Prompt</strong><small>由上方 5 個區塊即時組裝，只能檢視。</small></summary>
+            <pre id="agentSystemPrompt" class="prompt-preview" tabindex="0" aria-label="完整 System Prompt 唯讀預覽"></pre>
+          </details>
+          <p class="voice-fact"><strong>實際 Realtime 聲線：<code id="realtimeVoiceName">sage</code></strong><span>與正式 dodo 相同，語速固定為較慢的 0.82 倍；聲音表現由「個性與聲音」分塊描述，不使用關鍵字判斷。</span></p>
+          <p class="voice-fact"><strong>沿用 Workshop 1.0 工具：<code>get_weather</code>、<code>read_memory</code>、<code>update_memory</code></strong><span id="weatherToolStatus">正在檢查 WEATHER_API_KEY…</span></p>
+          <label>輸出 token 上限
+            <input id="maxOutputTokens" type="number" min="32" max="1024" step="16">
+            <small>這是 API 的硬上限，但不是「最多幾句」的保證。</small>
+          </label>
+        </div>
+
+        <div class="lab-block">
+          <div class="block-heading"><span class="layer-number">B</span><div><h3>何時算說完</h3><p>以下內容會送進 Realtime session.update。</p></div></div>
+          <label>回合判定方式
+            <select id="turnDetectionMode">
+              <option value="semantic_vad">Semantic VAD：依語意判斷</option>
+              <option value="server_vad">Server VAD：依靜音時間判斷</option>
+              <option value="push_to_talk">Push-to-talk：放開才送出</option>
+            </select>
+          </label>
+          <label id="semanticEagernessField">Semantic VAD 等待傾向
+            <select id="semanticEagerness">
+              <option value="low">low：讓使用者慢慢說</option>
+              <option value="auto">auto：預設平衡</option>
+              <option value="high">high：盡快回應</option>
+            </select>
+          </label>
+          <label id="silenceDurationField">Server VAD 靜音門檻（毫秒）
+            <input id="silenceDuration" type="number" min="200" max="3000" step="100">
+            <small>只有選 Server VAD 時才會使用。</small>
+          </label>
+          <label class="toggle-row"><input id="interruptResponse" type="checkbox">使用者插話時中止 Dodo 目前的回覆</label>
+          <p id="turnModeNotice" class="mode-explanation"></p>
+        </div>
+        <div class="lab-actions">
+          <button id="saveWorkshop1" class="secondary-button">套用 5 個 Prompt 區塊</button>
+          <button id="runTurnTests" class="primary-button">執行 5 項設定預演</button>
+        </div>
+        <div id="turnResults" class="test-results" aria-live="polite"></div>
+      </section>
+
+      <section id="workshop2Panel" class="lab-section" hidden>
+        <p class="eyebrow">WORKSHOP 02</p>
+        <h2>讓它記得，也知道何時安靜</h2>
+        <label>長者稱呼<input id="elderAddress"></label>
+        <label>興趣（用逗號分隔）<input id="elderInterests"></label>
+        <div class="memory-block">
+          <h3>實作一：記憶分類</h3>
+          <p>A 重要事實 · B 近期事件 · C 跨日摘要 · X 不保存</p>
+          <div id="memoryCards"></div>
+          <button id="checkMemory" class="secondary-button">檢查記憶分類</button>
+          <div id="memoryResult" class="single-result" aria-live="polite"></div>
+        </div>
+        <div class="policy-block">
+          <h3>實作二：主動規則</h3>
+          <div class="field-row">
+            <label>安靜開始<input id="quietStart" type="number" min="0" max="23"></label>
+            <label>安靜結束<input id="quietEnd" type="number" min="0" max="23"></label>
+          </div>
+          <div class="field-row">
+            <label>冷卻分鐘<input id="cooldown" type="number" min="0"></label>
+            <label>每日上限<input id="dailyLimit" type="number" min="1"></label>
+          </div>
+          <div class="lab-actions">
+            <button id="saveWorkshop2" class="secondary-button">保存設定</button>
+            <button id="runProactiveTests" class="primary-button">執行 6 個情境</button>
+          </div>
+          <div id="proactiveResults" class="test-results" aria-live="polite"></div>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <section id="onboarding" class="onboarding" hidden aria-labelledby="onboardingTitle">
+    <div class="onboarding-sheet">
+      <p class="eyebrow">FIRST RUN</p>
+      <h2 id="onboardingTitle">用你現場擁有的設備，完成同一個 Dodo</h2>
+      <p class="lead">先設定 OpenAI 與天氣服務，再分別選擇怎麼輸入、Dodo 怎麼回覆。語音輸入需要麥克風；語音輸出建議使用耳機。</p>
+      <fieldset>
+        <legend>連接 OpenAI API</legend>
+        <div class="api-key-row">
+          <label for="apiKeyInput">API Key</label>
+          <input id="apiKeyInput" type="password" autocomplete="off" placeholder="sk-...">
+          <button id="testApiKey" type="button" class="secondary-button">測試</button>
+          <button id="saveApiKey" type="button" class="primary-button" disabled>儲存設定</button>
+        </div>
+        <p id="apiKeyStatus" class="api-status">尚未設定。Key 只保存在這次本機程式的記憶體中。</p>
+      </fieldset>
+      <fieldset>
+        <legend>連接天氣 API</legend>
+        <div class="api-key-row">
+          <label for="weatherApiKeyInput">OpenWeatherMap API Key</label>
+          <input id="weatherApiKeyInput" type="password" autocomplete="off" placeholder="輸入天氣 API Key">
+          <button id="testWeatherApiKey" type="button" class="secondary-button">測試</button>
+          <button id="saveWeatherApiKey" type="button" class="primary-button" disabled>儲存設定</button>
+        </div>
+        <p id="weatherApiKeyStatus" class="api-status">若要使用即時天氣查詢，請輸入 Workshop 1.0 使用的天氣 API Key。</p>
+      </fieldset>
+      <fieldset>
+        <legend>選擇輸入方式</legend>
+        <label class="choice"><input type="radio" name="inputMode" value="text" checked><span><strong>打字</strong><small>使用鍵盤輸入，不開啟麥克風</small></span></label>
+        <label class="choice"><input type="radio" name="inputMode" value="voice"><span><strong>語音</strong><small>使用麥克風說話，可測試 VAD 與插話</small></span></label>
+      </fieldset>
+      <fieldset>
+        <legend>選擇輸出方式</legend>
+        <label class="choice"><input type="radio" name="outputMode" value="text" checked><span><strong>文字</strong><small>Dodo 在畫面上顯示回答，不播放聲音</small></span></label>
+        <label class="choice"><input type="radio" name="outputMode" value="voice"><span><strong>語音</strong><small>Dodo 使用與正式專案相同的聲音回答</small></span></label>
+      </fieldset>
+      <div id="voiceCheck" class="device-check" hidden>
+        <p id="deviceCheckMessage">請允許瀏覽器使用麥克風。</p>
+        <button id="checkMicrophone" class="secondary-button">檢查麥克風</button>
+        <span id="microphoneStatus">尚未檢查</span>
+      </div>
+      <fieldset id="entryChoice">
+        <legend>從哪裡開始</legend>
+        <label class="choice"><input type="radio" name="entry" value="workshop1" checked><span><strong>參加 Workshop 1</strong><small>建立自己的 Dodo</small></span></label>
+        <label class="choice"><input type="radio" name="entry" value="continue"><span><strong>繼續我的 Dodo</strong><small>使用這台電腦已保存的成果</small></span></label>
+        <label class="choice"><input type="radio" name="entry" value="workshop2"><span><strong>只參加 Workshop 2</strong><small>載入講師準備的第一堂完成版</small></span></label>
+      </fieldset>
+      <div class="onboarding-footer">
+        <p id="onboardingError" role="alert"></p>
+        <button id="finishOnboarding" class="primary-button">開始 Workshop</button>
+      </div>
+    </div>
+  </section>
+
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

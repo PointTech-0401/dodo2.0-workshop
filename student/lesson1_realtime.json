@@ -1,0 +1,11 @@
+{
+  "turn_detection": {
+    "type": "semantic_vad",
+    "eagerness": "low",
+    "threshold": 0.5,
+    "prefix_padding_ms": 300,
+    "silence_duration_ms": 800,
+    "create_response": true,
+    "interrupt_response": true
+  }
+}
