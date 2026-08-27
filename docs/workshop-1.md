@@ -41,7 +41,7 @@ Voice Agent 不是「多寫一些 Prompt」就會自然。學生要能分清楚�
 
 ## 開始前：連接真正模型
 
-第一次啟動時，在畫面內分別輸入 OpenAI API Key 與 OpenWeatherMap API Key。每個 Key 旁邊只有「測試」按鈕（可先確認 Key 有效），實際儲存一律由畫面最下方那一個按鈕完成 —— 沒測試過的 Key 會在儲存時自動先測一次。完成初次設定後，右上角「API 設定」開啟的視窗右上角有「×」（也可按 Esc）可以關掉；關掉會丟棄尚未儲存的變更。Key 只送到本機 Python 後端並保存在該次程式的記憶體，不寫入 localStorage、`my-dodo.json` 或前端程式碼。也可以由講師預先在 `.env` 設定 `OPENAI_API_KEY` 與 `WEATHER_API_KEY`。天氣 Key 沒有設定時仍可進入 Workshop，但即時天氣工具會明確提示尚未設定。
+第一次啟動時，在畫面內分別輸入 OpenAI API Key 與 OpenWeatherMap API Key。每個 Key 旁邊只有「測試」按鈕（可先確認 Key 有效），實際儲存一律由畫面最下方那一個按鈕完成 —— 沒測試過的 Key 會在儲存時自動先測一次。完成初次設定後，右上角「系統設定」開啟的視窗右上角有「×」（也可按 Esc）可以關掉；關掉會丟棄尚未儲存的變更。Key 只送到本機 Python 後端並保存在該次程式的記憶體，不寫入 localStorage、`my-dodo.json` 或前端程式碼。也可以由講師預先在 `.env` 設定 `OPENAI_API_KEY` 與 `WEATHER_API_KEY`。天氣 Key 沒有設定時仍可進入 Workshop，但即時天氣工具會明確提示尚未設定。
 
 未設定 Key 時，聊天功能會明確停用；不會用固定句型假裝成模型回覆。
 

@@ -29,6 +29,13 @@ runtime/*.json
 !runtime/.gitkeep
 *.log
 
+# Optional browser checks pull happy-dom in via bun (see tests/browser/README.md).
+# Each machine installs it locally; the workshop itself has no npm dependencies.
+node_modules/
+package.json
+bun.lock
+bun.lockb
+
 # Editors
 .idea/
 .vscode/

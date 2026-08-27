@@ -292,7 +292,7 @@ async def weather_tool(payload: WeatherRequest) -> dict[str, Any]:
     if not api_key:
         raise HTTPException(
             status_code=503,
-            detail="尚未設定天氣 API Key，請從右上角「API 設定」完成設定。",
+            detail="尚未設定天氣 API Key，請從右上角「系統設定」完成設定。",
         )
     try:
         return await get_weather(payload.city, api_key)
@@ -306,7 +306,7 @@ async def weather_tool(payload: WeatherRequest) -> dict[str, Any]:
 async def realtime_session(payload: RealtimeSessionRequest) -> Response:
     api_key = active_api_key()
     if not api_key:
-        raise HTTPException(status_code=503, detail="尚未設定 OPENAI_API_KEY，請先完成 API 設定。")
+        raise HTTPException(status_code=503, detail="尚未設定 OPENAI_API_KEY，請先完成系統設定。")
 
     session: dict[str, Any] = {
         "type": "realtime",

@@ -18,7 +18,7 @@
     </nav>
     <div class="top-actions">
       <span id="modeBadge" class="mode-badge">輸入：打字 · 輸出：文字</span>
-      <button id="apiSettingsButton" class="quiet-button">API 設定</button>
+      <button id="apiSettingsButton" class="quiet-button">系統設定</button>
       <button id="importButton" class="quiet-button">匯入</button>
       <button id="exportButton" class="quiet-button">下載我的 Dodo</button>
       <input id="importFile" type="file" accept="application/json" hidden>
@@ -50,7 +50,7 @@
       <div id="messages" class="messages" aria-live="polite">
         <article class="message system">
           <span class="speaker">SYSTEM</span>
-          <p>先完成 API 設定，再用同一句話比較 Prompt 與回合控制各自改變了什麼。</p>
+          <p>先完成系統設定，再用同一句話比較 Prompt 與回合控制各自改變了什麼。</p>
         </article>
       </div>
       <form id="chatForm" class="composer">
@@ -76,17 +76,24 @@
 
     <aside class="lab-panel">
       <section id="workshop1Panel" class="lab-section">
-        <p class="eyebrow">WORKSHOP 01</p>
-        <!-- 套用 lives beside the title and only appears once a field differs
-             from what the live session already has — see refreshApplyState(). -->
-        <div class="section-heading">
-          <h2>Prompt 與 Realtime 是兩層</h2>
-          <button id="saveWorkshop1" class="primary-button apply-button" hidden>套用</button>
-        </div>
-        <p class="layer-intro">Prompt 決定回答內容；VAD 與按鍵決定何時把聲音送給模型。兩者不能混為一談。</p>
-        <div class="tab-bar" role="tablist" aria-label="Workshop 1 設定">
-          <button type="button" class="tab-button is-active" role="tab" aria-selected="true" aria-controls="tabPersona" data-tab="tabPersona">A 回答方式</button>
-          <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabTurn" data-tab="tabTurn">B 何時算說完</button>
+        <!-- Eyebrow, title, 套用 and the tab bar stay pinned while the fields
+             below scroll: on a long tab the 套用 button used to scroll out of
+             reach, and there was no way to change tab without scrolling back. -->
+        <div class="lab-sticky">
+          <p class="eyebrow">WORKSHOP 01</p>
+          <!-- 套用 lives beside the title and only appears once a field differs
+               from what the live session already has — see refreshApplyState(). -->
+          <div class="section-heading">
+            <h2>Prompt 與 Realtime 是兩層</h2>
+            <div class="apply-actions">
+              <button id="revertWorkshop1" class="secondary-button apply-button" hidden>取消變更</button>
+              <button id="saveWorkshop1" class="primary-button apply-button" hidden>套用</button>
+            </div>
+          </div>
+          <div class="tab-bar" role="tablist" aria-label="Workshop 1 設定">
+            <button type="button" class="tab-button is-active" role="tab" aria-selected="true" aria-controls="tabPersona" data-tab="tabPersona">A 回答方式</button>
+            <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabTurn" data-tab="tabTurn">B 何時算說完</button>
+          </div>
         </div>
 
         <div id="tabPersona" class="tab-panel" role="tabpanel" tabindex="0">
@@ -161,17 +168,21 @@
       </section>
 
       <section id="workshop2Panel" class="lab-section" hidden>
-        <p class="eyebrow">WORKSHOP 02</p>
-        <div class="section-heading">
-          <h2>讓它記得，也知道何時安靜</h2>
-          <button id="saveWorkshop2" class="primary-button apply-button" hidden>套用</button>
-        </div>
-        <p class="layer-intro">Workshop 1 決定豆豆怎麼講話；這裡決定它記得什麼、什麼時候可以先開口。兩邊會合併成同一份 instructions，送進同一個 Realtime session。</p>
-        <div class="tab-bar" role="tablist" aria-label="Workshop 2 設定">
-          <button type="button" class="tab-button is-active" role="tab" aria-selected="true" aria-controls="tabW2Prompt" data-tab="tabW2Prompt">C Prompt</button>
-          <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Memory" data-tab="tabW2Memory">記憶</button>
-          <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Policy" data-tab="tabW2Policy">主動規則</button>
-          <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Trigger" data-tab="tabW2Trigger">觸發主動</button>
+        <div class="lab-sticky">
+          <p class="eyebrow">WORKSHOP 02</p>
+          <div class="section-heading">
+            <h2>讓它記得，也知道何時安靜</h2>
+            <div class="apply-actions">
+              <button id="revertWorkshop2" class="secondary-button apply-button" hidden>取消變更</button>
+              <button id="saveWorkshop2" class="primary-button apply-button" hidden>套用</button>
+            </div>
+          </div>
+          <div class="tab-bar" role="tablist" aria-label="Workshop 2 設定">
+            <button type="button" class="tab-button is-active" role="tab" aria-selected="true" aria-controls="tabW2Prompt" data-tab="tabW2Prompt">C Prompt</button>
+            <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Memory" data-tab="tabW2Memory">記憶</button>
+            <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Policy" data-tab="tabW2Policy">主動規則</button>
+            <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Trigger" data-tab="tabW2Trigger">觸發主動</button>
+          </div>
         </div>
 
         <div id="tabW2Prompt" class="tab-panel" role="tabpanel" tabindex="0">
@@ -201,14 +212,17 @@
         <div id="tabW2Memory" class="tab-panel memory-block" role="tabpanel" tabindex="0" hidden>
           <h3>實作一：記憶分類</h3>
           <p>A 重要事實 · B 近期事件 · C 跨日摘要 · X 不保存</p>
-          <p class="block-purpose">分類不只是考試：它決定 <code>update_memory</code> 把一句話存進哪一層（<code>layer=A/B/C</code>）、保存多久、誰能改，以及哪些資料一律不進記憶。上面的「記憶使用規則」就是把這套分類講給豆豆聽。</p>
+          <p class="block-purpose">分類不是考試：<strong>答對的每一題會直接寫進下面的「豆豆現在記得什麼」</strong>，存到你選的那一層。它決定 <code>update_memory</code> 把一句話存進哪一層（<code>layer=A/B/C</code>）、保存多久、再存一次時是並存還是覆蓋，以及哪些資料一律不進記憶。X 那一題答對不會寫入任何東西 —— 拒絕保存就是正確行為。</p>
           <div id="memoryCards"></div>
-          <button id="checkMemory" class="secondary-button">檢查記憶分類</button>
-          <div id="memoryResult" class="single-result" aria-live="polite"></div>
-          <div id="memoryExplanations" class="memory-explanations" aria-live="polite"></div>
+          <button id="checkMemory" class="secondary-button">檢查並寫入記憶</button>
+          <details id="memoryOutcome" class="result-panel" hidden>
+            <summary><span id="memoryResult" class="single-result" aria-live="polite"></span><em>收合／展開</em></summary>
+            <div id="memoryExplanations" class="memory-explanations" aria-live="polite"></div>
+          </details>
 
           <h4 class="sub-heading">豆豆現在記得什麼（人可以刪）</h4>
-          <p class="block-purpose">這是 <code>workspace.memory</code> 的真實內容。AI 會寫，人也必須能改 —— 按「刪除」會同時更新 Prompt 與正在進行的 session。標成「未進入 Prompt」的是超出每層 8 筆上限、目前沒有送給模型的舊記錄。</p>
+          <p class="block-purpose">這是 <code>workspace.memory</code> 的真實內容，上面的分類和豆豆自己呼叫 <code>update_memory</code> 都寫在這裡。AI 會寫，人也必須能改 —— 按「刪除」會同時更新 Prompt 與正在進行的 session。標成「未進入 Prompt」的是超出每層 8 筆上限、目前沒有送給模型的舊記錄。</p>
+          <p class="block-purpose">每一層下面那行小字是它的<strong>合併規則</strong>：同一個 key 再存一次時，A 會並存（「興趣：唱歌」不會被「興趣：跳舞」蓋掉，兩件都是事實）、B 只留最新一筆（近期事件本來就會被取代，整層也有上限）、C 直接重寫（摘要是重算的）。豆豆想真的覆蓋 A 的舊值時，要自己傳 <code>mode="replace"</code>。</p>
           <div id="memoryViewer" class="memory-viewer" aria-live="polite"></div>
 
           <h4 class="sub-heading">紅隊挑戰：想辦法讓它記下不該記的事</h4>
@@ -224,7 +238,8 @@
 
         <div id="tabW2Policy" class="tab-panel policy-block" role="tabpanel" tabindex="0" hidden>
           <h3>實作二：主動規則</h3>
-          <p class="block-purpose">這一節有兩件事：先用 6 個固定情境驗證「該不該開口」的規則（純程式判斷，不呼叫模型），再用下面的「現在觸發一次」讓豆豆真的先開口說話。</p>
+          <p class="block-purpose">這一頁在調的是「<strong>豆豆什麼時候可以不等你問就先開口</strong>」。下面五個欄位就是那套規則 —— 它們是<strong>程式</strong>在判斷，不是模型：程式先決定「說不說」，決定要說之後，模型才負責「怎麼說」。真正的主動開口在「觸發主動」分頁。</p>
+          <p class="block-purpose">為什麼需要規則？因為一個會主動說話的 Agent，最大的風險不是講錯，是<strong>在不該講的時候講</strong>：半夜、你剛說不想聊、五分鐘前才講過、今天已經煩你四次。這五個欄位就是在畫這條線。</p>
           <div class="field-row">
             <label>安靜開始<input id="quietStart" type="number" min="0" max="23"></label>
             <label>安靜結束<input id="quietEnd" type="number" min="0" max="23"></label>
@@ -234,46 +249,81 @@
             <label>每日上限<input id="dailyLimit" type="number" min="1"></label>
           </div>
           <label>每則主動訊息最多幾句<input id="maxSentences" type="number" min="1" max="6"></label>
+
+          <!-- Five number fields said nothing about what they add up to. The band
+               and the summary line redraw on every keystroke, so a change to
+               安靜時段 or 冷卻 is visible before anything is run. -->
+          <div class="policy-preview">
+            <p class="preview-label">這套規則現在長什麼樣</p>
+            <div id="quietBand" class="quiet-band" aria-hidden="true"></div>
+            <div class="band-scale" aria-hidden="true"><span>0</span><span>6</span><span>12</span><span>18</span><span>24</span></div>
+            <p id="policySummary" class="policy-summary" aria-live="polite"></p>
+            <p id="policyBinding" class="policy-binding" aria-live="polite"></p>
+          </div>
+
+          <h4 class="sub-heading">驗證一：規則寫對了嗎</h4>
+          <p class="block-purpose">「執行 6 個情境」＝<strong>把你的規則當程式來單元測試</strong>。6 個寫死的情境（深夜新聞、回診提醒撞上新聞、使用者剛拒絕、訊息太密集、深夜跌倒、今日已達上限）各有一個正確答案，跑完會告訴你幾個對。<strong>不呼叫模型、不需要 API Key</strong>，所以隨便改隨便跑。把安靜時段或冷卻改掉再跑一次，看哪幾個情境翻轉了 —— 那就是你剛剛真正改動的東西。</p>
           <div class="lab-actions">
             <button id="runProactiveTests" class="primary-button">執行 6 個情境</button>
           </div>
-          <div id="proactiveResults" class="test-results" aria-live="polite"></div>
+          <details id="proactiveOutcome" class="result-panel" hidden>
+            <summary><span id="proactiveScore" class="single-result"></span><em>收合／展開</em></summary>
+            <div id="proactiveResults" class="test-results" aria-live="polite"></div>
+          </details>
 
-          <h4 class="sub-heading">把一整天壓縮成三分鐘</h4>
-          <p class="block-purpose">6 個情境各自從乾淨狀態開始，真實的一天不是這樣：冷卻與每日額度會累積下去，早上多聊一句，晚上的睡前藥就少一次額度。這裡用同一份規則跑完 24 小時的 13 個事件。</p>
+          <h4 class="sub-heading">驗證二：這套規則過完一天的代價</h4>
+          <p class="block-purpose">6 個情境有個盲點：<strong>每個都從乾淨狀態開始</strong>。真實的一天不是這樣 —— 冷卻與每日額度會累積下去，早上多聊一句，晚上的睡前藥提醒就少一次額度。「跑一整天」用你現在這份規則，一路跑完 24 小時的 13 個事件，然後給你兩個數字：<strong>漏掉重要事</strong>（提醒、緊急被擋掉幾次）和<strong>打擾</strong>（可有可無的訊息說出去幾次）。</p>
+          <p class="block-purpose">這兩個數字會互相拉扯，<strong>沒有滿分</strong>：規則放寬就少漏、但更煩；規則收緊就清靜、但會漏掉吃藥。這一題要的是你的取捨與理由，不是分數。</p>
           <div class="lab-actions">
             <button id="runDaySimulation" class="primary-button">跑一整天</button>
           </div>
-          <div id="daySummary" class="day-summary" aria-live="polite"></div>
-          <div id="dayTimeline" class="day-timeline"></div>
+          <details id="dayOutcome" class="result-panel" hidden>
+            <summary><span id="dayScore" class="single-result"></span><em>收合／展開</em></summary>
+            <div id="daySummary" class="day-summary" aria-live="polite"></div>
+            <div id="dayTimeline" class="day-timeline"></div>
+          </details>
         </div>
 
         <div id="tabW2Trigger" class="tab-panel policy-block" role="tabpanel" tabindex="0" hidden>
           <h3>現在觸發一次主動關心</h3>
-          <p class="block-purpose">同一套規則（<code>choose_event</code>）判斷這個情境；通過才讓豆豆在聊天室先開口，被擋下來就只顯示理由。程式決定「說不說」，模型只決定「怎麼說」。</p>
+          <p class="block-purpose">這裡是唯一會讓豆豆<strong>真的在聊天室先開口</strong>的地方。同一套規則（<code>choose_event</code>）先判斷這個情境，通過才送 <code>response.create</code> 讓它說話，被擋下來就只顯示理由。</p>
+          <p class="block-purpose"><strong>沒有排程器</strong>：真實的 dodo 由事件源在背後推事件，這裡由你按按鈕代替它。事件<strong>類型沒有串接任何資料來源</strong>（連 weather 都不會去查天氣），它只做兩件事 —— 決定優先權數字、以「事件類型：X」寫進這一輪的 Prompt。要說什麼完全來自你填的「事件內容」。</p>
           <div class="field-row">
             <label>事件類型
-              <select id="proactiveEventType">
-                <option value="reminder">reminder 提醒</option>
-                <option value="health">health 健康關心</option>
-                <option value="weather">weather 天氣</option>
-                <option value="news">news 新聞</option>
-                <option value="reverse_mentor">reverse_mentor 反向請教</option>
-                <option value="emergency">emergency 緊急</option>
-              </select>
+              <select id="proactiveEventType"></select>
+              <small>括號是優先權，同時來好幾件事時數字大的先講；緊急事件不受安靜時段與額度限制。</small>
             </label>
-            <label>模擬現在時間<input id="proactiveNow" type="time"></label>
+            <label>事件內容<input id="proactiveTopic" placeholder="例如：16:00 回診，要帶健保卡"></label>
           </div>
-          <label>事件內容<input id="proactiveTopic" placeholder="例如：16:00 回診，要帶健保卡"></label>
+
+          <h4 class="sub-heading">A. 待提醒項目（時間到了自己觸發）</h4>
+          <p class="block-purpose">用上面的事件類型與內容，加一筆排在<strong>真實時鐘</strong>上的提醒。到了時間就自己跑一次 <code>choose_event</code>：過了就讓豆豆開口，被擋下就在那一列寫理由。每筆只會觸發一次。</p>
+          <div class="schedule-add">
+            <label>提醒時間（真實時間）<input id="scheduleTime" type="time"><small>選過去的時間，下一次檢查就會立刻觸發，方便現場示範。</small></label>
+            <button id="addSchedule" type="button" class="secondary-button">加入待提醒</button>
+          </div>
+          <label class="toggle-row"><input id="scheduleAuto" type="checkbox" checked>到時間自動觸發（每 5 秒對一次真實時鐘）</label>
+          <p id="scheduleClock" class="schedule-clock" aria-live="off"></p>
+          <div id="scheduleList" class="schedule-list" aria-live="polite"></div>
+
+          <h4 class="sub-heading">B. 手動測試一次（可以假設任何時間與狀態）</h4>
+          <p class="block-purpose">排程用的是真實時間與真實累積量；這裡相反 —— 四個欄位都是<strong>你假設的狀況</strong>，用來一次一次戳規則的邊界，例如「如果現在是凌晨三點呢」。</p>
           <div class="field-row">
-            <label>距上次主動訊息（分鐘）<input id="proactiveSinceLast" type="number" min="0" value="999"></label>
-            <label>今日已發送<input id="proactiveSentToday" type="number" min="0" value="0"></label>
+            <label>模擬現在時間<input id="proactiveNow" type="time"><small id="nowHint"></small></label>
+            <label class="toggle-row"><input id="proactiveDeclined" type="checkbox">使用者剛剛拒絕聊天</label>
           </div>
-          <label class="toggle-row"><input id="proactiveDeclined" type="checkbox">使用者剛剛拒絕聊天</label>
+          <!-- These two numbers are the ONLY inputs to the 冷卻 and 每日上限
+               rules, and nothing on screen said so — the value they have to beat
+               lives one tab away in 主動規則. The hints carry it here, live. -->
+          <div class="field-row">
+            <label>距上次主動訊息（分鐘）<input id="proactiveSinceLast" type="number" min="0" value="999"><small id="sinceLastHint"></small></label>
+            <label>今日已發送<input id="proactiveSentToday" type="number" min="0" value="0"><small id="sentTodayHint"></small></label>
+          </div>
           <div class="lab-actions">
-            <button id="triggerProactive" class="primary-button">觸發主動關心</button>
+            <button id="triggerProactive" class="primary-button">用上面的假設觸發一次</button>
           </div>
           <div id="proactiveDecision" class="single-result" aria-live="polite"></div>
+          <p class="block-purpose">真實累積量（排程與手動實際說出去的訊息都算在內）：<span id="proactiveLiveState" class="live-state"></span></p>
         </div>
       </section>
     </aside>

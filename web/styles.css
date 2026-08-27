@@ -100,13 +100,21 @@ h3 { margin: 0 0 8px; font-size: 18px; }
 .panel-resizer:hover span, .panel-resizer:focus-visible span, .panel-resizer.is-dragging span { height: 72px; background: var(--blue); }
 body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .lab-panel { min-width: 0; background: var(--paper); overflow-y: auto; max-height: calc(100vh - 77px); }
-.lab-section { padding: 38px 30px 60px; }
+/* `--lab-pad` is declared once so the sticky header can bleed its background to
+   both panel edges with a negative margin that still matches at every
+   breakpoint — a hardcoded -30px left an 8px seam below 1100px. */
+.lab-section { --lab-pad: 30px; padding: 0 var(--lab-pad) 60px; }
+/* Eyebrow + title + 套用 + tabs stay put while the fields scroll under them. */
+.lab-sticky { position: sticky; top: 0; z-index: 4; margin-inline: calc(var(--lab-pad) * -1); padding: 30px var(--lab-pad) 0; background: var(--paper); box-shadow: 0 6px 10px -8px rgba(21, 50, 74, .35); }
+.lab-sticky .tab-bar { margin-bottom: 0; }
+.lab-section .tab-panel { padding-top: 20px; }
 .lab-section > label, .tab-panel > label, .field-row label { display: block; margin-bottom: 14px; font-size: 13px; font-weight: 700; color: var(--ink-soft); }
 /* The 套用 button rides in the title row and is only rendered when something is
    actually unapplied, so an untouched panel has no button asking to be pressed. */
 .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
 .section-heading h2 { margin: 0; }
-.apply-button { flex: 0 0 auto; padding: 9px 20px; }
+.apply-actions { display: flex; flex: 0 0 auto; gap: 6px; }
+.apply-button { flex: 0 0 auto; padding: 9px 18px; white-space: nowrap; }
 /* Tabs replaced one long scrolling column that showed every control at once. */
 .tab-bar { display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: 20px; border-bottom: 1px solid var(--line); }
 .tab-button { position: relative; padding: 10px 14px 9px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--ink-soft); font-weight: 700; }
@@ -145,7 +153,6 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .voice-fact strong, .voice-fact span { display: block; }
 .voice-fact code { color: var(--blue); }
 .voice-fact span { margin-top: 3px; }
-.layer-intro { margin: 0 0 18px; padding: 12px 14px; border-left: 4px solid var(--blue); background: var(--white); color: var(--ink-soft); font-size: 13px; line-height: 1.6; }
 .toggle-row { display: flex !important; gap: 9px; align-items: flex-start; color: var(--ink) !important; line-height: 1.45; }
 .toggle-row input { width: auto !important; margin: 3px 0 0 !important; }
 .mode-explanation { margin: 8px 0 0; padding: 11px 12px; background: var(--sky); color: var(--ink-soft); font-size: 12px; line-height: 1.55; }
@@ -171,6 +178,16 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .memory-card p { margin: 0 0 6px; font-size: 13px; line-height: 1.45; }
 .memory-card select { width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
 .single-result { margin-top: 12px; font-weight: 700; }
+/* Results used to pile up under the button that made them with no way to close
+   them. Collapsed still shows the headline, so the score survives the collapse. */
+.result-panel { margin-top: 14px; border: 1px solid var(--line); border-radius: 4px 12px 12px 4px; background: var(--white); }
+.result-panel > summary { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; padding: 11px 13px; cursor: pointer; list-style: none; }
+.result-panel > summary::-webkit-details-marker { display: none; }
+.result-panel > summary .single-result { margin: 0; }
+.result-panel > summary em { flex: 0 0 auto; color: var(--ink-soft); font-style: normal; font-weight: 400; }
+.result-panel[open] > summary { border-bottom: 1px solid var(--line); }
+.result-panel > :not(summary) { padding: 0 13px 13px; }
+.result-panel .test-results { margin-top: 0; border-top: 0; }
 .block-purpose { margin: 0 0 14px; padding: 11px 12px; border-left: 4px solid var(--blue); background: var(--white); color: var(--ink-soft); line-height: 1.6; }
 .block-purpose code { color: var(--blue); }
 .memory-explanations { display: grid; gap: 8px; margin-top: 12px; }
@@ -185,14 +202,54 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 /* Memory viewer — the model writes, but a human has to be able to delete. */
 .memory-viewer { display: grid; gap: 10px; }
 .memory-layer { padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--white); }
-.memory-layer h4 { margin: 0 0 6px; font-size: 13px; color: var(--blue); }
+.memory-layer h4 { margin: 0 0 3px; font-size: 13px; color: var(--blue); }
+/* 累加／取代／重寫 — the one place A, B and C behave differently. */
+.memory-rule { margin: 0 0 8px; color: var(--ink-soft); font-size: 11px !important; line-height: 1.4; }
 .memory-layer ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 5px; }
-.memory-layer li { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: baseline; line-height: 1.5; }
+.memory-layer li { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; line-height: 1.5; }
+.memory-layer li > span { flex: 1 1 60%; min-width: 0; }
+.memory-layer time { color: var(--ink-soft); font-size: 11px !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .memory-layer li.is-empty, .memory-layer li.is-outside span { color: var(--ink-soft); }
 .memory-layer li.is-outside { opacity: .7; }
 .memory-layer em { font-size: 11px; font-style: normal; color: var(--ink-soft); white-space: nowrap; }
 .redteam-list { margin: 0 0 14px; padding-left: 22px; display: grid; gap: 8px; line-height: 1.55; }
 .redteam-list small { display: block; color: var(--ink-soft); }
+
+/* What the 記憶分類 exercise did with a right answer. */
+.card-stored { display: block; margin-top: 5px; color: #287653; font-size: 12px !important; line-height: 1.45; }
+.card-stored.is-refused { color: var(--ink-soft); }
+
+/* 主動規則 as a picture. Five number fields never showed what they add up to:
+   how much of the day is silenced, and which of the three limits actually bites. */
+.policy-preview { margin: 6px 0 4px; padding: 12px; border: 1px solid var(--line); border-radius: 4px 12px 12px 4px; background: var(--white); }
+.preview-label { margin: 0 0 8px; font-size: 11px !important; font-weight: 800; letter-spacing: .12em; color: var(--blue); }
+.quiet-band { display: grid; grid-template-columns: repeat(24, 1fr); gap: 1px; height: 26px; border-radius: 3px; overflow: hidden; }
+.band-hour { background: var(--mint); }
+.band-hour.is-quiet { background: #c9d4de; }
+.band-hour.is-now { box-shadow: inset 0 -4px 0 var(--blue); }
+.band-scale { display: flex; justify-content: space-between; margin-top: 3px; color: var(--ink-soft); font-size: 10px !important; font-variant-numeric: tabular-nums; }
+.policy-summary { margin: 10px 0 0; color: var(--ink-soft); line-height: 1.7; }
+.policy-summary b { color: var(--ink); font-size: 15px !important; }
+.policy-binding { margin: 6px 0 0; padding: 9px 11px; background: var(--sky); line-height: 1.6; }
+
+/* The 加入待提醒 button sits beside its time field. Not a grid cell: a pill
+   button stretched to a grid row's height renders as a giant circle. */
+.schedule-add { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.schedule-add label { flex: 1 1 200px; min-width: 0; }
+.schedule-add .secondary-button { flex: 0 0 auto; align-self: flex-start; margin-top: 24px; }
+
+/* 待提醒項目 — the list the real clock is checked against. */
+.schedule-clock { margin: 8px 0 6px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.schedule-list { display: grid; gap: 3px; }
+.schedule-empty { margin: 0; padding: 11px 12px; border: 1px dashed var(--line); border-radius: 4px; color: var(--ink-soft); line-height: 1.55; }
+.schedule-row { display: grid; grid-template-columns: 52px 110px minmax(0, 1fr) auto; gap: 4px 8px; align-items: baseline; padding: 8px 9px; border-left: 3px solid var(--line); background: var(--white); line-height: 1.45; }
+.schedule-row time { font-variant-numeric: tabular-nums; color: var(--ink-soft); }
+.schedule-row .schedule-status { grid-column: 2 / -1; color: var(--ink-soft); font-size: 13px !important; }
+.schedule-row.is-pending { border-left-color: var(--apricot); }
+.schedule-row.is-due { border-left-color: var(--blue); background: var(--sky); }
+.schedule-row.is-spoken { border-left-color: var(--blue); }
+.schedule-row.is-blocked { background: transparent; color: var(--ink-soft); }
+.live-state { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
 
 /* One simulated day. Two competing numbers, never one grade. */
 .day-summary { margin-top: 14px; }
@@ -245,7 +302,7 @@ legend { margin-bottom: 10px; font-weight: 800; }
   .conversation-panel { min-height: 0; }
   .lab-panel { height: 100%; max-height: none; }
 }
-@media (max-width: 1100px) { .app-shell { --lab-width: calc(50% - 5px); grid-template-columns: minmax(320px, 1fr) 10px var(--lab-width); } .conversation-panel { padding-inline: 28px; } .lab-section { padding-inline: 22px; } }
+@media (max-width: 1100px) { .app-shell { --lab-width: calc(50% - 5px); grid-template-columns: minmax(320px, 1fr) 10px var(--lab-width); } .conversation-panel { padding-inline: 28px; } .lab-section { --lab-pad: 22px; } }
 @media (max-width: 860px) {
   .topbar { grid-template-columns: 1fr auto; }
   .stage-nav { grid-column: 1 / -1; grid-row: 2; }

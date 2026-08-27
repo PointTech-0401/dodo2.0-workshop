@@ -57,7 +57,7 @@ const REALTIME_TOOLS = [
   {
     type: "function",
     name: "update_memory",
-    description: "保存或更新使用者主動提供的非敏感個人資訊。不得保存密碼、API Key、金融帳號或驗證碼（X 類一律不保存）。",
+    description: "保存或更新使用者主動提供的非敏感個人資訊。同一個 key 再存新內容時，A 層預設會「並存」，不會蓋掉舊的（例如興趣可以同時有唱歌和跳舞）；只有新內容真的取代舊內容時才傳 mode=\"replace\"。不得保存密碼、API Key、金融帳號或驗證碼（X 類一律不保存）。",
     parameters: {
       type: "object",
       properties: {
@@ -65,10 +65,23 @@ const REALTIME_TOOLS = [
         value: { type: "string", description: "要保存的臺灣繁體中文內容。" },
         // Workshop 2's A/B/C classification, decided by the model as it saves.
         // Optional with an A fallback: a model that omits it must still succeed.
+        // 「喜歡吃西瓜」vs B's own example「今天想吃什麼」is the collision that
+        // sent food preferences into B, where the supersede rule ate every
+        // earlier fruit. The distinction is spelled out rather than implied.
         layer: {
           type: "string",
           enum: ["A", "B", "C"],
-          description: "記憶層級：A 重要事實（長期、需真人確認）、B 近期事件（幾天內可能改變）、C 跨日摘要（多次對話整理出的趨勢）。不確定時用 A。",
+          description: "記憶層級：A 重要事實 —— 長期、需真人確認，包含喜歡或不喜歡的食物、音樂、活動等長期偏好，A 層同一個 key 會並存多筆。B 近期事件 —— 幾天內就會改變的當下狀態，例如昨晚沒睡好、今天中午想吃什麼；B 層同一個 key 只留最新一筆，舊的會被丟掉，所以會累積的偏好千萬不要放 B。C 跨日摘要 —— 多次對話整理出的趨勢。不確定時用 A。",
+        },
+        // Without this the only way to record a second 興趣 was to overwrite the
+        // first one, which is how「我喜歡唱歌」got erased by「我喜歡跳舞」.
+        // `remove` is the other half: accumulating means a fact can no longer be
+        // retracted by writing another one, and rewriting the whole key with
+        // `replace` throws away the values that are still true.
+        mode: {
+          type: "string",
+          enum: ["add", "replace", "remove"],
+          description: "add（預設）：這是同一個 key 的另一筆事實，和既有內容並存。replace：新內容取代同一個 key 的全部舊內容，例如搬家、換藥、改了聯絡人。remove：使用者否定某一筆已經記得的事（例如「我不喜歡吃西瓜了」），用完全相同的 key 與 value 移除那一筆，同一個 key 的其他內容會留下；不要改用新增一筆相反的記錄。",
         },
       },
       required: ["key", "value"],
@@ -84,6 +97,19 @@ const MEMORY_LAYERS = [
   ["C", "summaries", "C 跨日摘要"],
 ];
 const MEMORY_PREVIEW_LIMIT = 8;
+// What「再存一次同一個 key」means is different in each layer, and that difference
+// is the real behavioural payload of the A/B/C classification:
+//   A 累加   —— 興趣：唱歌 and 興趣：跳舞 are both true, so both stay. Overwriting
+//               here is the bug students hit: the second fact ate the first.
+//   B 取代   —— 近期事件 IS the latest state.「今天想吃什麼」has one answer at a
+//               time, and B is also capped so stale days cannot pile up outside
+//               the prompt window.
+//   C 重寫   —— a summary is recomputed from scratch, never appended to.
+const MEMORY_MERGE_RULES = {
+  A: { merge: "accumulate", label: "累加：同一個 key 可以並存多筆事實", capacity: 0 },
+  B: { merge: "supersede", label: `取代：同一個 key 只留最新一筆，整層最多 ${MEMORY_PREVIEW_LIMIT} 筆`, capacity: MEMORY_PREVIEW_LIMIT },
+  C: { merge: "rewrite", label: "重寫：摘要每次重算，同一個 key 直接覆蓋", capacity: 0 },
+};
 // Labels are hints, not guarantees — the point of the lesson is that students
 // listen and judge for themselves. OpenAI recommends marin/cedar for quality.
 const REALTIME_VOICES = [
@@ -188,19 +214,59 @@ const $$ = (selector) => [...document.querySelectorAll(selector)];
 // measured against the snapshot taken at the last successful apply, NOT against
 // `workspace`: 執行 6 個情境, 跑一整天 and 觸發主動關心 all call collectWorkshop2(),
 // which writes the fields into workspace without ever sending a session.update.
+//
+// `read` is what 套用 sends; `write` puts a snapshot back into the fields, which
+// is all 取消變更 needs — the snapshot IS the last applied value, not a hash.
 const APPLY_GROUPS = {
   workshop1: {
     button: "#saveWorkshop1",
+    revert: "#revertWorkshop1",
     tabs: {
-      tabPersona: () => agentFromFields(),
-      tabTurn: () => turnDetectionFromFields(),
+      tabPersona: {
+        read: () => agentFromFields(),
+        write: (agent) => {
+          $("#agentName").value = agent.name;
+          $("#agentAddress").value = agent.address;
+          PROMPT_BLOCKS.forEach(([key, , selector]) => { $(selector).value = agent.prompt_blocks[key]; });
+          $("#agentVoice").value = agent.voice;
+        },
+      },
+      tabTurn: {
+        read: () => turnDetectionFromFields(),
+        write: (turn) => {
+          $("#turnDetectionMode").value = turn.type;
+          $("#semanticEagerness").value = turn.eagerness;
+          $("#silenceDuration").value = turn.silence_duration_ms;
+          $("#interruptResponse").checked = turn.interrupt_response;
+          // Which of the two mode-specific fields is visible follows the mode.
+          updateTurnFields();
+        },
+      },
     },
   },
   workshop2: {
     button: "#saveWorkshop2",
+    revert: "#revertWorkshop2",
     tabs: {
-      tabW2Prompt: () => [elderProfileFromFields(), workshop2BlocksFromFields()],
-      tabW2Policy: () => proactivePolicyFromFields(),
+      tabW2Prompt: {
+        read: () => [elderProfileFromFields(), workshop2BlocksFromFields()],
+        write: ([elder, blocks]) => {
+          $("#elderAddress").value = elder.address;
+          $("#elderCity").value = elder.city || "";
+          $("#elderInterests").value = (elder.interests || []).join("、");
+          WORKSHOP2_BLOCKS.forEach(([key, , selector]) => { $(selector).value = blocks[key] ?? ""; });
+        },
+      },
+      tabW2Policy: {
+        read: () => proactivePolicyFromFields(),
+        write: (policy) => {
+          $("#quietStart").value = policy.quiet_hours.start;
+          $("#quietEnd").value = policy.quiet_hours.end;
+          $("#cooldown").value = policy.cooldown_minutes;
+          $("#dailyLimit").value = policy.daily_message_limit;
+          $("#maxSentences").value = policy.max_message_sentences;
+        },
+      },
     },
   },
 };
@@ -219,11 +285,11 @@ function switchTab(tabId) {
 
 function tabSnapshot(tabId) {
   const group = Object.values(APPLY_GROUPS).find((entry) => tabId in entry.tabs);
-  return JSON.stringify(group.tabs[tabId]());
+  return JSON.stringify(group.tabs[tabId].read());
 }
 
-/** Show 套用 only where there is something to apply, and dot the tab that holds
- *  the change — a hidden tab would otherwise leave the button unexplained. */
+/** Show 套用／取消變更 only where there is something to apply, and dot the tab
+ *  that holds the change — a hidden tab would otherwise leave them unexplained. */
 function refreshApplyState() {
   Object.values(APPLY_GROUPS).forEach((group) => {
     const dirtyTabs = Object.keys(group.tabs).filter((tabId) => {
@@ -231,8 +297,28 @@ function refreshApplyState() {
       document.querySelector(`.tab-button[data-tab="${tabId}"]`).classList.toggle("is-dirty", dirty);
       return dirty;
     });
-    $(group.button).hidden = dirtyTabs.length === 0;
+    const clean = dirtyTabs.length === 0;
+    $(group.button).hidden = clean;
+    $(group.revert).hidden = clean;
   });
+}
+
+/** Put every field in this group back to what was last applied. The buttons then
+ *  hide themselves: after the write, fields equal the snapshot, so the ordinary
+ *  dirty computation in refreshApplyState() is the only thing deciding. */
+function revertGroup(groupName) {
+  const group = APPLY_GROUPS[groupName];
+  Object.entries(group.tabs).forEach(([tabId, tab]) => {
+    tab.write(JSON.parse(appliedSnapshots[tabId]));
+  });
+  // Assigning .value fires no input event, so the previews have to be told —
+  // the 主動規則 band and the trigger hints read the same fields and would
+  // otherwise keep showing the numbers that were just reverted away.
+  rebuildSystemPrompt();
+  renderPolicyPreview();
+  renderTriggerHints();
+  refreshApplyState();
+  notify("已取消未套用的變更，欄位回到上次套用的內容。");
 }
 
 /** Freeze the current fields as「已經送出去了」. Called at load, after an import
@@ -332,6 +418,32 @@ function selectedVoice() {
   return REALTIME_VOICES.some(([id]) => id === value) ? value : "sage";
 }
 
+// The trigger dropdown is generated from `proactive_policy.priorities` rather
+// than hardcoded, so an imported project with its own numbers shows its own
+// numbers — and「類型只是一個優先權」stops being a claim and becomes visible.
+const PROACTIVE_EVENT_LABELS = {
+  emergency: "emergency 緊急",
+  reminder: "reminder 提醒",
+  health: "health 健康關心",
+  weather: "weather 天氣",
+  reverse_mentor: "reverse_mentor 反向請教",
+  news: "news 新聞",
+};
+
+function renderProactiveEventOptions() {
+  const priorities = workspace.profile.proactive_policy.priorities || {};
+  const selected = $("#proactiveEventType").value;
+  $("#proactiveEventType").innerHTML = Object.entries(priorities)
+    .sort((left, right) => right[1] - left[1])
+    .map(([type, score]) => {
+      const label = `${PROACTIVE_EVENT_LABELS[type] || type}（優先權 ${score}）`;
+      return `<option value="${type}">${label}</option>`;
+    })
+    .join("");
+  // Keep the student's pick across a re-render; fall back to the first option.
+  if (selected && priorities[selected]) $("#proactiveEventType").value = selected;
+}
+
 function renderVoiceOptions() {
   $("#agentVoice").innerHTML = REALTIME_VOICES
     .map(([id, label]) => `<option value="${id}">${label}</option>`)
@@ -394,6 +506,43 @@ function rebuildSystemPrompt() {
   preview.textContent = prompt || EMPTY_PROMPT_NOTICE;
   preview.classList.toggle("is-empty", !prompt);
   rebuildWorkshop2Prompt();
+}
+
+// Workshop 2's 記憶使用規則 gained a paragraph about 累加 vs mode="replace".
+// A stored project keeps whatever text it saved (non-empty wins over the
+// default), so a student who started before this change would sit and read a
+// block that never mentions the rule their memory now actually follows. Mirrors
+// the line in WORKSHOP2_PROMPT_BLOCKS["memory_use"] in profile.py.
+const MEMORY_USE_GUIDANCE = [
+  '同一個 key 再存一次時：新資訊和舊的都成立就直接存（預設會並存，例如興趣同時有唱歌和跳舞，不要為了塞進一筆而改寫舊的）；只有新內容真的取代舊內容（搬家、換藥、換聯絡人）才傳 mode="replace"；使用者否定某一筆已經記得的事時傳 mode="remove"，用一模一樣的 key 與 value 移除那一筆，不要新增一筆相反的記錄。',
+  '喜歡或不喜歡的食物、音樂、活動都是長期偏好，一律存 layer=A 讓它們並存；只有「今天中午想吃什麼」這種當下的一次性念頭才放 layer=B。放錯層會讓新的偏好直接吃掉舊的。',
+];
+// Every line the block manages starts with one of these, so an older revision
+// can be recognised and replaced instead of piling up beside the new one.
+const MEMORY_USE_GUIDANCE_PREFIXES = ["同一個 key 再存一次時：", "喜歡或不喜歡的食物"];
+const MEMORY_USE_ANCHOR = "提起記憶時要像家人記得";
+
+/** Keep the generated guidance lines current inside a stored block.
+ *
+ *  A stored 記憶使用規則 wins over the default, so nothing written here ever
+ *  reaches a project that already exists — that is what this repairs. The first
+ *  version gated on `mode="replace"`, a string every revision contains, so a
+ *  project migrated once could never receive a later revision. Old variants are
+ *  stripped by prefix and the current lines re-inserted, which makes the
+ *  function idempotent and safe to revise again.
+ *
+ *  Only touches a block whose closing line is still recognisable: a student who
+ *  rewrote it is left alone, and empty stays empty (deleted on purpose). */
+function migrateWorkshop2Blocks(blocks) {
+  const stored = String(blocks?.memory_use ?? "");
+  if (!stored) return blocks;
+  const lines = stored
+    .split("\n")
+    .filter((line) => !MEMORY_USE_GUIDANCE_PREFIXES.some((prefix) => line.startsWith(prefix)));
+  const anchor = lines.findIndex((line) => line.startsWith(MEMORY_USE_ANCHOR));
+  if (anchor < 0) return blocks;
+  const merged = [...lines.slice(0, anchor), ...MEMORY_USE_GUIDANCE, ...lines.slice(anchor)].join("\n");
+  return merged === stored ? blocks : { ...blocks, memory_use: merged };
 }
 
 function migrateAgent(agent) {
@@ -597,7 +746,6 @@ function addMessage(role, text, id = null) {
 // only be made once the function_call shows up: the text streams first.
 let activeResponseBubbles = [];
 let activeResponseIsPreamble = false;
-let preambleExplained = false;
 
 function startResponseTracking() {
   activeResponseBubbles = [];
@@ -618,17 +766,14 @@ function markPreamble(bubble) {
   bubble.querySelector(".speaker").textContent = "DODO · PREAMBLE（工具前的開場）";
 }
 
+// The dashed 「DODO · PREAMBLE」 label on the bubble is the whole explanation now.
+// A SYSTEM row spelling out the response/function_call structure used to fire on
+// the first tool call, which pushed the conversation off screen for a point the
+// label already makes.
 function markResponseAsPreamble() {
   if (activeResponseIsPreamble) return;
   activeResponseIsPreamble = true;
   activeResponseBubbles.forEach(markPreamble);
-  if (activeResponseBubbles.length && !preambleExplained) {
-    preambleExplained = true;
-    addMessage(
-      "system",
-      "上面那格是 preamble：它和 function_call 在同一個 response 裡，屬於「我先說我要去查什麼」；工具查完後的正式回答會是另一個 response。",
-    );
-  }
 }
 
 function responseHasFunctionCall(response) {
@@ -659,9 +804,12 @@ function loadFields() {
   $("#cooldown").value = proactive.cooldown_minutes;
   $("#dailyLimit").value = proactive.daily_message_limit;
   $("#maxSentences").value = proactive.max_message_sentences;
+  renderProactiveEventOptions();
   // Last: both previews read every field above, Workshop 2's included.
   rebuildSystemPrompt();
   renderMemoryViewer();
+  renderPolicyPreview();
+  renderTriggerHints();
   updateTurnFields();
   // Whatever was just loaded is what a connection will send, so nothing is
   // pending yet — this is the baseline every 套用 button is measured against.
@@ -735,6 +883,16 @@ function memoryEntryText(entry) {
     return key && value ? `${key}：${value}` : key || value;
   }
   return String(entry ?? "").trim();
+}
+
+/** HH:MM of a stored write, for the viewer only. The prompt context keeps the
+ *  plain `key：value` shape that `buildMemoryContext` and `compose_memory_context`
+ *  must agree on. */
+function memoryEntryTime(entry) {
+  const stamp = entry && typeof entry === "object" ? entry.updated_at : null;
+  if (!stamp) return "";
+  const when = new Date(stamp);
+  return Number.isNaN(when.getTime()) ? "" : when.toTimeString().slice(0, 5);
 }
 
 /** Layer titles carrying their retention window. `memory_policy` was dead
@@ -847,6 +1005,116 @@ const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => (
   { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]
 ));
 
+function memoryEntryKey(entry) {
+  return entry && typeof entry === "object" ? String(entry.key || "").trim() : "";
+}
+
+function memoryEntryValue(entry) {
+  return entry && typeof entry === "object" ? String(entry.value || "").trim() : String(entry ?? "").trim();
+}
+
+/** The single place anything writes memory — the Realtime `update_memory` tool
+ *  and the 記憶分類 exercise both come through here, so the two can never drift.
+ *
+ *  `mode` overrides the layer's own rule for one write: the model passes
+ *  "replace" when a fact really is superseded (搬家、換藥). Re-saving the exact
+ *  same key+value is a no-op beyond the timestamp, which is what makes clicking
+ *  「檢查記憶分類」 twice idempotent instead of duplicating every card.
+ *
+ *  Returns what happened so the caller can say it out loud. */
+function upsertMemory(layerId, key, value, mode) {
+  const [layer, field, layerTitle] =
+    MEMORY_LAYERS.find(([id]) => id === String(layerId || "").toUpperCase()) || MEMORY_LAYERS[0];
+  const rule = MEMORY_MERGE_RULES[layer];
+  if (!Array.isArray(workspace.memory[field])) workspace.memory[field] = [];
+  const updatedAt = new Date().toISOString();
+
+  const identical = workspace.memory[field].find(
+    (entry) => memoryEntryKey(entry) === key && memoryEntryValue(entry) === value,
+  );
+  if (identical) {
+    identical.updated_at = updatedAt;
+    return { layer, field, layerTitle, action: "unchanged", replaced: 0, dropped: 0, sameKey: 1 };
+  }
+
+  const accumulate = (mode || rule.merge) === "accumulate";
+  const kept = accumulate
+    ? workspace.memory[field]
+    : workspace.memory[field].filter((entry) => memoryEntryKey(entry) !== key);
+  // Named, not counted: 「覆蓋原本 1 筆」 gave a student no way to notice that
+  // 芭樂 had just been thrown away by 柳丁.
+  const superseded = workspace.memory[field]
+    .filter((entry) => !kept.includes(entry))
+    .map(memoryEntryValue);
+  const replaced = superseded.length;
+  let entries = [...kept, { key, value, updated_at: updatedAt }];
+  // B is 近期事件: without a ceiling the oldest days survive forever, silently
+  // parked outside the prompt window where nothing can ever refresh them.
+  const dropped = rule.capacity ? Math.max(0, entries.length - rule.capacity) : 0;
+  if (dropped) entries = entries.slice(dropped);
+  workspace.memory[field] = entries;
+
+  return {
+    layer,
+    field,
+    layerTitle,
+    action: replaced ? "replaced" : "added",
+    replaced,
+    superseded,
+    dropped,
+    sameKey: entries.filter((entry) => memoryEntryKey(entry) === key).length,
+  };
+}
+
+/** Retract exactly one remembered value.
+ *
+ *  This is the operation the accumulate rule created a need for:「我不喜歡吃西瓜」
+ *  cannot be handled by writing another fact, and rewriting the whole key with
+ *  mode="replace" would throw away 鳳梨 and 芭樂 along with it. Matches on
+ *  key AND value, so nothing else under that key is touched.
+ *
+ *  Returns what is left under the key, so a near-miss on the value can be
+ *  retried precisely instead of the model guessing again. */
+function forgetMemory(layerId, key, value) {
+  const [layer, field, layerTitle] =
+    MEMORY_LAYERS.find(([id]) => id === String(layerId || "").toUpperCase()) || MEMORY_LAYERS[0];
+  const entries = Array.isArray(workspace.memory[field]) ? workspace.memory[field] : [];
+  const kept = entries.filter(
+    (entry) => !(memoryEntryKey(entry) === key && memoryEntryValue(entry) === value),
+  );
+  const removed = entries.length - kept.length;
+  if (removed) workspace.memory[field] = kept;
+  return {
+    layer,
+    field,
+    layerTitle,
+    removed,
+    remaining: kept.filter((entry) => memoryEntryKey(entry) === key).map(memoryEntryValue),
+  };
+}
+
+/** One human-readable sentence for a write, so the TOOL row explains the layer's
+ *  merge rule at the moment it applies instead of only in the docs. */
+function describeMemoryWrite(result, key, value) {
+  const tail = result.dropped ? `（B 已滿，捲出最舊 ${result.dropped} 筆）` : "";
+  if (result.action === "unchanged") return `${result.layerTitle}「${key}：${value}」已經記得，只更新時間`;
+  if (result.action === "replaced") {
+    return `已取代 ${result.layerTitle}「${key}」＝「${value}」（丟掉了：${result.superseded.join("、")}）${tail}`;
+  }
+  const alongside = result.sameKey > 1 ? `（同一個「${key}」現在並存 ${result.sameKey} 筆）` : "";
+  return `已新增 ${result.layerTitle}「${key}」＝「${value}」${alongside}${tail}`;
+}
+
+/** Push memory into the live session. Baked instructions still hold the old
+ *  state until a session.update replaces them, so a write made outside the
+ *  conversation (刪除、記憶分類) would otherwise look like it did nothing. */
+function pushMemoryToSession() {
+  if (dataChannel?.readyState !== "open") return false;
+  pendingRealtimeApply = true;
+  dataChannel.send(JSON.stringify({ type: "session.update", session: realtimeSessionUpdate() }));
+  return true;
+}
+
 /** Show every stored memory with a way for a *human* to delete it.
  *  Until now only the model could write memory and nobody could correct it,
  *  which quietly contradicted the lesson's own question:「誰能寫入或修改？」
@@ -858,14 +1126,25 @@ function renderMemoryViewer() {
     const entries = workspace.memory?.[field] || [];
     const firstShown = Math.max(0, entries.length - MEMORY_PREVIEW_LIMIT);
     const rows = entries.length
-      ? entries.map((entry, index) => `
+      ? entries.map((entry, index) => {
+        const time = memoryEntryTime(entry);
+        return `
           <li class="${index < firstShown ? "is-outside" : ""}">
             <span>${escapeHtml(memoryEntryText(entry)) || "（空白）"}</span>
+            ${time ? `<time>${time}</time>` : ""}
             ${index < firstShown ? "<em>未進入 Prompt</em>" : ""}
             <button type="button" class="link-button" data-memory-layer="${layer}" data-memory-entry="${index}">刪除</button>
-          </li>`).join("")
+          </li>`;
+      }).join("")
       : '<li class="is-empty">（目前沒有任何記錄）</li>';
-    return `<div class="memory-layer"><h4>${escapeHtml(headings[field])}</h4><ul>${rows}</ul></div>`;
+    // The merge rule is printed next to the layer it governs: it is the only
+    // place A、B and C actually behave differently, and it is invisible until a
+    // student saves the same key twice.
+    return `<div class="memory-layer">
+      <h4>${escapeHtml(headings[field])}</h4>
+      <p class="memory-rule">${escapeHtml(MEMORY_MERGE_RULES[layer].label)}</p>
+      <ul>${rows}</ul>
+    </div>`;
   }).join("");
 }
 
@@ -883,17 +1162,33 @@ function deleteMemoryEntry(layer, index) {
   saveProject();
   renderMemoryViewer();
   rebuildWorkshop2Prompt();
-  if (dataChannel?.readyState === "open") {
-    pendingRealtimeApply = true;
-    dataChannel.send(JSON.stringify({ type: "session.update", session: realtimeSessionUpdate() }));
-  }
+  pushMemoryToSession();
   notify(`已從 ${title} 刪除「${removed}」，並更新豆豆的記憶。人可以覆寫 AI 記得的事。`);
 }
 
+/** Whoever 豆豆 is talking to, by name. The cards, the Workshop 2 prompt and the
+ *  memory writes all have to agree — hardcoded 王奶奶 in the card text meant
+ *  renaming the elder left the exercise talking about a stranger. */
+function elderAddress() {
+  return $("#elderAddress")?.value.trim()
+    || workspace?.profile?.elder_profile?.address
+    || $("#agentAddress")?.value.trim()
+    || "長者";
+}
+
+function memoryCardText(card) {
+  return String(card.text || "").replaceAll("{USER_ADDRESS}", elderAddress());
+}
+
 function renderMemoryCards() {
+  // Re-rendered whenever 長者稱呼 changes, so answers already chosen have to
+  // survive the innerHTML rebuild — otherwise renaming mid-quiz wipes the work.
+  const chosen = bootstrapData.memory_cards.map(
+    (_, index) => $(`[data-memory-index="${index}"]`)?.value || "",
+  );
   $("#memoryCards").innerHTML = bootstrapData.memory_cards.map((card, index) => `
     <div class="memory-card">
-      <p>${index + 1}. ${card.text}</p>
+      <p>${index + 1}. ${escapeHtml(memoryCardText(card))}</p>
       <select data-memory-index="${index}" aria-label="第 ${index + 1} 題分類">
         <option value="">選擇分類</option>
         <option value="A">A 重要事實</option>
@@ -903,6 +1198,9 @@ function renderMemoryCards() {
       </select>
     </div>
   `).join("");
+  chosen.forEach((value, index) => {
+    if (value) $(`[data-memory-index="${index}"]`).value = value;
+  });
 }
 
 function switchStage(stage) {
@@ -926,7 +1224,7 @@ function applyMode() {
   const outputLabel = setup?.outputMode === "voice" ? "語音" : "文字";
   $("#modeBadge").textContent = `輸入：${inputLabel} · 輸出：${outputLabel}`;
   $("#pushToTalk").hidden = true;
-  setState("listening", apiConfigured ? "Realtime 將自動連線" : "請先完成 API 設定");
+  setState("listening", apiConfigured ? "Realtime 將自動連線" : "請先完成系統設定");
 }
 
 function refreshApiUi() {
@@ -948,7 +1246,7 @@ function refreshApiUi() {
   $("#weatherApiKeyStatus").classList.toggle("is-ready", weatherConfigured);
   $("#weatherToolStatus").textContent = weatherConfigured
     ? "天氣 API Key 已設定，可直接詢問即時天氣。"
-    : "請從右上角「API 設定」輸入天氣 API Key；工具定義仍會保留供課堂觀察。";
+    : "請從右上角「系統設定」輸入天氣 API Key；工具定義仍會保留供課堂觀察。";
   $("#modelStatus").textContent = apiConfigured
     ? `Realtime · ${bootstrapData.realtime_model} · 自動連線`
     : "尚未連接 Realtime";
@@ -991,7 +1289,7 @@ async function commitApiKey() {
   const apiKey = $("#apiKeyInput").value.trim();
   if (!apiKey) return true;
   if (apiKey !== testedApiKey && !(await testApiKey())) return false;
-  $("#apiKeyStatus").textContent = "正在儲存 API 設定…";
+  $("#apiKeyStatus").textContent = "正在儲存 API Key…";
   try {
     const response = await fetch("/api/settings/api-key", {
       method: "POST",
@@ -1001,7 +1299,7 @@ async function commitApiKey() {
     const result = await response.json();
     if (!response.ok) {
       testedApiKey = "";
-      $("#apiKeyStatus").textContent = result.detail || "API 設定儲存失敗。";
+      $("#apiKeyStatus").textContent = result.detail || "API Key 儲存失敗。";
       return false;
     }
     apiConfigured = true;
@@ -1054,7 +1352,7 @@ async function commitWeatherApiKey() {
   const apiKey = $("#weatherApiKeyInput").value.trim();
   if (!apiKey) return true;
   if (apiKey !== testedWeatherApiKey && !(await testWeatherApiKey())) return false;
-  $("#weatherApiKeyStatus").textContent = "正在儲存天氣 API 設定…";
+  $("#weatherApiKeyStatus").textContent = "正在儲存天氣 API Key…";
   try {
     const response = await fetch("/api/settings/weather-api-key", {
       method: "POST",
@@ -1064,7 +1362,7 @@ async function commitWeatherApiKey() {
     const result = await response.json();
     if (!response.ok) {
       testedWeatherApiKey = "";
-      $("#weatherApiKeyStatus").textContent = result.detail || "天氣 API 設定儲存失敗。";
+      $("#weatherApiKeyStatus").textContent = result.detail || "天氣 API Key 儲存失敗。";
       return false;
     }
     weatherConfigured = true;
@@ -1196,10 +1494,20 @@ async function finishOnboarding() {
   history.replaceState({}, "", location.pathname);
   applyMode();
   // Only when the entry choice was actually offered. Reopening this sheet from
-  // 「API 設定」 hides that fieldset, and switching there would drag a Workshop 2
+  // 「系統設定」 hides that fieldset, and switching there would drag a Workshop 2
   // student back to Workshop 1 — and now also persist stage 1 over their place.
   if (!forced) switchStage(startStage);
   await connectRealtime();
+}
+
+/** Reveal a collapsible result panel and put its headline in the <summary>, so
+ *  the number survives collapsing — a closed panel still says what the last run
+ *  scored. Results used to pile up unclosable under the buttons that made them. */
+function showResult(panelSelector, headlineSelector, headline) {
+  $(headlineSelector).textContent = headline;
+  const panel = $(panelSelector);
+  panel.hidden = false;
+  panel.open = true;
 }
 
 const MEMORY_LAYER_LABELS = {
@@ -1209,23 +1517,307 @@ const MEMORY_LAYER_LABELS = {
   X: "X 不保存",
 };
 
+/** Classify, then live with the consequence. A right answer on an A/B/C card
+ *  writes that card into `workspace.memory` on the layer the student chose, so
+ *  「豆豆現在記得什麼」 fills up as they work and the same 累加／取代／重寫 rules
+ *  the model hits apply here too. X cards write nothing — refusing to store is
+ *  the correct behaviour, and seeing 提款卡密碼 land in memory would teach the
+ *  opposite. `upsertMemory` makes a re-check idempotent, which matters because
+ *  the UI invites 「修改後再檢查一次」. */
 function checkMemory() {
   let score = 0;
+  const written = [];
   // The cards always carried an `explanation`; the browser used to throw it away
   // and show only a score, which left 「為什麼」 —— the actual lesson —— invisible.
   const rows = bootstrapData.memory_cards.map((card, index) => {
     const passed = $(`[data-memory-index="${index}"]`).value === card.answer;
     if (passed) score += 1;
+    let stored = "";
+    if (passed && card.answer !== "X" && card.key && card.value) {
+      const result = upsertMemory(card.answer, card.key, card.value);
+      if (result.action !== "unchanged") written.push(`${result.layerTitle}「${card.key}」`);
+      stored = `<span class="card-stored">已寫進 ${escapeHtml(result.layerTitle)}：${escapeHtml(card.key)}：${escapeHtml(card.value)}</span>`;
+    } else if (passed && card.answer === "X") {
+      stored = '<span class="card-stored is-refused">沒有寫進任何一層 —— X 的正確行為就是拒絕保存</span>';
+    }
     return `<div class="${passed ? "is-pass" : "is-fail"}">
       <strong>${index + 1}. ${passed ? "✓" : "×"} 建議分類：${MEMORY_LAYER_LABELS[card.answer]}</strong>
       ${card.explanation}
+      ${stored}
     </div>`;
   });
   memoryPassed = score === bootstrapData.memory_cards.length;
-  $("#memoryResult").textContent = memoryPassed
-    ? `✓ ${score}/${bootstrapData.memory_cards.length}，記憶分類完成`
-    : `${score}/${bootstrapData.memory_cards.length}，修改後再檢查一次`;
   $("#memoryExplanations").innerHTML = rows.join("");
+  showResult("#memoryOutcome", "#memoryResult", memoryPassed
+    ? `✓ ${score}/${bootstrapData.memory_cards.length}，記憶分類完成`
+    : `${score}/${bootstrapData.memory_cards.length}，修改後再檢查一次`);
+
+  if (!written.length) return;
+  saveProject();
+  renderMemoryViewer();
+  rebuildWorkshop2Prompt();
+  // Unlike a model-driven `update_memory`, this write happens outside the
+  // conversation — without the session.update the live 豆豆 never learns it.
+  const live = pushMemoryToSession();
+  notify(`分類正確的 ${written.length} 筆已寫進「豆豆現在記得什麼」：${written.join("、")}。${live ? "已同步到正在進行的 session。" : "下次連線時生效。"}`);
+}
+
+const pad2 = (value) => String(value).padStart(2, "0");
+
+/** Hours the rules keep 豆豆 quiet. `start > end` wraps midnight, matching
+ *  `is_quiet_hour` in lesson2.py — the band has to agree with the decider or it
+ *  teaches the wrong thing. */
+function isQuietHour(hour, start, end) {
+  if (start === end) return false;
+  return start > end ? hour >= start || hour < end : hour >= start && hour < end;
+}
+
+/** Five number fields, redrawn as one 24-hour band plus a sentence. Runs on
+ *  every keystroke, so 安靜時段 and 冷卻 stop being abstract before anything is
+ *  executed. Nothing here calls the server. */
+function renderPolicyPreview() {
+  const policy = proactivePolicyFromFields();
+  const start = policy.quiet_hours.start;
+  const end = policy.quiet_hours.end;
+  const nowHour = new Date().getHours();
+  $("#quietBand").innerHTML = Array.from({ length: 24 }, (_, hour) => {
+    const quiet = isQuietHour(hour, start, end);
+    const classes = ["band-hour", quiet ? "is-quiet" : "is-open", hour === nowHour ? "is-now" : ""];
+    return `<span class="${classes.filter(Boolean).join(" ")}" title="${pad2(hour)}:00 ${quiet ? "安靜" : "可以開口"}"></span>`;
+  }).join("");
+
+  const quietCount = Array.from({ length: 24 }, (_, hour) => hour).filter((hour) => isQuietHour(hour, start, end)).length;
+  const awakeMinutes = (24 - quietCount) * 60;
+  const cooldownCap = policy.cooldown_minutes > 0
+    ? Math.floor(awakeMinutes / policy.cooldown_minutes) + (awakeMinutes % policy.cooldown_minutes ? 1 : 0)
+    : Infinity;
+  const allowed = Math.min(cooldownCap, policy.daily_message_limit);
+  $("#policySummary").innerHTML = [
+    `安靜 <b>${quietCount}</b> 小時（${pad2(start)}:00–${pad2(end)}:00）`,
+    `可以開口 <b>${24 - quietCount}</b> 小時`,
+    `冷卻 <b>${policy.cooldown_minutes}</b> 分鐘 → 最多容得下 <b>${cooldownCap === Infinity ? "不限" : cooldownCap}</b> 則`,
+    `每日上限 <b>${policy.daily_message_limit}</b> 則`,
+    `每則最多 <b>${policy.max_message_sentences}</b> 句`,
+  ].join(" ｜ ");
+
+  // Which of the three limits is doing the work. Students change 冷卻 and see
+  // nothing move because 每日上限 was the binding one all along.
+  let binding;
+  if (quietCount >= 24) binding = "整天都在安靜時段：除了緊急事件，什麼都出不去。";
+  else if (cooldownCap < policy.daily_message_limit) binding = `真正卡住的是<strong>冷卻時間</strong>：每日上限 ${policy.daily_message_limit} 則根本用不完，一天最多只擠得出 ${cooldownCap} 則。`;
+  else if (policy.daily_message_limit < cooldownCap) binding = `真正卡住的是<strong>每日上限</strong>：時間夠塞 ${cooldownCap} 則，但額度只給 ${policy.daily_message_limit} 則。`;
+  else binding = `冷卻與每日上限剛好一樣緊（都是 ${policy.daily_message_limit} 則）。`;
+  $("#policyBinding").innerHTML = `${binding} 緊急事件不受這三條限制。`;
+}
+
+/** The manual trigger's four fields are the only inputs to the rules, and the
+ *  numbers they must beat live one tab away. These hints bring them here and say
+ *  which way the comparison goes. */
+function renderTriggerHints() {
+  const policy = proactivePolicyFromFields();
+  const start = policy.quiet_hours.start;
+  const end = policy.quiet_hours.end;
+
+  const now = $("#proactiveNow").value || "12:00";
+  const quiet = isQuietHour(Number(now.slice(0, 2)), start, end);
+  $("#nowHint").textContent = `主動規則的安靜時段是 ${pad2(start)}:00–${pad2(end)}:00。${quiet ? `${now} 落在安靜時段裡，只有緊急事件過得去。` : `${now} 不在安靜時段，這一關會通過。`}`;
+
+  const sinceLast = Number($("#proactiveSinceLast").value) || 0;
+  $("#sinceLastHint").textContent = `對上「主動規則」的冷卻 ${policy.cooldown_minutes} 分鐘：小於 ${policy.cooldown_minutes} 就會被擋下。現在填 ${sinceLast} → ${sinceLast < policy.cooldown_minutes ? "會被擋下" : "會通過"}。`;
+
+  const sentToday = Number($("#proactiveSentToday").value) || 0;
+  $("#sentTodayHint").textContent = `對上「主動規則」的每日上限 ${policy.daily_message_limit} 則：達到 ${policy.daily_message_limit} 就會被擋下。現在填 ${sentToday} → ${sentToday >= policy.daily_message_limit ? "會被擋下" : "會通過"}。`;
+}
+
+// =====================================================================
+// Item 9: 待提醒項目 on the real clock.
+// A time field with no scheduler was the whole complaint: setting 16:00 did
+// nothing at 16:00. These fire once each, against `Date.now()`, through the
+// very same `choose_event` the 6 scenarios use.
+// =====================================================================
+const SCHEDULE_TICK_MS = 5000;
+let scheduleTimer = null;
+let schedulerBusy = false;
+let scheduleSeq = 0;
+
+function todayKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+}
+
+/** Real spend so far today, as opposed to the manual trigger's what-if numbers.
+ *  Rolls over at midnight so 每日上限 means one day. */
+function proactiveState() {
+  if (!workspace.proactive_state || typeof workspace.proactive_state !== "object") {
+    workspace.proactive_state = { last_spoken_at: null, sent_today: 0, day: "" };
+  }
+  const state = workspace.proactive_state;
+  if (state.day !== todayKey()) {
+    state.day = todayKey();
+    state.sent_today = 0;
+  }
+  return state;
+}
+
+function minutesSinceLastProactive() {
+  const state = proactiveState();
+  if (!state.last_spoken_at) return 24 * 60;
+  return Math.max(0, Math.floor((Date.now() - new Date(state.last_spoken_at).getTime()) / 60000));
+}
+
+/** One place records the cost of an actual proactive message, so the manual
+ *  button and the scheduler can never disagree about the budget. The what-if
+ *  fields are written too: after 豆豆 really speaks, 距上次 genuinely is 0. */
+function recordProactiveSpoken() {
+  const state = proactiveState();
+  state.last_spoken_at = new Date().toISOString();
+  state.sent_today += 1;
+  $("#proactiveSinceLast").value = 0;
+  $("#proactiveSentToday").value = state.sent_today;
+  saveProject();
+  renderTriggerHints();
+  renderProactiveLiveState();
+}
+
+function renderProactiveLiveState() {
+  const state = proactiveState();
+  const since = state.last_spoken_at ? `${minutesSinceLastProactive()} 分鐘前` : "還沒說過";
+  $("#proactiveLiveState").textContent = `距上次主動訊息 ${since}｜今日已發送 ${state.sent_today} 則`;
+}
+
+function scheduledItems() {
+  if (!Array.isArray(workspace.scheduled)) workspace.scheduled = [];
+  return workspace.scheduled;
+}
+
+const SCHEDULE_STATUS_LABELS = { pending: "等待中", spoken: "已說出", blocked: "被擋下" };
+
+function renderScheduleList() {
+  const items = scheduledItems();
+  const now = new Date();
+  $("#scheduleClock").textContent = `現在真實時間 ${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
+  if (!items.length) {
+    $("#scheduleList").innerHTML = '<p class="schedule-empty">目前沒有待提醒項目。填好上面的事件類型與內容，選一個時間，按「加入待提醒」。</p>';
+    return;
+  }
+  $("#scheduleList").innerHTML = items.map((item) => {
+    const due = item.status === "pending" && item.time <= `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+    const status = due ? "時間已到，等待觸發" : SCHEDULE_STATUS_LABELS[item.status] || item.status;
+    return `<div class="schedule-row is-${item.status}${due ? " is-due" : ""}">
+      <time>${escapeHtml(item.time)}</time>
+      <span class="schedule-kind">${escapeHtml(PROACTIVE_EVENT_LABELS[item.type] || item.type)}</span>
+      <span class="schedule-topic">${escapeHtml(item.topic || "（未填寫內容）")}</span>
+      <span class="schedule-status">${escapeHtml(status)}${item.reason ? `：${escapeHtml(item.reason)}` : ""}</span>
+      <button type="button" class="link-button" data-schedule-id="${escapeHtml(item.id)}">刪除</button>
+    </div>`;
+  }).join("");
+}
+
+/** Unique across this page load AND across whatever was restored from storage:
+ *  a plain counter restarts at 0 after F5 and would collide with saved rows. */
+function nextScheduleId() {
+  const taken = new Set(scheduledItems().map((item) => item.id));
+  do { scheduleSeq += 1; } while (taken.has(`s${scheduleSeq}`));
+  return `s${scheduleSeq}`;
+}
+
+function addSchedule() {
+  const time = $("#scheduleTime").value;
+  if (!time) {
+    notify("請先選一個提醒時間。");
+    return;
+  }
+  const topic = $("#proactiveTopic").value.trim();
+  scheduledItems().push({
+    // Not derived from list length: delete-then-add would otherwise reuse an id
+    // that is still on the list, and 刪除 would take out both rows.
+    id: nextScheduleId(),
+    type: $("#proactiveEventType").value,
+    topic,
+    time,
+    status: "pending",
+    reason: "",
+  });
+  saveProject();
+  renderScheduleList();
+  notify(`已加入 ${time} 的「${PROACTIVE_EVENT_LABELS[$("#proactiveEventType").value] || ""}」提醒${topic ? `：${topic}` : ""}。到時間會自己跑一次規則。`);
+  // Fire straight away when the chosen time has already passed, instead of
+  // making the room wait up to 5 seconds to see anything happen.
+  tickScheduler();
+}
+
+function deleteSchedule(id) {
+  const items = scheduledItems();
+  const removed = items.find((item) => item.id === id);
+  workspace.scheduled = items.filter((item) => item.id !== id);
+  saveProject();
+  renderScheduleList();
+  if (removed) notify(`已刪除 ${removed.time} 的待提醒項目。`);
+}
+
+/** One scheduled item, decided and (if allowed) spoken. Uses the REAL clock and
+ *  the REAL accumulated spend — that is the difference from the manual trigger,
+ *  and the reason the time field now means something. */
+async function fireScheduledItem(item) {
+  const now = new Date();
+  const time = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+  const event = { type: item.type, topic: item.topic };
+  const policy = workspace.profile.proactive_policy;
+  const decision = await decideProactive(policy, {
+    time,
+    minutes_since_last_message: minutesSinceLastProactive(),
+    messages_today: proactiveState().sent_today,
+    // NOT the 剛被拒絕 checkbox: that belongs to the manual what-if trigger, and
+    // this client has no real signal for it. Reading it here would let a
+    // hypothesis ticked in section B silently kill a scheduled 吃藥提醒.
+    user_declined: false,
+    events: [event],
+  });
+  if (!decision) {
+    // A dead backend must not burn the item; it stays pending and retries.
+    return;
+  }
+
+  let reason = decision.reason;
+  if (decision.should_speak) {
+    const outcome = await speakProactive(event, time, policy);
+    // Mid-sentence is temporary: leave the item pending and try again in 5s.
+    if (outcome === "busy") return;
+    if (outcome !== "spoken") reason = "規則允許開口，但目前沒有連線，豆豆說不出話。";
+    item.status = outcome === "spoken" ? "spoken" : "blocked";
+  } else {
+    item.status = "blocked";
+  }
+  item.reason = reason;
+  addMessage("tool", `待提醒觸發（${item.type} @ ${time}）：${item.status === "spoken" ? "主動開口" : "保持安靜"} — ${reason}`);
+  saveProject();
+  renderScheduleList();
+}
+
+/** Compare the pending list against the wall clock. Highest priority first, one
+ *  per tick: firing two at once would let both pass the cooldown that the first
+ *  one is supposed to impose on the second. */
+async function tickScheduler() {
+  renderScheduleList();
+  renderProactiveLiveState();
+  if (!$("#scheduleAuto").checked || schedulerBusy) return;
+  const nowText = `${pad2(new Date().getHours())}:${pad2(new Date().getMinutes())}`;
+  const priorities = workspace.profile.proactive_policy.priorities || {};
+  const due = scheduledItems()
+    .filter((item) => item.status === "pending" && item.time <= nowText)
+    .sort((left, right) => (priorities[right.type] || 0) - (priorities[left.type] || 0));
+  if (!due.length) return;
+  schedulerBusy = true;
+  try {
+    await fireScheduledItem(due[0]);
+  } finally {
+    schedulerBusy = false;
+  }
+}
+
+function startScheduler() {
+  if (scheduleTimer) clearInterval(scheduleTimer);
+  scheduleTimer = setInterval(tickScheduler, SCHEDULE_TICK_MS);
 }
 
 async function runProactiveTests() {
@@ -1243,6 +1835,10 @@ async function runProactiveTests() {
       <span>${item.name}<br><small>${item.should_speak ? "主動開口" : "保持安靜"}：${item.reason}</small></span>
     </div>
   `).join("");
+  const passedCount = result.results.filter((item) => item.passed).length;
+  showResult("#proactiveOutcome", "#proactiveScore", result.passed
+    ? `✓ ${passedCount}/${result.results.length}，規則通過全部情境`
+    : `${passedCount}/${result.results.length}，看下面哪幾個翻轉了`);
   if (result.passed && memoryPassed) {
     workspace.progress.workshop_2_completed = true;
     saveProject();
@@ -1313,6 +1909,8 @@ async function runDaySimulation() {
         <span class="day-topic">${escapeHtml(step.topic)}</span>
         <span class="day-verdict">${step.spoke ? "說出" : "擋下"}：${escapeHtml(step.reason)}</span>
       </div>`).join("");
+    showResult("#dayOutcome", "#dayScore",
+      `漏掉重要事 ${result.missed_critical}／${result.critical_total} · 打擾 ${result.noise}／${result.optional_total}`);
     lastDayRun = result;
   } catch (error) {
     $("#daySummary").textContent = error.message || "無法連接本機服務。";
@@ -1354,6 +1952,52 @@ function proactiveTurnInstructions(event, time, policy) {
   ].filter((part) => part.trim()).join("\n\n");
 }
 
+/** Ask the same `choose_event` the 6 scenarios and 跑一整天 use. Returns null on
+ *  a transport failure so callers can tell "the rules said no" apart from "the
+ *  question never got asked" — the scheduler must not burn an item on the latter. */
+async function decideProactive(policy, scenario) {
+  try {
+    const response = await fetch("/api/proactive-decide", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ policy, scenario }),
+    });
+    const decision = await response.json();
+    if (!response.ok) throw new Error(decision.detail || "主動決策失敗。");
+    return decision;
+  } catch (error) {
+    $("#proactiveDecision").textContent = error.message || "無法連接本機服務。";
+    return null;
+  }
+}
+
+/** Let 豆豆 actually open its mouth, and charge the budget for it. Shared by the
+ *  manual button and the scheduler, so a scheduled 16:00 提醒 costs exactly what
+ *  a hand-triggered one costs.
+ *
+ *  Returns "spoken", "busy" (talking right now — worth retrying) or
+ *  "unavailable" (no session — waiting will not help). The scheduler needs the
+ *  difference: a 待提醒 row must not claim 已說出 when nothing was said, and it
+ *  must not burn itself because 豆豆 happened to be mid-sentence. */
+async function speakProactive(event, time, policy) {
+  if (!apiConfigured) {
+    addMessage("system", "規則允許主動開口，但還沒有連接 OpenAI，所以豆豆說不出話。請先完成系統設定。");
+    return "unavailable";
+  }
+  if (!(await connectRealtime())) return "unavailable";
+  // A proactive message must not talk over 豆豆's current sentence.
+  if (isDodoSpeaking()) {
+    notify("豆豆正在說話，等它說完再觸發主動關心。");
+    return "busy";
+  }
+  setState("thinking", "豆豆正在主動開口");
+  sendProactiveResponse(proactiveTurnInstructions(event, time, policy));
+  // The rules only mean something if speaking feeds them: the next attempt now
+  // runs into the cooldown and the daily budget, exactly as it would live.
+  recordProactiveSpoken();
+  return "spoken";
+}
+
 async function triggerProactive() {
   collectWorkshop2();
   const policy = workspace.profile.proactive_policy;
@@ -1362,27 +2006,14 @@ async function triggerProactive() {
     type: $("#proactiveEventType").value,
     topic: $("#proactiveTopic").value.trim(),
   };
-  const scenario = {
+  const decision = await decideProactive(policy, {
     time,
     minutes_since_last_message: Number($("#proactiveSinceLast").value) || 0,
     messages_today: Number($("#proactiveSentToday").value) || 0,
     user_declined: $("#proactiveDeclined").checked,
     events: [event],
-  };
-
-  let decision;
-  try {
-    const response = await fetch("/api/proactive-decide", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ policy, scenario }),
-    });
-    decision = await response.json();
-    if (!response.ok) throw new Error(decision.detail || "主動決策失敗。");
-  } catch (error) {
-    $("#proactiveDecision").textContent = error.message || "無法連接本機服務。";
-    return;
-  }
+  });
+  if (!decision) return;
 
   $("#proactiveDecision").textContent = decision.should_speak
     ? `✓ 主動開口：${decision.reason}`
@@ -1391,29 +2022,12 @@ async function triggerProactive() {
     "tool",
     `主動決策（${event.type} @ ${time}）：${decision.should_speak ? "主動開口" : "保持安靜"} — ${decision.reason}`,
   );
-  if (!decision.should_speak) return;
-
-  if (!apiConfigured) {
-    addMessage("system", "規則允許主動開口，但還沒有連接 OpenAI，所以豆豆說不出話。請先完成 API 設定。");
-    return;
-  }
-  if (!(await connectRealtime())) return;
-  // A proactive message must not talk over 豆豆's current sentence.
-  if (isDodoSpeaking()) {
-    notify("豆豆正在說話，等它說完再觸發主動關心。");
-    return;
-  }
-  setState("thinking", "豆豆正在主動開口");
-  sendProactiveResponse(proactiveTurnInstructions(event, time, policy));
-  // The rules only mean something if the trigger feeds them: the next attempt
-  // now runs into the cooldown and the daily budget, exactly as it would live.
-  $("#proactiveSinceLast").value = 0;
-  $("#proactiveSentToday").value = scenario.messages_today + 1;
+  if (decision.should_speak) await speakProactive(event, time, policy);
 }
 
 async function sendText(message) {
   if (!apiConfigured) {
-    addMessage("system", "目前沒有連接 OpenAI 模型。請先點右上角「API 設定」。");
+    addMessage("system", "目前沒有連接 OpenAI 模型。請先點右上角「系統設定」。");
     showOnboarding(true);
     return;
   }
@@ -1595,6 +2209,25 @@ async function executeRealtimeTool(call) {
       addMessage("tool", "update_memory 失敗：key 與 value 都不可空白", statusId);
       return { error: "key 與 value 都不可空白。" };
     }
+    // Dispatched ahead of the X guard on purpose: that guard exists to stop
+    // sensitive data going *in*. Letting it block a removal would mean anything
+    // that slipped past it once could never be taken back out by 豆豆.
+    if (String(args.mode || "").trim().toLowerCase() === "remove") {
+      const result = forgetMemory(args.layer, key, value);
+      if (!result.removed) {
+        const found = result.remaining.length
+          ? `目前「${key}」底下是：${result.remaining.join("、")}`
+          : `目前沒有「${key}」這一筆`;
+        addMessage("tool", `update_memory 找不到要移除的記錄：${result.layerTitle}「${key}：${value}」（${found}）`, statusId);
+        return { removed: 0, key, value, layer: result.layer, remaining: result.remaining, error: `找不到「${key}：${value}」。${found}` };
+      }
+      saveProject();
+      rebuildWorkshop2Prompt();
+      renderMemoryViewer();
+      const left = result.remaining.length ? `，同一個 key 還留著：${result.remaining.join("、")}` : "";
+      addMessage("tool", `update_memory：已從 ${result.layerTitle} 移除「${key}：${value}」${left}`, statusId);
+      return { removed: result.removed, key, value, layer: result.layer, remaining: result.remaining };
+    }
     if (/(密碼|password|api.?key|金鑰|帳號|信用卡|驗證碼)/i.test(`${key} ${value}`)) {
       // This is X in the Workshop 2 classification: refused, never stored.
       addMessage("tool", `update_memory 已拒絕（X 不保存）：「${key}」屬於敏感資料`, statusId);
@@ -1603,22 +2236,24 @@ async function executeRealtimeTool(call) {
     // A/B/C decides which list the value lands in, which is what turns the
     // classification exercise into behaviour instead of a score. The model may
     // omit `layer`, so A is the fallback.
-    const requested = String(args.layer || "").trim().toUpperCase();
-    const [layer, field, layerTitle] = MEMORY_LAYERS.find(([id]) => id === requested) || MEMORY_LAYERS[0];
-    if (!Array.isArray(workspace.memory[field])) workspace.memory[field] = [];
-    const entries = workspace.memory[field];
-    const existing = entries.find((item) => item && typeof item === "object" && item.key === key);
-    if (existing) {
-      existing.value = value;
-      existing.updated_at = new Date().toISOString();
-    } else {
-      entries.push({ key, value, updated_at: new Date().toISOString() });
-    }
+    //
+    // `mode` is what stops a second fact under the same key from eating the
+    // first: 「興趣：唱歌」 then 「興趣：跳舞」 used to leave only 跳舞, because any
+    // key match overwrote. Now the layer's own rule decides, and only an
+    // explicit replace throws the old value away.
+    const mode = String(args.mode || "").trim().toLowerCase() === "replace" ? "supersede" : "";
+    const result = upsertMemory(args.layer, key, value, mode || undefined);
     saveProject();
     rebuildWorkshop2Prompt();
     renderMemoryViewer();
-    addMessage("tool", `update_memory：已${existing ? "更新" : "新增"} ${layerTitle}「${key}」＝「${value}」`, statusId);
-    return { saved: true, key, value, layer };
+    addMessage("tool", `update_memory：${describeMemoryWrite(result, key, value)}`, statusId);
+    return {
+      saved: true,
+      key,
+      value,
+      layer: result.layer,
+      merge: mode ? "replace" : MEMORY_MERGE_RULES[result.layer].merge,
+    };
   }
 
   if (call.name !== "get_weather") return { error: `不支援工具：${call.name}` };
@@ -1815,7 +2450,12 @@ async function openRealtimeConnection() {
       microphoneTrack = stream.getAudioTracks()[0];
       microphoneTrack.enabled = !isPushToTalk;
       peerConnection.addTrack(microphoneTrack, stream);
-    } else if (setup.outputMode === "voice") {
+    } else {
+      // Unconditional, even when BOTH ends are text. A data-channel-only offer
+      // has no audio m-line at all and OpenAI rejects it outright with
+      // `invalid_offer: Offer did not have an audio media section.` — which is
+      // why 打字輸入／文字輸出, the default classroom mode, could not connect.
+      // The section stays unused when output is text; only its presence matters.
       peerConnection.addTransceiver("audio", { direction: "recvonly" });
     }
 
@@ -1922,6 +2562,7 @@ async function importProject(file) {
     if (imported.schema_version !== 1 || !imported.profile) throw new Error();
     workspace = deepMerge(bootstrapData.default_workspace, imported);
     workspace.profile.agent = migrateAgent(workspace.profile.agent);
+    workspace.profile.workshop2_blocks = migrateWorkshop2Blocks(workspace.profile.workshop2_blocks);
     saveProject();
     loadFields();
     switchStage(workspace.progress.workshop_1_completed ? 2 : 1);
@@ -1938,6 +2579,7 @@ async function initialize() {
   const storedProject = readStored(PROJECT_KEY);
   workspace = deepMerge(bootstrapData.default_workspace, storedProject);
   workspace.profile.agent = migrateAgent(workspace.profile.agent);
+  workspace.profile.workshop2_blocks = migrateWorkshop2Blocks(workspace.profile.workshop2_blocks);
   setup = normalizeSetup(readStored(SETUP_KEY));
   // Options must exist before loadFields() assigns #agentVoice.value, or the
   // assignment hits an empty <select>, the picker falls back to its first entry,
@@ -1950,6 +2592,13 @@ async function initialize() {
   refreshApiUi();
   restoreLabPanelWidth();
   $("#proactiveNow").value = new Date().toTimeString().slice(0, 5);
+  $("#scheduleTime").value = new Date().toTimeString().slice(0, 5);
+  renderScheduleList();
+  renderProactiveLiveState();
+  renderTriggerHints();
+  // The 待提醒 list is only worth setting a time on if something watches the
+  // clock for it. 5s so a demo set to a past minute reacts while people look.
+  startScheduler();
 
   // Restore the stage the student was last on. The old rule read the progress
   // flags instead, and 套用 in Workshop 1 sets workshop_1_completed — so a plain
@@ -2010,8 +2659,17 @@ bindFieldEvents(WORKSHOP1_FIELDS, () => {
 bindFieldEvents(WORKSHOP2_FIELDS, () => {
   rebuildWorkshop2Prompt();
   refreshApplyState();
+  // 主動規則 is five numbers; the band and the hints are what make them legible.
+  renderPolicyPreview();
+  renderTriggerHints();
 });
+// The manual trigger's own fields are half of every comparison in the hints.
+bindFieldEvents(["#proactiveNow", "#proactiveSinceLast", "#proactiveSentToday"], renderTriggerHints);
+// The quiz cards address the elder by name, so they follow 長者稱呼 live.
+["input", "change"].forEach((event) => $("#elderAddress").addEventListener(event, renderMemoryCards));
 $$(".tab-button").forEach((button) => button.addEventListener("click", () => switchTab(button.dataset.tab)));
+$("#revertWorkshop1").addEventListener("click", () => revertGroup("workshop1"));
+$("#revertWorkshop2").addEventListener("click", () => revertGroup("workshop2"));
 $("#chatOnly").addEventListener("change", () => {
   $("#messages").classList.toggle("is-chat-only", $("#chatOnly").checked);
 });
@@ -2022,6 +2680,18 @@ $("#saveWorkshop2").addEventListener("click", applyWorkshop2);
 $("#runProactiveTests").addEventListener("click", runProactiveTests);
 $("#runDaySimulation").addEventListener("click", runDaySimulation);
 $("#triggerProactive").addEventListener("click", triggerProactive);
+$("#addSchedule").addEventListener("click", addSchedule);
+$("#scheduleAuto").addEventListener("change", () => {
+  notify($("#scheduleAuto").checked
+    ? "自動觸發已開啟：待提醒項目到時間會自己跑一次規則。"
+    : "自動觸發已關閉：待提醒項目會停在原地，不會自己開口。");
+  tickScheduler();
+});
+// Delegated: the list is re-rendered on every tick.
+$("#scheduleList").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-schedule-id]");
+  if (button) deleteSchedule(button.dataset.scheduleId);
+});
 // Delegated: the viewer is re-rendered after every write and delete.
 $("#memoryViewer").addEventListener("click", (event) => {
   const button = event.target.closest("[data-memory-layer]");

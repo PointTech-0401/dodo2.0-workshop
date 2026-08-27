@@ -62,10 +62,12 @@ def resolve_voice(value: Any, fallback: str = DEFAULT_VOICE) -> str:
 # reached the model at all and only surfaced if it happened to call read_memory.
 WORKSHOP2_PROMPT_BLOCKS: dict[str, str] = {
     "memory_use": """用 read_memory 讀取 {USER_ADDRESS} 的三層記憶，用 update_memory 保存新資訊，並在保存時指定層級：
-A 重要事實（layer=A）：過敏、慢性病、緊急聯絡人、長期偏好；由真人確認管理，不要自行推測或改寫。
-B 近期事件（layer=B）：這幾天的狀況與心情，例如昨晚沒睡好、今天想吃什麼；可能很快改變，不要當成永久事實。
+A 重要事實（layer=A）：過敏、慢性病、緊急聯絡人，以及長期偏好（喜歡或不喜歡的食物、音樂、活動）；由真人確認管理，不要自行推測或改寫。
+B 近期事件（layer=B）：這幾天的狀況與心情，例如昨晚沒睡好、今天中午想吃什麼；可能很快改變，不要當成永久事實。
 C 跨日摘要（layer=C）：跨多次對話才看得出來的趨勢，例如最近一週常提到睡不好。
 X 不保存：密碼、提款卡密碼、API Key、金融帳號、驗證碼一律不保存，也不要在對話中複誦。
+同一個 key 再存一次時：新資訊和舊的都成立就直接存（預設會並存，例如興趣同時有唱歌和跳舞，不要為了塞進一筆而改寫舊的）；只有新內容真的取代舊內容（搬家、換藥、換聯絡人）才傳 mode="replace"；使用者否定某一筆已經記得的事時傳 mode="remove"，用一模一樣的 key 與 value 移除那一筆，不要新增一筆相反的記錄。
+喜歡或不喜歡的食物、音樂、活動都是長期偏好，一律存 layer=A 讓它們並存；只有「今天中午想吃什麼」這種當下的一次性念頭才放 layer=B。放錯層會讓新的偏好直接吃掉舊的。
 提起記憶時要像家人記得，而不是唸資料庫；不確定的事先問一句，不要假裝記得。""",
     "proactive": """你可以主動開口，但「主動」不等於想到就說。
 安靜時段、冷卻時間與每日上限由程式規則決定，你只負責措辭；沒有收到主動事件時不要自行開啟新話題。
@@ -320,6 +322,14 @@ DEFAULT_WORKSPACE: dict[str, Any] = {
         },
     },
     "memory": {"facts": [], "events": [], "summaries": []},
+    # 待提醒項目 for the Workshop 2 trigger tab. The browser ticks the real clock
+    # against these, so a 提醒 set for 16:00 actually fires at 16:00 instead of
+    # only ever being a number typed into a what-if field.
+    "scheduled": [],
+    # Real accumulated cost of the proactive messages 豆豆 has actually sent, as
+    # opposed to the what-if numbers in the manual trigger. 冷卻 and 每日上限 are
+    # meaningless if an F5 silently refunds the budget.
+    "proactive_state": {"last_spoken_at": None, "sent_today": 0, "day": ""},
     "progress": {
         "workshop_1_completed": False,
         "workshop_2_completed": False,

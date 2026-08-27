@@ -575,7 +575,7 @@ def test_refresh_keeps_the_student_on_the_stage_they_were_on() -> None:
     assert "function storedStage()" in script
     # Progress survives only as the first-visit default, never as an override.
     assert "const stage = storedStage()" in script
-    # Reopening the sheet from 「API 設定」 hides the entry choice, so saving there
+    # Reopening the sheet from 「系統設定」 hides the entry choice, so saving there
     # must not switch (and persist) a stage the student never picked.
     assert "if (!forced) switchStage(startStage);" in script
     assert (
@@ -708,10 +708,13 @@ def test_humans_can_delete_what_the_agent_remembered() -> None:
     assert "function deleteMemoryEntry(layer, index)" in script
     delete_fn = script.split("function deleteMemoryEntry(layer, index) {")[1].split("\n}")[0]
     # Deleting has to reach the live session, or the baked instructions still
-    # hold the deleted fact and 「刪除」 looks broken.
+    # hold the deleted fact and 「刪除」 looks broken. Shared with the 記憶分類
+    # write, which happens outside the conversation for the same reason.
     assert "saveProject();" in delete_fn
     assert "rebuildWorkshop2Prompt();" in delete_fn
-    assert '"session.update"' in delete_fn
+    assert "pushMemoryToSession();" in delete_fn
+    push_fn = script.split("function pushMemoryToSession() {")[1].split("\n}")[0]
+    assert '"session.update"' in push_fn
     # Entries beyond the prompt window are marked, or a delete looks like a no-op.
     assert "未進入 Prompt" in script
     # Memory values come from the model, so they are escaped before innerHTML.
@@ -788,13 +791,293 @@ def test_proactive_can_actually_speak_first() -> None:
     # travel with the proactive brief.
     assert "function proactiveTurnInstructions(event, time, policy)" in script
     assert "if (instructions) response.instructions = instructions;" in script
-    # A proactive message must not talk over 豆豆's current sentence.
+    # A proactive message must not talk over 豆豆's current sentence. The guard
+    # lives in the speak path both the manual button and the 待提醒 scheduler use,
+    # so a scheduled reminder cannot interrupt what a manual one may not.
+    speak = script.split("async function speakProactive(event, time, policy) {")[1].split("\n}\n")[0]
+    assert "if (isDodoSpeaking())" in speak
+    assert "sendProactiveResponse(proactiveTurnInstructions(" in speak
+    assert "recordProactiveSpoken();" in speak
     trigger = script.split("async function triggerProactive() {")[1].split("\n}\n")[0]
-    assert "if (isDodoSpeaking())" in trigger
-    assert "sendProactiveResponse(proactiveTurnInstructions(" in trigger
+    assert "await speakProactive(event, time, policy)" in trigger
     # The dead endpoint nothing ever called is gone.
     assert "/api/proactive-message" not in server
     assert "/api/proactive-message" not in script
+
+
+def test_memory_writes_accumulate_instead_of_overwriting() -> None:
+    """「我喜歡唱歌」then「我喜歡跳舞」left only 跳舞.
+
+    Every write matched on `key` alone and overwrote, so a second fact under the
+    same category ate the first. The layer now decides: A keeps both, B is the
+    latest state, C is recomputed — and only an explicit mode=replace discards.
+    """
+
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+
+    assert "const MEMORY_MERGE_RULES = {" in script
+    rules = script.split("const MEMORY_MERGE_RULES = {")[1].split("};")[0]
+    assert 'A: { merge: "accumulate"' in rules
+    assert 'B: { merge: "supersede"' in rules
+    assert 'C: { merge: "rewrite"' in rules
+    # B is the only capped layer: 近期事件 that can never be refreshed are noise.
+    assert "capacity: MEMORY_PREVIEW_LIMIT" in rules
+
+    upsert = script.split("function upsertMemory(layerId, key, value, mode) {")[1].split("\n}\n")[0]
+    # Same key AND same value is a no-op, which is what makes a re-run of the
+    # 記憶分類 exercise idempotent instead of duplicating every card.
+    assert "memoryEntryKey(entry) === key && memoryEntryValue(entry) === value" in upsert
+    # Accumulate keeps the list untouched; only the other modes filter by key.
+    assert 'const accumulate = (mode || rule.merge) === "accumulate";' in upsert
+    assert "entry) => memoryEntryKey(entry) !== key" in upsert
+    assert "rule.capacity ? Math.max(0, entries.length - rule.capacity) : 0" in upsert
+
+    # The model has to be told, or it keeps assuming a second save overwrites.
+    assert 'enum: ["add", "replace", "remove"]' in script
+    assert 'String(args.mode || "").trim().toLowerCase() === "replace"' in script
+    # Nothing writes memory except through the one helper.
+    assert script.count("function upsertMemory(") == 1
+    assert "workspace.memory[field].push(" not in script
+
+
+def test_the_model_can_retract_exactly_one_remembered_value() -> None:
+    """Accumulating created a gap: once「興趣：西瓜」is stored,「我不喜歡吃西瓜」
+    cannot be handled by writing another fact, and mode="replace" would discard
+    鳳梨 and 芭樂 too. Without a removal the memory keeps both「喜歡西瓜」and
+    「不喜歡西瓜」side by side forever."""
+
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+
+    forget = script.split("function forgetMemory(layerId, key, value) {")[1].split("\n}\n")[0]
+    # key AND value, or removing 西瓜 would take 鳳梨 and 芭樂 with it.
+    assert "memoryEntryKey(entry) === key && memoryEntryValue(entry) === value" in forget
+    assert "if (removed) workspace.memory[field] = kept;" in forget
+    # What is left under the key travels back, so a near-miss can be retried.
+    assert "remaining: kept.filter((entry) => memoryEntryKey(entry) === key)" in forget
+
+    tool = script.split("async function executeRealtimeTool(call) {")[1].split("\n}\n")[0]
+    assert 'String(args.mode || "").trim().toLowerCase() === "remove"' in tool
+    # Removal is dispatched BEFORE the X keyword guard: that guard stops
+    # sensitive data going in, and must never stop it being taken back out.
+    remove_at = tool.index('=== "remove"')
+    guard_at = tool.index("(密碼|password|api.?key|金鑰|帳號|信用卡|驗證碼)")
+    assert remove_at < guard_at, "the X guard would block 豆豆 from forgetting"
+    # A miss must say what IS stored rather than silently reporting success.
+    assert "找不到要移除的記錄" in tool
+
+
+def test_a_long_term_preference_is_an_accumulating_A_fact() -> None:
+    """Card 5 answered B, whose merge rule is 取代 — while its own explanation
+    promised 累積. A student following the card would have watched 鳳梨 and 西瓜
+    get eaten by 芭樂: the very bug the merge rules were added to fix."""
+
+    cards = bootstrap()["memory_cards"]
+    preference = next(card for card in cards if "鄧麗君" in card["text"])
+
+    assert preference["answer"] == "A"
+    assert "累積" in preference["explanation"] or "累加" in preference["explanation"]
+    # No card may promise 累積 on a layer that supersedes.
+    for card in cards:
+        if card["answer"] == "B":
+            assert "累積" not in card["explanation"], card["text"]
+    # The quiz still teaches all four buckets.
+    assert {card["answer"] for card in cards} == {"A", "B", "C", "X"}
+
+
+def test_a_saved_project_learns_the_new_memory_merge_rule() -> None:
+    """A stored 記憶使用規則 wins over the default, so a project saved before the
+    累加／replace rule existed would show a block that contradicts the behaviour
+    its own memory now follows."""
+
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    profile_source = (
+        Path(__file__).resolve().parents[1] / "dodo_workshop" / "profile.py"
+    ).read_text(encoding="utf-8")
+
+    # Every inserted line must be a line the fresh default also carries.
+    assert "const MEMORY_USE_GUIDANCE = [" in script
+    block = script.split("const MEMORY_USE_GUIDANCE = [")[1].split("\n];")[0]
+    lines = [part.split("',")[0] for part in block.split("  '")[1:]]
+    assert len(lines) == 2, lines
+    for line in lines:
+        assert line in profile_source, f"app.js and profile.py disagree on: {line[:30]}"
+
+    migrate = script.split("function migrateWorkshop2Blocks(blocks) {")[1].split("\n}\n")[0]
+    # Empty stays empty (deleted on purpose), and a block the student rewrote
+    # past recognition is left alone.
+    assert "if (!stored) return blocks;" in migrate
+    assert "if (anchor < 0) return blocks;" in migrate
+    # Old revisions are stripped by prefix and replaced, NOT skipped. The first
+    # version gated on `mode="replace"` — a string every revision contains — so
+    # a project migrated once could never receive a later revision.
+    assert "MEMORY_USE_GUIDANCE_PREFIXES.some((prefix) => line.startsWith(prefix))" in migrate
+    assert 'stored.includes(\'mode="replace"\')' not in migrate
+    # Idempotent: an already-current block comes back untouched.
+    assert "return merged === stored ? blocks : " in migrate
+    # Both hydration paths run it, or an import would carry the stale text back.
+    assert script.count("migrateWorkshop2Blocks(workspace.profile.workshop2_blocks)") == 2
+
+
+def test_the_prompt_says_which_layer_a_preference_belongs_to() -> None:
+    """「我喜歡吃西瓜」landed in B, whose own example was「今天想吃什麼」 —— and B
+    supersedes, so 芭樂／西瓜／鳳梨 were each eaten by the next fruit. Changing the
+    quiz card fixed what the *student* reads; this is what the *model* reads."""
+
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    blocks = bootstrap()["default_workspace"]["profile"]["workshop2_blocks"]
+    memory_use = blocks["memory_use"]
+
+    # The tool description is the only guidance not persisted per project, so it
+    # is the one place a fix reaches a student who already has a saved Dodo.
+    layer_field = script.split('layer: {')[1].split("},")[0]
+    assert "長期偏好" in layer_field and "並存" in layer_field
+    assert "只留最新一筆" in layer_field, "B's destructive merge has to be stated"
+    assert "不要放 B" in layer_field
+
+    # …and the default block spells the same distinction out.
+    assert "喜歡或不喜歡的食物" in memory_use
+    assert "layer=A" in memory_use and "一律存 layer=A" in memory_use
+    # B's example must not read as a preference any more.
+    assert "今天想吃什麼" not in memory_use
+    assert "今天中午想吃什麼" in memory_use
+
+
+def test_a_supersede_names_the_value_it_threw_away() -> None:
+    """「覆蓋原本 1 筆」gave a student no way to notice 芭樂 had just been eaten."""
+
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+
+    upsert = script.split("function upsertMemory(layerId, key, value, mode) {")[1].split("\n}\n")[0]
+    assert "const superseded = workspace.memory[field]" in upsert
+    assert "const replaced = superseded.length;" in upsert
+    describe = script.split("function describeMemoryWrite(result, key, value) {")[1].split("\n}\n")[0]
+    assert "丟掉了：${result.superseded.join" in describe
+    assert "覆蓋原本" not in describe
+
+
+def test_memory_classification_writes_into_the_real_memory() -> None:
+    """The exercise scored itself and stopped. A right answer now lands in
+    `workspace.memory` on the layer the student picked — X writes nothing,
+    because refusing to store IS the right behaviour there."""
+
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    cards = bootstrap()["memory_cards"]
+
+    check = script.split("function checkMemory() {")[1].split("\n}\n")[0]
+    assert "upsertMemory(card.answer, card.key, card.value)" in check
+    assert 'card.answer !== "X"' in check
+    # Written outside the conversation, so the live session has to be told.
+    assert "pushMemoryToSession()" in check
+    assert "renderMemoryViewer();" in check
+    assert "檢查並寫入記憶" in page
+
+    # Every A/B/C card carries what to store; X cards deliberately do not.
+    for card in cards:
+        if card["answer"] == "X":
+            assert "key" not in card and "value" not in card, card["text"]
+        else:
+            assert card["key"] and card["value"], card["text"]
+
+
+def test_memory_cards_follow_the_students_own_elder_name() -> None:
+    """王奶奶 was hardcoded into the card text, so renaming 長者稱呼 left the
+    exercise talking about someone who no longer existed."""
+
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    lesson2 = (Path(__file__).resolve().parents[1] / "dodo_workshop" / "lesson2.py").read_text(
+        encoding="utf-8"
+    )
+    cards = bootstrap()["memory_cards"]
+
+    assert not any("王奶奶" in card["text"] for card in cards)
+    assert any("{USER_ADDRESS}" in card["text"] for card in cards)
+    assert 'replaceAll("{USER_ADDRESS}", elderAddress())' in script
+    assert '|| "長者"' in script
+    # Re-rendering on rename must not wipe answers already chosen.
+    render = script.split("function renderMemoryCards() {")[1].split("\n}\n")[0]
+    assert "const chosen = bootstrapData.memory_cards.map(" in render
+    assert 'if (value) $(`[data-memory-index="${index}"]`).value = value;' in render
+    assert '$("#elderAddress").addEventListener(event, renderMemoryCards)' in script
+    # The CLI reads the same file and has to substitute too.
+    assert "card['text'].replace('{USER_ADDRESS}', address)" in lesson2
+
+
+def test_proactive_policy_has_a_live_picture_and_self_explaining_fields() -> None:
+    """Five bare number fields never showed what they add up to, and the manual
+    trigger's 距上次／今日已發送 never said which policy value they are compared
+    against — that lived one tab away."""
+
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
+
+    assert 'id="quietBand"' in page and 'id="policySummary"' in page and 'id="policyBinding"' in page
+    assert "function renderPolicyPreview()" in script
+    assert 'Array.from({ length: 24 }, (_, hour)' in script
+    # The band must agree with the decider, wrap-around included.
+    quiet = script.split("function isQuietHour(hour, start, end) {")[1].split("\n}")[0]
+    assert "start > end ? hour >= start || hour < end : hour >= start && hour < end" in quiet
+    # Naming the binding limit is the point: changing 冷卻 does nothing visible
+    # when 每日上限 was the one biting all along.
+    assert "真正卡住的是" in script
+    assert ".quiet-band" in styles and ".band-hour.is-quiet" in styles
+
+    assert 'id="sinceLastHint"' in page and 'id="sentTodayHint"' in page and 'id="nowHint"' in page
+    hints = script.split("function renderTriggerHints() {")[1].split("\n}\n")[0]
+    assert "policy.cooldown_minutes" in hints and "policy.daily_message_limit" in hints
+    assert "會被擋下" in hints and "會通過" in hints
+
+    # 取消變更 writes fields programmatically, which fires no input event.
+    revert = script.split("function revertGroup(groupName) {")[1].split("\n}\n")[0]
+    assert "renderPolicyPreview();" in revert and "renderTriggerHints();" in revert
+
+
+def test_scheduled_reminders_fire_on_the_real_clock() -> None:
+    """模擬現在時間 was the only time field, and nothing ever watched a clock —
+    so setting a 提醒 time did nothing when that time came round."""
+
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    default_scheduled = bootstrap()["default_workspace"]
+
+    assert 'id="scheduleTime"' in page and 'id="addSchedule"' in page
+    assert 'id="scheduleList"' in page and 'id="scheduleAuto"' in page
+    assert default_scheduled["scheduled"] == []
+    assert default_scheduled["proactive_state"]["sent_today"] == 0
+
+    assert "function startScheduler()" in script
+    assert "setInterval(tickScheduler, SCHEDULE_TICK_MS)" in script
+    tick = script.split("async function tickScheduler() {")[1].split("\n}\n")[0]
+    assert 'item.status === "pending" && item.time <= nowText' in tick
+    # One per tick: firing two at once would let the second skip the cooldown
+    # the first is supposed to impose on it.
+    assert "await fireScheduledItem(due[0]);" in tick
+    assert "schedulerBusy" in tick
+
+    fire = script.split("async function fireScheduledItem(item) {")[1].split("\n}\n")[0]
+    # Real clock and real accumulated spend — that is what separates a scheduled
+    # reminder from the manual what-if trigger.
+    assert "minutes_since_last_message: minutesSinceLastProactive()" in fire
+    assert "messages_today: proactiveState().sent_today" in fire
+    # The 剛被拒絕 checkbox is a what-if for the manual trigger only; reading it
+    # here would let a hypothesis silently kill a real scheduled reminder.
+    assert "user_declined: false," in fire
+    assert 'user_declined: $("#proactiveDeclined").checked' not in fire
+    # A transport failure must not burn the item, and mid-sentence is temporary.
+    assert "if (!decision) {" in fire
+    assert 'if (outcome === "busy") return;' in fire
+    # It must not claim 已說出 when there was no session to say it in.
+    assert 'item.status = outcome === "spoken" ? "spoken" : "blocked";' in fire
+
+    # The pending list is deletable, like every other thing a human must be able
+    # to take back in this workshop.
+    assert "function deleteSchedule(id)" in script
+    assert 'event.target.closest("[data-schedule-id]")' in script
+    # Real spend survives F5, or 每日上限 quietly refunds itself.
+    assert "function recordProactiveSpoken()" in script
+    assert "state.sent_today += 1;" in script
+    assert 'if (state.day !== todayKey())' in script
 
 
 def test_lab_panels_are_tabbed_with_a_title_bar_apply_button() -> None:
@@ -870,10 +1153,90 @@ def test_passing_status_no_longer_floods_the_transcript() -> None:
     # …and the ones that must still interrupt the student are still rows.
     for kept in ("瀏覽器擋住了自動播放", "Realtime 回報設定錯誤", "目前沒有連接 OpenAI 模型"):
         assert kept in script, kept
-    assert 'addMessage(\n      "system"' in script  # the one-shot preamble explainer
+    # The one-shot preamble explainer used to fire on the first tool call. The
+    # dashed PREAMBLE label already makes that point without a SYSTEM row.
+    assert "上面那格是 preamble" not in script
+    assert "preambleExplained" not in script
 
     # An escape hatch that hides the instrumentation without discarding it.
     assert 'id="chatOnly"' in page
     assert '$("#messages").classList.toggle("is-chat-only"' in script
     assert ".messages.is-chat-only .message.tool" in styles
     assert ".activity-note" in styles
+
+
+def test_offer_always_carries_an_audio_media_section() -> None:
+    """打字輸入／文字輸出 — the default classroom mode — could not connect.
+
+    A data-channel-only offer has no audio m-line, and OpenAI rejects it with
+    `invalid_offer: Offer did not have an audio media section.` The transceiver
+    used to be added only when input or output was voice.
+    """
+
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    body = script.split("async function openRealtimeConnection() {")[1].split("\nasync function")[0]
+
+    assert 'peerConnection.addTransceiver("audio", { direction: "recvonly" });' in body
+    # The guard that skipped it for text/text is gone.
+    assert '} else if (setup.outputMode === "voice") {' not in body
+    assert body.count('addTransceiver("audio"') == 1
+    # Still only one audio path: a real mic track, or the placeholder section.
+    assert "peerConnection.addTrack(microphoneTrack, stream);" in body
+
+
+def test_unapplied_changes_can_be_thrown_away() -> None:
+    """套用 tells you something is pending; without a counterpart the only way
+    back to the applied state was to remember and retype it."""
+
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+
+    for button in ("revertWorkshop1", "revertWorkshop2"):
+        assert f'id="{button}" class="secondary-button apply-button" hidden' in page, button
+    assert "function revertGroup(groupName)" in script
+    # The snapshot IS the last applied value, so write() can replay it directly.
+    assert "tab.write(JSON.parse(appliedSnapshots[tabId]));" in script
+    # Assigning .value fires no events — previews and buttons must be told.
+    revert = script.split("function revertGroup(groupName) {")[1].split("\n}")[0]
+    assert "rebuildSystemPrompt();" in revert and "refreshApplyState();" in revert
+    # Visibility falls out of the ordinary dirty computation, never toggled apart.
+    refresh = script.split("function refreshApplyState() {")[1].split("\n}")[0]
+    assert "$(group.revert).hidden = clean;" in refresh
+    assert "$(group.button).hidden = clean;" in refresh
+    # Restoring the turn mode has to restore which mode-specific field shows.
+    assert "updateTurnFields();" in script.split("tabTurn: {")[1].split("},\n    },")[0]
+
+
+def test_lab_results_collapse_and_keep_their_score() -> None:
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
+
+    for panel in ("memoryOutcome", "proactiveOutcome", "dayOutcome"):
+        assert f'<details id="{panel}" class="result-panel" hidden>' in page, panel
+    # The existing result containers keep their ids; they are wrapped, not moved.
+    for kept in ("memoryExplanations", "proactiveResults", "daySummary", "dayTimeline"):
+        assert f'id="{kept}"' in page, kept
+    assert "function showResult(panelSelector, headlineSelector, headline)" in script
+    assert script.count("showResult(") == 4  # definition + three call sites
+    assert ".result-panel > summary" in styles
+
+
+def test_proactive_event_types_are_rendered_from_the_project_priorities() -> None:
+    """None of the six types is wired to a data source — not even weather. The
+    type only picks a priority number and a line of prompt text, so the numbers
+    are rendered from `proactive_policy.priorities` instead of being hardcoded."""
+
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+
+    assert '<select id="proactiveEventType"></select>' in page
+    assert '<option value="reminder">' not in page
+    assert "function renderProactiveEventOptions()" in script
+    render = script.split("function renderProactiveEventOptions() {")[1].split("\n}")[0]
+    assert "workspace.profile.proactive_policy.priorities" in render
+    assert "優先權 ${score}" in render
+    assert "renderProactiveEventOptions();" in script.split("function loadFields() {")[1].split("\n}")[0]
+    # And the panel says so, rather than leaving students to assume integrations.
+    assert "沒有串接任何資料來源" in page
+    assert "沒有排程器" in page

@@ -135,12 +135,18 @@ def compose_fallback(event: dict, profile: dict) -> str:
 
 def run_memory_quiz() -> None:
     cards = load_json("scenarios/memory_cards.json")
+    # The card text addresses the elder by name via {USER_ADDRESS}: the browser
+    # substitutes the student's own 長者稱呼, and so must the CLI, or the
+    # placeholder shows up verbatim in class.
+    address = str(
+        load_workspace()["profile"]["elder_profile"].get("address") or "長者"
+    )
     labels = {"A": "重要事實", "B": "近期事件", "C": "跨日摘要", "X": "不應保存"}
     score = 0
     print("\n=== 第二堂實作一：三層記憶分類 ===")
     print("請輸入 A、B、C 或 X；輸入 exit 可提前結束。\n")
     for index, card in enumerate(cards, start=1):
-        print(f"{index}. {card['text']}")
+        print(f"{index}. {card['text'].replace('{USER_ADDRESS}', address)}")
         answer = input("分類 > ").strip().lstrip("\ufeffï»¿").upper()
         if answer == "EXIT":
             break
