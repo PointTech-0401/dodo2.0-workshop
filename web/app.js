@@ -178,6 +178,93 @@ const WORKSHOP2_BLOCKS = [
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
+// --- Tabs + the 套用 button ------------------------------------------------
+// Both lab panels used to be one long scrolling column with every control on
+// screen at once. Each panel is a set of tabs now, and 套用 moved out of the
+// bottom of that column into the section title — where it only appears if
+// something is actually waiting to be sent.
+//
+// `tabs` maps a tab id to the slice of state that 套用 pushes from it. Dirty is
+// measured against the snapshot taken at the last successful apply, NOT against
+// `workspace`: 執行 6 個情境, 跑一整天 and 觸發主動關心 all call collectWorkshop2(),
+// which writes the fields into workspace without ever sending a session.update.
+const APPLY_GROUPS = {
+  workshop1: {
+    button: "#saveWorkshop1",
+    tabs: {
+      tabPersona: () => agentFromFields(),
+      tabTurn: () => turnDetectionFromFields(),
+    },
+  },
+  workshop2: {
+    button: "#saveWorkshop2",
+    tabs: {
+      tabW2Prompt: () => [elderProfileFromFields(), workshop2BlocksFromFields()],
+      tabW2Policy: () => proactivePolicyFromFields(),
+    },
+  },
+};
+const appliedSnapshots = {};
+
+function switchTab(tabId) {
+  const target = document.querySelector(`.tab-button[data-tab="${tabId}"]`);
+  if (!target) return;
+  [...target.closest(".tab-bar").querySelectorAll(".tab-button")].forEach((button) => {
+    const isActive = button === target;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+    document.getElementById(button.dataset.tab).hidden = !isActive;
+  });
+}
+
+function tabSnapshot(tabId) {
+  const group = Object.values(APPLY_GROUPS).find((entry) => tabId in entry.tabs);
+  return JSON.stringify(group.tabs[tabId]());
+}
+
+/** Show 套用 only where there is something to apply, and dot the tab that holds
+ *  the change — a hidden tab would otherwise leave the button unexplained. */
+function refreshApplyState() {
+  Object.values(APPLY_GROUPS).forEach((group) => {
+    const dirtyTabs = Object.keys(group.tabs).filter((tabId) => {
+      const dirty = appliedSnapshots[tabId] !== tabSnapshot(tabId);
+      document.querySelector(`.tab-button[data-tab="${tabId}"]`).classList.toggle("is-dirty", dirty);
+      return dirty;
+    });
+    $(group.button).hidden = dirtyTabs.length === 0;
+  });
+}
+
+/** Freeze the current fields as「已經送出去了」. Called at load, after an import
+ *  and after each successful 套用 — never from collectWorkshopN(). */
+function markApplied(groupName) {
+  const groups = groupName ? [APPLY_GROUPS[groupName]] : Object.values(APPLY_GROUPS);
+  groups.forEach((group) => {
+    Object.keys(group.tabs).forEach((tabId) => {
+      appliedSnapshots[tabId] = tabSnapshot(tabId);
+    });
+  });
+  refreshApplyState();
+}
+
+// --- Passing status -------------------------------------------------------
+// 套用 confirmations, preset loads and reconnect notices used to be SYSTEM rows
+// in the transcript. They arrive several at a time and pushed the actual
+// conversation off screen, so they live in the state bar now and fade out. Only
+// errors, refusals and milestones still earn a place in the transcript.
+let activityNoticeTimer;
+
+function notify(text) {
+  const note = $("#activityNote");
+  note.textContent = text;
+  note.hidden = false;
+  clearTimeout(activityNoticeTimer);
+  activityNoticeTimer = setTimeout(() => {
+    note.hidden = true;
+    note.textContent = "";
+  }, 9000);
+}
+
 let bootstrapData;
 let workspace;
 let setup;
@@ -228,6 +315,18 @@ function agentFromFields() {
   };
 }
 
+function turnDetectionFromFields() {
+  return {
+    type: $("#turnDetectionMode").value,
+    eagerness: $("#semanticEagerness").value,
+    threshold: 0.5,
+    prefix_padding_ms: 300,
+    silence_duration_ms: Number($("#silenceDuration").value),
+    create_response: true,
+    interrupt_response: $("#interruptResponse").checked,
+  };
+}
+
 function selectedVoice() {
   const value = $("#agentVoice")?.value;
   return REALTIME_VOICES.some(([id]) => id === value) ? value : "sage";
@@ -259,7 +358,9 @@ function applyPreset(id) {
   });
   $("#agentVoice").value = preset.voice;
   rebuildSystemPrompt();
-  addMessage("system", `已載入「${preset.label}」範例（聲線 ${preset.voice}）。可以繼續編輯，按「套用」才會生效。`);
+  // Assigning .value fires no input event, so the 套用 button has to be told.
+  refreshApplyState();
+  notify(`已載入「${preset.label}」範例（聲線 ${preset.voice}）。可以繼續編輯，按「套用」才會生效。`);
 }
 
 const EMPTY_PROMPT_NOTICE =
@@ -562,6 +663,9 @@ function loadFields() {
   rebuildSystemPrompt();
   renderMemoryViewer();
   updateTurnFields();
+  // Whatever was just loaded is what a connection will send, so nothing is
+  // pending yet — this is the baseline every 套用 button is measured against.
+  markApplied();
 }
 
 function collectWorkshop1() {
@@ -572,17 +676,7 @@ function collectWorkshop1() {
     system_prompt: buildSystemPrompt(agentFromFields()),
     voice: selectedVoice(),
   };
-  workspace.profile.realtime = {
-    turn_detection: {
-      type: $("#turnDetectionMode").value,
-      eagerness: $("#semanticEagerness").value,
-      threshold: 0.5,
-      prefix_padding_ms: 300,
-      silence_duration_ms: Number($("#silenceDuration").value),
-      create_response: true,
-      interrupt_response: $("#interruptResponse").checked,
-    },
-  };
+  workspace.profile.realtime = { turn_detection: turnDetectionFromFields() };
   saveProject();
 }
 
@@ -793,7 +887,7 @@ function deleteMemoryEntry(layer, index) {
     pendingRealtimeApply = true;
     dataChannel.send(JSON.stringify({ type: "session.update", session: realtimeSessionUpdate() }));
   }
-  addMessage("system", `已從 ${title} 刪除「${removed}」，並更新豆豆的記憶。人可以覆寫 AI 記得的事。`);
+  notify(`已從 ${title} 刪除「${removed}」，並更新豆豆的記憶。人可以覆寫 AI 記得的事。`);
 }
 
 function renderMemoryCards() {
@@ -1230,13 +1324,15 @@ async function runDaySimulation() {
 async function applyWorkshop2() {
   collectWorkshop2();
   await connectRealtime();
-  if (dataChannel?.readyState === "open") {
+  const live = dataChannel?.readyState === "open";
+  if (live) {
     pendingRealtimeApply = true;
     dataChannel.send(JSON.stringify({ type: "session.update", session: realtimeSessionUpdate() }));
-    addMessage("system", "第二堂設定已套用：長者資料、三層記憶與主動規則都寫進了同一份 instructions，正在確認更新…");
-    return;
   }
-  addMessage("system", "第二堂設定已保存（尚未連線，下次連線時生效）。");
+  markApplied("workshop2");
+  notify(live
+    ? "第二堂設定已套用：長者資料、三層記憶與主動規則都寫進了同一份 instructions，正在確認更新…"
+    : "第二堂設定已保存（尚未連線，下次連線時生效）。");
 }
 
 /** The brief for one proactive turn. Response-level `instructions` *replace* the
@@ -1304,7 +1400,7 @@ async function triggerProactive() {
   if (!(await connectRealtime())) return;
   // A proactive message must not talk over 豆豆's current sentence.
   if (isDodoSpeaking()) {
-    addMessage("system", "豆豆正在說話，等它說完再觸發主動關心。");
+    notify("豆豆正在說話，等它說完再觸發主動關心。");
     return;
   }
   setState("thinking", "豆豆正在主動開口");
@@ -1452,7 +1548,7 @@ async function applyWorkshop1() {
   const voiceChanged = Boolean(previousVoice) && previousVoice !== workspace.profile.agent.voice;
   if (voiceChanged) {
     disconnectRealtime();
-    addMessage("system", `聲線改成 ${workspace.profile.agent.voice}，正在重新建立連線（Realtime 不允許在同一個 session 換聲線）。`);
+    notify(`聲線改成 ${workspace.profile.agent.voice}，正在重新建立連線（Realtime 不允許在同一個 session 換聲線）。`);
   }
   await connectRealtime();
   if (dataChannel?.readyState === "open") {
@@ -1467,8 +1563,9 @@ async function applyWorkshop1() {
   // it never checked anything the student had not just typed in themselves.
   workspace.progress.workshop_1_completed = true;
   saveProject();
+  markApplied("workshop1");
   const voiceNote = dataChannel?.readyState === "open" ? "，正在確認更新…" : "（尚未連線，下次連線時生效）";
-  addMessage("system", `已套用「${workspace.profile.agent.name}」的設定${voiceNote}`);
+  notify(`已套用「${workspace.profile.agent.name}」的設定${voiceNote}`);
 }
 
 async function executeRealtimeTool(call) {
@@ -1565,7 +1662,7 @@ async function handleRealtimeEvent(event) {
   }
   if (event.type === "session.updated" && pendingRealtimeApply) {
     pendingRealtimeApply = false;
-    addMessage("system", "Realtime 已確認套用，下一次回答會使用新設定");
+    notify("Realtime 已確認套用，下一次回答會使用新設定");
   }
   // WebRTC-only playback lifecycle. Without these, barge-in during playout has
   // nothing to detect and silently no-ops.
@@ -1828,7 +1925,7 @@ async function importProject(file) {
     saveProject();
     loadFields();
     switchStage(workspace.progress.workshop_1_completed ? 2 : 1);
-    addMessage("system", `已載入「${workspace.profile.agent.name}」，可以繼續上次的進度。`);
+    notify(`已載入「${workspace.profile.agent.name}」，可以繼續上次的進度。`);
   } catch {
     addMessage("system", "這個檔案不是可用的 Dodo 作品，請選擇 my-dodo.json。");
   }
@@ -1889,8 +1986,34 @@ document.addEventListener("keydown", (event) => {
   closeOnboarding();
 });
 $("#turnDetectionMode").addEventListener("change", updateTurnFields);
-["#agentName", "#agentAddress", ...PROMPT_BLOCKS.map(([, , selector]) => selector)].forEach((selector) => {
-  $(selector).addEventListener("input", rebuildSystemPrompt);
+// Every control that 套用 sends, so the button and the tab dots can never go
+// stale. Both events on all of them: a textarea reports `input`, a <select> and
+// a checkbox report `change` — and 聲線、等待傾向、靜音門檻、插話 had no listener
+// at all before this, so a change there used to leave the preview untouched.
+const WORKSHOP1_FIELDS = [
+  "#agentName", "#agentAddress", ...PROMPT_BLOCKS.map(([, , selector]) => selector),
+  "#agentVoice", "#turnDetectionMode", "#semanticEagerness", "#silenceDuration", "#interruptResponse",
+];
+const WORKSHOP2_FIELDS = [
+  "#elderAddress", "#elderCity", "#elderInterests", ...WORKSHOP2_BLOCKS.map(([, , selector]) => selector),
+  "#quietStart", "#quietEnd", "#cooldown", "#dailyLimit", "#maxSentences",
+];
+const bindFieldEvents = (selectors, handler) => selectors.forEach((selector) => {
+  ["input", "change"].forEach((event) => $(selector).addEventListener(event, handler));
+});
+bindFieldEvents(WORKSHOP1_FIELDS, () => {
+  rebuildSystemPrompt();
+  refreshApplyState();
+});
+// Workshop 2 fields feed the composed instructions, so the VIEW panel has to
+// follow them live the same way Workshop 1's does.
+bindFieldEvents(WORKSHOP2_FIELDS, () => {
+  rebuildWorkshop2Prompt();
+  refreshApplyState();
+});
+$$(".tab-button").forEach((button) => button.addEventListener("click", () => switchTab(button.dataset.tab)));
+$("#chatOnly").addEventListener("change", () => {
+  $("#messages").classList.toggle("is-chat-only", $("#chatOnly").checked);
 });
 $$(".stage-button").forEach((button) => button.addEventListener("click", () => switchStage(button.dataset.stage)));
 $("#saveWorkshop1").addEventListener("click", applyWorkshop1);
@@ -1903,15 +2026,6 @@ $("#triggerProactive").addEventListener("click", triggerProactive);
 $("#memoryViewer").addEventListener("click", (event) => {
   const button = event.target.closest("[data-memory-layer]");
   if (button) deleteMemoryEntry(button.dataset.memoryLayer, Number(button.dataset.memoryEntry));
-});
-// Workshop 2 fields feed the composed instructions, so the VIEW panel has to
-// follow them live the same way Workshop 1's does.
-[
-  "#elderAddress", "#elderCity", "#elderInterests",
-  "#quietStart", "#quietEnd", "#cooldown", "#dailyLimit", "#maxSentences",
-  ...WORKSHOP2_BLOCKS.map(([, , selector]) => selector),
-].forEach((selector) => {
-  $(selector).addEventListener("input", rebuildWorkshop2Prompt);
 });
 $("#chatInput").addEventListener("keydown", (event) => {
   if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;

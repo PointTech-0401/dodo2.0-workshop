@@ -41,6 +41,11 @@
           <li data-state="speaking"><span></span>回應中</li>
         </ol>
         <p id="connectionNote" class="connection-note">打字輸入／文字輸出已就緒</p>
+        <!-- 套用 confirmations and other passing status used to be SYSTEM rows in
+             the transcript, which buried the conversation. They land here and
+             fade; only errors and milestones still reach the transcript. -->
+        <p id="activityNote" class="activity-note" role="status" hidden></p>
+        <label class="log-toggle" title="暫時隱藏 SYSTEM 與 TOOL 記錄，只留下對話"><input id="chatOnly" type="checkbox">只看對話</label>
       </div>
       <div id="messages" class="messages" aria-live="polite">
         <article class="message system">
@@ -72,11 +77,21 @@
     <aside class="lab-panel">
       <section id="workshop1Panel" class="lab-section">
         <p class="eyebrow">WORKSHOP 01</p>
-        <h2>Prompt 與 Realtime 是兩層</h2>
+        <!-- 套用 lives beside the title and only appears once a field differs
+             from what the live session already has — see refreshApplyState(). -->
+        <div class="section-heading">
+          <h2>Prompt 與 Realtime 是兩層</h2>
+          <button id="saveWorkshop1" class="primary-button apply-button" hidden>套用</button>
+        </div>
         <p class="layer-intro">Prompt 決定回答內容；VAD 與按鍵決定何時把聲音送給模型。兩者不能混為一談。</p>
+        <div class="tab-bar" role="tablist" aria-label="Workshop 1 設定">
+          <button type="button" class="tab-button is-active" role="tab" aria-selected="true" aria-controls="tabPersona" data-tab="tabPersona">A 回答方式</button>
+          <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabTurn" data-tab="tabTurn">B 何時算說完</button>
+        </div>
 
-        <div class="lab-block">
-          <div class="block-heading"><span class="layer-number">A</span><div><h3>用分塊設計回答方式</h3><p>只編輯分塊；系統會組成一份 Prompt，送進同一個 Realtime model。</p></div></div>
+        <div id="tabPersona" class="tab-panel" role="tabpanel" tabindex="0">
+          <h3>用分塊設計回答方式</h3>
+          <p class="block-purpose">只編輯分塊；系統會組成一份 Prompt，送進同一個 Realtime model。</p>
           <div class="preset-row">
             <p class="preset-label">快速套用範例人格</p>
             <div id="promptPresets" class="preset-buttons"></div>
@@ -119,8 +134,9 @@
           <p class="voice-fact"><strong>沿用 Workshop 1.0 工具：<code>get_weather</code>、<code>read_memory</code>、<code>update_memory</code></strong><span id="weatherToolStatus">正在檢查 WEATHER_API_KEY…</span></p>
         </div>
 
-        <div class="lab-block">
-          <div class="block-heading"><span class="layer-number">B</span><div><h3>何時算說完</h3><p>以下內容在建立連線時就送進 Realtime session，按「套用」會再更新一次。</p></div></div>
+        <div id="tabTurn" class="tab-panel" role="tabpanel" tabindex="0" hidden>
+          <h3>何時算說完</h3>
+          <p class="block-purpose">以下內容在建立連線時就送進 Realtime session，按「套用」會再更新一次。</p>
           <label>回合判定方式
             <select id="turnDetectionMode">
               <option value="semantic_vad">Semantic VAD：依語意判斷</option>
@@ -142,18 +158,25 @@
           <label class="toggle-row"><input id="interruptResponse" type="checkbox">使用者插話時中止 Dodo 目前的回覆</label>
           <p id="turnModeNotice" class="mode-explanation"></p>
         </div>
-        <div class="lab-actions">
-          <button id="saveWorkshop1" class="primary-button">套用</button>
-        </div>
       </section>
 
       <section id="workshop2Panel" class="lab-section" hidden>
         <p class="eyebrow">WORKSHOP 02</p>
-        <h2>讓它記得，也知道何時安靜</h2>
+        <div class="section-heading">
+          <h2>讓它記得，也知道何時安靜</h2>
+          <button id="saveWorkshop2" class="primary-button apply-button" hidden>套用</button>
+        </div>
         <p class="layer-intro">Workshop 1 決定豆豆怎麼講話；這裡決定它記得什麼、什麼時候可以先開口。兩邊會合併成同一份 instructions，送進同一個 Realtime session。</p>
+        <div class="tab-bar" role="tablist" aria-label="Workshop 2 設定">
+          <button type="button" class="tab-button is-active" role="tab" aria-selected="true" aria-controls="tabW2Prompt" data-tab="tabW2Prompt">C Prompt</button>
+          <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Memory" data-tab="tabW2Memory">記憶</button>
+          <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Policy" data-tab="tabW2Policy">主動規則</button>
+          <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Trigger" data-tab="tabW2Trigger">觸發主動</button>
+        </div>
 
-        <div class="lab-block">
-          <div class="block-heading"><span class="layer-number">C</span><div><h3>記憶與主動要寫進 Prompt</h3><p>兩個分塊可以自訂；長者資料、三層記憶與主動規則會自動生成成 Prompt 段落。</p></div></div>
+        <div id="tabW2Prompt" class="tab-panel" role="tabpanel" tabindex="0">
+          <h3>記憶與主動要寫進 Prompt</h3>
+          <p class="block-purpose">兩個分塊可以自訂；長者資料、三層記憶與主動規則會自動生成成 Prompt 段落。</p>
           <div class="prompt-variables" aria-label="長者資料">
             <label>長者稱呼<input id="elderAddress"><small>會取代分塊中的 <code>{USER_ADDRESS}</code></small></label>
             <label>居住城市<input id="elderCity"><small>沒說城市時的天氣查詢預設值</small></label>
@@ -175,7 +198,7 @@
           </details>
         </div>
 
-        <div class="memory-block">
+        <div id="tabW2Memory" class="tab-panel memory-block" role="tabpanel" tabindex="0" hidden>
           <h3>實作一：記憶分類</h3>
           <p>A 重要事實 · B 近期事件 · C 跨日摘要 · X 不保存</p>
           <p class="block-purpose">分類不只是考試：它決定 <code>update_memory</code> 把一句話存進哪一層（<code>layer=A/B/C</code>）、保存多久、誰能改，以及哪些資料一律不進記憶。上面的「記憶使用規則」就是把這套分類講給豆豆聽。</p>
@@ -199,7 +222,7 @@
           <p class="block-purpose">關鍵字過濾一定會漏，所以真正的防線是三件事一起：<strong>拒絕高風險類別、不主動複誦、人隨時可以刪</strong>。</p>
         </div>
 
-        <div class="policy-block">
+        <div id="tabW2Policy" class="tab-panel policy-block" role="tabpanel" tabindex="0" hidden>
           <h3>實作二：主動規則</h3>
           <p class="block-purpose">這一節有兩件事：先用 6 個固定情境驗證「該不該開口」的規則（純程式判斷，不呼叫模型），再用下面的「現在觸發一次」讓豆豆真的先開口說話。</p>
           <div class="field-row">
@@ -212,7 +235,6 @@
           </div>
           <label>每則主動訊息最多幾句<input id="maxSentences" type="number" min="1" max="6"></label>
           <div class="lab-actions">
-            <button id="saveWorkshop2" class="secondary-button">套用</button>
             <button id="runProactiveTests" class="primary-button">執行 6 個情境</button>
           </div>
           <div id="proactiveResults" class="test-results" aria-live="polite"></div>
@@ -226,7 +248,7 @@
           <div id="dayTimeline" class="day-timeline"></div>
         </div>
 
-        <div class="policy-block">
+        <div id="tabW2Trigger" class="tab-panel policy-block" role="tabpanel" tabindex="0" hidden>
           <h3>現在觸發一次主動關心</h3>
           <p class="block-purpose">同一套規則（<code>choose_event</code>）判斷這個情境；通過才讓豆豆在聊天室先開口，被擋下來就只顯示理由。程式決定「說不說」，模型只決定「怎麼說」。</p>
           <div class="field-row">

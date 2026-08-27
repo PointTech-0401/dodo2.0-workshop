@@ -795,3 +795,85 @@ def test_proactive_can_actually_speak_first() -> None:
     # The dead endpoint nothing ever called is gone.
     assert "/api/proactive-message" not in server
     assert "/api/proactive-message" not in script
+
+
+def test_lab_panels_are_tabbed_with_a_title_bar_apply_button() -> None:
+    """The right panel was one scrolling column of every control at once, with
+    套用 buried at the bottom. Each panel is tabbed now and 套用 sits in the title
+    row — rendered only when a field differs from what the live session has."""
+
+    import re
+
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
+
+    # Every tab button points at a panel that exists, and each bar opens on one.
+    declared = set(re.findall(r'id="([A-Za-z0-9_-]+)"', page))
+    tabs = re.findall(r'data-tab="([A-Za-z0-9_-]+)"', page)
+    assert tabs, "no tab buttons in the page"
+    assert set(tabs) <= declared, set(tabs) - declared
+    for bar in re.findall(r'<div class="tab-bar".*?</div>', page, re.S):
+        assert bar.count("is-active") == 1, bar[:120]
+
+    # 套用 moved into the title row of both sections and starts hidden.
+    for button in ("saveWorkshop1", "saveWorkshop2"):
+        heading = page.split(f'id="{button}"')[0].rsplit('<div class="section-heading">', 1)[1]
+        assert "<h2>" in heading, button
+        assert f'id="{button}" class="primary-button apply-button" hidden' in page, button
+    assert 'class="lab-actions"' not in page.split('id="saveWorkshop1"')[0]
+
+    # Dirty is measured against the last apply, not against `workspace` — 執行 6
+    # 個情境 and friends call collectWorkshop2() without any session.update, so a
+    # workspace comparison would hide a genuinely unapplied change.
+    assert "const appliedSnapshots = {}" in script
+    assert "function markApplied(groupName)" in script
+    assert "function refreshApplyState()" in script
+    collect_two = script.split("function collectWorkshop2() {")[1].split("\n}")[0]
+    assert "markApplied" not in collect_two
+    # Snapshot baseline is taken where state arrives, and refreshed on apply.
+    assert "markApplied();" in script.split("function loadFields() {")[1].split("\n}")[0]
+    for name in ("applyWorkshop1", "applyWorkshop2"):
+        body = script.split(f"async function {name}() {{")[1].split("\n}")[0]
+        assert "markApplied(" in body, name
+    # Assigning .value fires no input event, so a preset has to say so itself.
+    assert "refreshApplyState();" in script.split("function applyPreset(id) {")[1].split("\n}")[0]
+
+    # Every control 套用 sends is wired, including the four that had no listener.
+    for selector in ("#agentVoice", "#semanticEagerness", "#silenceDuration", "#interruptResponse"):
+        assert f'"{selector}"' in script.split("const WORKSHOP1_FIELDS = [")[1].split("];")[0]
+    assert '["input", "change"].forEach' in script
+
+    assert ".tab-button.is-dirty::after" in styles
+    assert ".tab-button.is-active" in styles
+    assert ".section-heading" in styles
+    # Dead after the rewrite; leaving them would rot.
+    for stale in ("lab-block", "block-heading", "layer-number"):
+        assert stale not in page, stale
+        assert stale not in styles, stale
+
+
+def test_passing_status_no_longer_floods_the_transcript() -> None:
+    """SYSTEM rows for every 套用 / session.updated / preset load pushed the
+    conversation off screen. Those go to the state bar; the transcript keeps
+    errors, refusals and milestones."""
+
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
+
+    assert 'id="activityNote"' in page and 'role="status"' in page
+    assert "function notify(text)" in script
+    for moved in ("Realtime 已確認套用", "已套用「", "第二堂設定已套用", "已載入「"):
+        assert f'addMessage("system", `{moved}' not in script, moved
+        assert f'addMessage("system", "{moved}' not in script, moved
+    # …and the ones that must still interrupt the student are still rows.
+    for kept in ("瀏覽器擋住了自動播放", "Realtime 回報設定錯誤", "目前沒有連接 OpenAI 模型"):
+        assert kept in script, kept
+    assert 'addMessage(\n      "system"' in script  # the one-shot preamble explainer
+
+    # An escape hatch that hides the instrumentation without discarding it.
+    assert 'id="chatOnly"' in page
+    assert '$("#messages").classList.toggle("is-chat-only"' in script
+    assert ".messages.is-chat-only .message.tool" in styles
+    assert ".activity-note" in styles

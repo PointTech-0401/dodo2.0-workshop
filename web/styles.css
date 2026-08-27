@@ -65,12 +65,21 @@ h3 { margin: 0 0 8px; font-size: 18px; }
 .message.user p { background: var(--paper); border-radius: 18px 4px 18px 18px; }
 .speaker { font-size: 10px; font-weight: 800; letter-spacing: .14em; color: var(--ink-soft); }
 /* Tool and system rows are workshop instrumentation, not 豆豆 speaking — keep
-   them visible (function calling is the lesson) but clearly not chat bubbles. */
-.message.tool, .message.system { max-width: 62%; margin-bottom: 14px; }
+   them visible (function calling is the lesson) but clearly not chat bubbles.
+   They used to be 62%-wide boxes stacked between every turn, which buried the
+   conversation; a one-line log row with the label inline reads as an aside. */
+.message.tool, .message.system { width: auto; max-width: 100%; margin-bottom: 6px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 9px; align-items: baseline; }
 .message.tool .speaker { color: var(--blue); }
 .message.system .speaker { color: var(--ink-soft); }
-.message.tool p, .message.system p { padding: 9px 13px; font-size: 13px; line-height: 1.55; color: var(--ink-soft); background: transparent; border: 1px dashed var(--line); border-radius: 4px; }
-.message.system p { border-style: solid; background: var(--paper); }
+.message.tool p, .message.system p { margin: 0; padding: 3px 0 3px 10px; font-size: 12px; line-height: 1.55; color: var(--ink-soft); background: transparent; border: 0; border-left: 2px solid var(--line); border-radius: 0; }
+.message.system p { border-left-color: var(--apricot); }
+/* An escape hatch for「我找不到剛剛聊到哪」: hide the instrumentation entirely
+   without losing it — unchecking brings every row back. */
+.messages.is-chat-only .message.tool, .messages.is-chat-only .message.system { display: none; }
+.log-toggle { display: flex; gap: 6px; align-items: center; margin-left: auto; color: var(--ink-soft); font-size: 12px; }
+.log-toggle input { margin: 0; }
+/* Passing status: 套用 confirmations, preset loads, reconnect notices. */
+.activity-note { margin: 0; padding: 4px 10px; border-radius: 999px; background: var(--sky); color: var(--ink); font-size: 12px; line-height: 1.5; }
 /* A preamble is a message item that shares a response with a function_call —
    豆豆 saying what it is about to look up, not the answer. Same bubble shape so
    it still reads as speech, but visibly not the reply. */
@@ -92,7 +101,22 @@ h3 { margin: 0 0 8px; font-size: 18px; }
 body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .lab-panel { min-width: 0; background: var(--paper); overflow-y: auto; max-height: calc(100vh - 77px); }
 .lab-section { padding: 38px 30px 60px; }
-.lab-section > label, .field-row label { display: block; margin-bottom: 14px; font-size: 13px; font-weight: 700; color: var(--ink-soft); }
+.lab-section > label, .tab-panel > label, .field-row label { display: block; margin-bottom: 14px; font-size: 13px; font-weight: 700; color: var(--ink-soft); }
+/* The 套用 button rides in the title row and is only rendered when something is
+   actually unapplied, so an untouched panel has no button asking to be pressed. */
+.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+.section-heading h2 { margin: 0; }
+.apply-button { flex: 0 0 auto; padding: 9px 20px; }
+/* Tabs replaced one long scrolling column that showed every control at once. */
+.tab-bar { display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: 20px; border-bottom: 1px solid var(--line); }
+.tab-button { position: relative; padding: 10px 14px 9px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--ink-soft); font-weight: 700; }
+.tab-button:hover { color: var(--blue); }
+.tab-button.is-active { color: var(--ink); border-bottom-color: var(--blue); }
+/* An edit made on a hidden tab still has to be findable, or 套用 shows up with
+   nothing on screen explaining why. */
+.tab-button.is-dirty::after { content: ""; position: absolute; top: 7px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--apricot); }
+.tab-panel:focus-visible { outline: none; }
+.tab-panel > h3 { margin-bottom: 8px; }
 .lab-section label input, .lab-section label textarea { margin-top: 6px; font-weight: 400; }
 .lab-section label select { margin-top: 6px; font-weight: 400; }
 .lab-section label small { display: block; margin-top: 6px; color: var(--ink-soft); font-weight: 400; line-height: 1.45; }
@@ -121,13 +145,7 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .voice-fact strong, .voice-fact span { display: block; }
 .voice-fact code { color: var(--blue); }
 .voice-fact span { margin-top: 3px; }
-.layer-intro { margin: -10px 0 24px; padding: 12px 14px; border-left: 4px solid var(--blue); background: var(--white); color: var(--ink-soft); font-size: 13px; line-height: 1.6; }
-.lab-block { margin-top: 18px; padding: 20px; border: 1px solid var(--line); border-radius: 16px 4px 16px 16px; background: rgba(255, 253, 248, .72); }
-.lab-block > label { display: block; margin-bottom: 15px; color: var(--ink-soft); font-size: 13px; font-weight: 700; }
-.block-heading { display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: start; margin-bottom: 18px; }
-.block-heading h3, .block-heading p { margin: 0; }
-.block-heading p { margin-top: 4px; color: var(--ink-soft); font-size: 12px; line-height: 1.45; }
-.layer-number { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: var(--white); font-weight: 800; }
+.layer-intro { margin: 0 0 18px; padding: 12px 14px; border-left: 4px solid var(--blue); background: var(--white); color: var(--ink-soft); font-size: 13px; line-height: 1.6; }
 .toggle-row { display: flex !important; gap: 9px; align-items: flex-start; color: var(--ink) !important; line-height: 1.45; }
 .toggle-row input { width: auto !important; margin: 3px 0 0 !important; }
 .mode-explanation { margin: 8px 0 0; padding: 11px 12px; background: var(--sky); color: var(--ink-soft); font-size: 12px; line-height: 1.55; }
@@ -146,7 +164,8 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .test-item { display: grid; grid-template-columns: 22px 1fr; gap: 6px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; line-height: 1.5; }
 .test-item.is-pass strong { color: #287653; }
 .test-item.is-fail strong { color: var(--danger); }
-.memory-block, .policy-block { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--line); }
+/* Each of these now owns a whole tab, so the rule that used to separate them
+   from the block above is gone with the single-column layout. */
 .memory-block > p { color: var(--ink-soft); font-size: 12px; line-height: 1.5; }
 .memory-card { margin: 14px 0; }
 .memory-card p { margin: 0 0 6px; font-size: 13px; line-height: 1.45; }

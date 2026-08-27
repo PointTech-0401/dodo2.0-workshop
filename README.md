@@ -28,6 +28,8 @@
 - 桌面版預設左右各半（1:1），可拖曳聊天區與右側 Prompt 設定區之間的分隔線；分隔線取得焦點後也可用左右方向鍵調整，拖過的寬度會記在瀏覽器裡
 - 重新整理（F5）會留在原本那一堂，不會因為按過「套用」就跳到 Workshop 2
 - 聊天輸入框按 Enter 送出、Shift+Enter 換行；右側設定區統一使用 14px Microsoft JhengHei
+- 右側設定區以分頁分組（Workshop 1：A 回答方式／B 何時算說完；Workshop 2：C Prompt／記憶／主動規則／觸發主動）。「套用」按鈕固定在該堂標題列最右邊，**只有在欄位真的和已送出的設定不同時才出現**；有未套用變更的分頁會標上小圓點，所以改在隱藏分頁也看得到
+- 「套用完成」「Realtime 已確認套用」這類過場狀態顯示在狀態列並自動淡出，不再洗版聊天室；聊天室只保留錯誤、拒絕與階段完成訊息。狀態列右邊的「只看對話」可暫時隱藏 `SYSTEM` 與 `TOOL` 記錄
 
 差異只在輸入與輸出介面：
 
@@ -166,7 +168,7 @@ uv run pytest
 
 ## Workshop 1：讓 Dodo 聽完，再回答
 
-右側分成兩個明確層次：
+右側分成兩個分頁，對應兩個明確層次：
 
 - A「用分塊設計回答方式」：名稱、使用者稱呼與五個 Prompt 分塊會即時組成完整 System Prompt。學生只能編輯「角色與身分、個性與聲音、對話方式、語言、邊界與安全」分塊；完整 Prompt 僅提供唯讀預覽。這份組裝結果在**建立連線時就隨 SDP offer 送給 OpenAI**，所以第一句話就已經是豆豆；按「套用」會再用 `session.update` 更新一次。回覆長度不設 API 上限，由「對話方式」分塊描述。
 - B「何時算說完」：`semantic_vad`、`server_vad`、`silence_duration_ms`、`interrupt_response` 或 Push-to-talk 會真正送進 Realtime session（mint 與 `session.update` 都會帶）。

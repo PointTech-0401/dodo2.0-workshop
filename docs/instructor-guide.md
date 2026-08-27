@@ -28,6 +28,7 @@
 - 鍵盤按「送出」會在同一個 Realtime session 建立文字回合，但不會使用 VAD 或靜音門檻。
 - A 區是模型 instructions（角色、聲音、回覆長度都在這裡描述，不設 token 上限）；Prompt 不負責偵測使用者是否說完。
 - instructions 在建立連線時就隨 SDP offer 送出，第一句話就是豆豆；按「套用」才會再 `session.update`。
+- 「套用」在標題列最右邊，**改了東西才會出現**。學生說「找不到套用按鈕」＝他還沒改任何欄位，此時送出去的設定本來就是最新的。改在別的分頁時，那個分頁會有小圓點。
 - B 區是 Realtime `turn_detection`；只有連接耳麥後才是在測真實 `server_vad`／`semantic_vad`。
 - `interrupt_response` 與 Push-to-talk 的 `response.cancel` 負責 barge-in，不是靠一句 Prompt 停止音訊。
 - 沒有耳麥時，回合設定只能用「套用後回答有什麼不同」來觀察，客端不會測量真實音訊。
