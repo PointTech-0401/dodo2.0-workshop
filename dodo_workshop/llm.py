@@ -20,7 +20,6 @@ class TextModel:
         instructions: str,
         user_input: str | list[dict[str, str]],
         fallback: str | None = None,
-        max_output_tokens: int = 180,
     ) -> str:
         if self.offline:
             if fallback is None:
@@ -30,10 +29,12 @@ class TextModel:
             raise RuntimeError(
                 "找不到 OPENAI_API_KEY。請在首次啟動引導輸入，或設定 .env。"
             )
+        # No `max_output_tokens`: reply length is a Prompt concern, not an API
+        # cap — the same choice the正式 dodo 專案 makes. A hard ceiling cuts
+        # sentences off mid-thought, which is worse than a slightly long answer.
         response = OpenAI(api_key=self.api_key).responses.create(
             model=self.model,
             instructions=instructions,
             input=user_input,
-            max_output_tokens=max(1, min(int(max_output_tokens), 4096)),
         )
         return response.output_text.strip()

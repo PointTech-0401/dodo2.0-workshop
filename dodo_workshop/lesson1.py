@@ -117,7 +117,6 @@ def run_lesson1(offline: bool = False) -> None:
             build_voice_instructions(persona),
             model_input,
             fallback_reply(result.text, result.event, persona),
-            max_output_tokens=persona["max_output_tokens"],
         )
         print(f"豆豆 > {reply}\n")
         history.extend([f"使用者：{result.text}", f"豆豆：{reply}"])

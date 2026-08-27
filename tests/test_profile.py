@@ -1,3 +1,6 @@
+import json
+
+from dodo_workshop.config import ROOT
 from dodo_workshop.profile import (
     DEFAULT_PROMPT_BLOCKS,
     WORKSHOP2_PROMPT_BLOCKS,
@@ -19,7 +22,6 @@ def test_normalize_workspace_preserves_student_changes_and_adds_defaults() -> No
     )
 
     assert workspace["profile"]["agent"]["name"] == "小暖"
-    assert workspace["profile"]["agent"]["max_output_tokens"] == 180
     assert workspace["profile"]["agent"]["prompt_blocks"] == DEFAULT_PROMPT_BLOCKS
     assert workspace["profile"]["realtime"]["turn_detection"]["type"] == "semantic_vad"
     assert workspace["progress"]["workshop_1_completed"] is True
@@ -219,3 +221,35 @@ def test_workshop2_starter_includes_the_new_prompt_layer() -> None:
     assert workspace["profile"]["workshop2_blocks"] == WORKSHOP2_PROMPT_BLOCKS
     # The preamble instruction is synced into the starter's Workshop 1 blocks.
     assert "preamble" in workspace["profile"]["agent"]["prompt_blocks"]["conversation_style"]
+
+
+def test_no_output_token_cap_survives_anywhere_in_a_project() -> None:
+    """「下載我的 Dodo」 kept re-exporting `max_output_tokens: 180`.
+
+    It was only ever removed from the Realtime `session.update`; the profile
+    schema and the CLI text path still carried it, and `_merge_defaults` keeps
+    every key a student's file has — so an older project fed it straight back
+    into the next export. Length is a Prompt concern here, not an API cap.
+    """
+
+    legacy = normalize_workspace(
+        {
+            "schema_version": 1,
+            "profile": {"agent": {"name": "小暖", "max_output_tokens": 180}},
+        }
+    )
+
+    assert "max_output_tokens" not in legacy["profile"]["agent"]
+    assert "max_output_tokens" not in json.dumps(legacy, ensure_ascii=False)
+    assert "max_output_tokens" not in json.dumps(normalize_workspace(None), ensure_ascii=False)
+    assert "max_output_tokens" not in json.dumps(workshop2_starter(), ensure_ascii=False)
+
+    # The two shipped project files are what a student opens or imports.
+    for name in ("starter/workshop2-default-dodo.json", "student/my-dodo.json"):
+        assert "max_output_tokens" not in (ROOT / name).read_text(encoding="utf-8"), name
+
+    # And the browser must not put it back on the way to the download.
+    script = (ROOT / "web" / "app.js").read_text(encoding="utf-8")
+    collect = script.split("function collectWorkshop1() {")[1].split("\n}")[0]
+    assert "max_output_tokens" not in collect
+    assert "delete agent.max_output_tokens;" in script

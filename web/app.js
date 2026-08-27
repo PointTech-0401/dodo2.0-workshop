@@ -305,6 +305,10 @@ function migrateAgent(agent) {
     }
   }
   agent.prompt_blocks = { ...DEFAULT_PROMPT_BLOCKS, ...agent.prompt_blocks };
+  // Mirrors normalize_workspace: deepMerge keeps whatever a stored or imported
+  // project carries, so an output cap from an older build survives every save
+  // and lands back in 下載我的 Dodo. This project sets no cap anywhere.
+  delete agent.max_output_tokens;
   agent.system_prompt = buildSystemPrompt(agent);
   return agent;
 }
@@ -567,9 +571,6 @@ function collectWorkshop1() {
     prompt_blocks: promptBlocksFromFields(),
     system_prompt: buildSystemPrompt(agentFromFields()),
     voice: selectedVoice(),
-    // Preserved for the CLI text lessons (Responses API); the Realtime session
-    // no longer sends an output-token cap.
-    max_output_tokens: workspace.profile.agent.max_output_tokens,
   };
   workspace.profile.realtime = {
     turn_detection: {

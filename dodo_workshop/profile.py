@@ -276,7 +276,6 @@ DEFAULT_WORKSPACE: dict[str, Any] = {
             "prompt_blocks": copy.deepcopy(DEFAULT_PROMPT_BLOCKS),
             "system_prompt": "",
             "voice": DEFAULT_VOICE,
-            "max_output_tokens": 180,
         },
         "realtime": {
             "turn_detection": {
@@ -352,6 +351,10 @@ def normalize_workspace(value: dict[str, Any] | None) -> dict[str, Any]:
         raise ValueError("目前只支援 schema_version 1。")
     workspace = _merge_defaults(DEFAULT_WORKSPACE, value)
     agent = workspace["profile"]["agent"]
+    # Dropped on the way in, not just missing from the defaults: `_merge_defaults`
+    # keeps every key the student's file carries, so an older 我的 Dodo would
+    # re-export the output cap this project deliberately never sets.
+    agent.pop("max_output_tokens", None)
     agent["prompt_blocks"] = prompt_blocks_for(agent)
     # Stored as Workshop 1 only, on purpose: the Workshop 2 half depends on live
     # memory and is composed at send time by `compose_full_instructions`.
