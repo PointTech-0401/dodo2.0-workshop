@@ -268,7 +268,7 @@ function renderIntakeHints() {
   const quiet = readRows("routine").filter((row) => row.do_not_disturb).length;
   const meds = readRows("medication").length;
   $("#hintRoutines").textContent = quiet
-    ? `${quiet} 段不打擾時段會變成主動分頁帶狀圖上的灰色；只有重要提醒能穿過。`
+    ? `${quiet} 段不打擾時段會變成主動規則分頁帶狀圖上的灰色；只有重要提醒能穿過。`
     : "還沒有不打擾時段：現在她的一天裡，豆豆什麼時候都能開口。";
   $("#hintCare").textContent = meds
     ? `${meds} 筆用藥會變成重要提醒 —— 不受間隔與上限限制，也不吃額度。`
@@ -1866,6 +1866,10 @@ function init() {
       if (event.key === "Enter" || event.key === " ") { event.preventDefault(); goto(); }
     });
   });
+  // 主動規則 and 主動對話 are two halves of one line: the rules, then the only
+  // place that runs them for real. Each end points at the other.
+  $$("[data-goto-policy]").forEach((element) => element.addEventListener("click", () => switchTab("tabW2Policy")));
+  $$("[data-goto-live]").forEach((element) => element.addEventListener("click", () => switchTab("tabW2Live")));
   $("#declineChat").addEventListener("click", () => (isDeclinedNow() ? clearDecline() : declineChat()));
   $("#proactiveEventType").addEventListener("change", suggestTriggerTopic);
   $$("[data-trigger-mode]").forEach((button) => {

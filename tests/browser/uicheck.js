@@ -617,6 +617,22 @@ ok("今日已發送 names the daily limit", $("#sentTodayHint").textContent.incl
 ok("模擬現在時間 names her 作息, not a quiet-hours field",
    /安靜|不打擾|上床與起床/.test($("#nowHint").textContent), $("#nowHint").textContent);
 
+// --- 主動規則 → 主動對話: rules on one tab, the place they run on the other --
+// The cut is where the risk changes: nothing on 主動規則 reaches the student, and
+// everything on 主動對話 does — a real response.create, and a summary of what was
+// actually said. So the schedule and summary flows below start by going there.
+$('.tab-button[data-tab="tabW2Policy"]').click();
+ok("主動規則 holds the two knobs and her day",
+   shown("tabW2Policy") && !shown("tabW2Live") && !$("#cooldown").closest(".tab-panel").hidden);
+$("[data-goto-live]").click();
+ok("...and points at the tab that runs them", shown("tabW2Live") && !shown("tabW2Policy"));
+ok("真的開口 and 今日摘要 moved with it",
+   !$("#triggerProactive").closest(".tab-panel").hidden
+   && !$("#runTodaySummary").closest(".tab-panel").hidden);
+$("[data-goto-policy]").click();
+ok("...and the way back works too", shown("tabW2Policy") && !shown("tabW2Live"));
+$('.tab-button[data-tab="tabW2Live"]').click();
+
 // --- 待提醒項目: the time field finally means something --------------------
 $("#scheduleAuto").checked = false; fire("#scheduleAuto", "change");
 ok("the pending list starts empty", $("#scheduleList").textContent.includes("沒有待提醒項目"));

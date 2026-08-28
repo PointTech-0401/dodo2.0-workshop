@@ -1395,23 +1395,40 @@ def test_the_reference_intake_endpoint_hands_over_the_answer_key_on_purpose() ->
         data["elder_profile"], data["memory"], REFERENCE["expected_counts"]))
 
 
-def test_the_two_proactive_tabs_are_one_line_top_to_bottom() -> None:
-    """主動規則 and 觸發主動 were two tabs describing one mechanism: the rules on
-    one, the only place that exercises them on the other. Spec §5.3 merges them
-    into a single 主動 tab read top to bottom — two knobs, her day, real speech,
-    today's summary."""
+def test_the_proactive_half_is_rules_then_the_place_they_run() -> None:
+    """The 主動 half is two tabs, cut where the risk changes.
+
+    Everything on 主動規則 is a simulation: nothing 豆豆 says there reaches the
+    student, so the rules and 她的一天 can be swept and re-run freely. 主動對話 is
+    the only place a `response.create` actually goes out — plus 今日摘要, which
+    also consumes the live conversation rather than a model of it.
+
+    This is a different cut from the one spec §5.3 made (rules vs. trigger, which
+    were two halves of one mechanism and were merged). The merged tab then held
+    four numbered sections and had simply grown too long to read.
+    """
 
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
     script = client_script()
 
-    # Three tabs, not four. The id stays tabW2Policy; only the label merges.
-    assert page.count('data-tab="tabW2') == 3
-    assert '>主動</button>' in page
+    # 建檔／對話規範／主動規則／主動對話. tabW2Trigger stays dead — the new tab is
+    # not the old one coming back: it holds 真的開口 AND 今日摘要, not the rules.
+    assert page.count('data-tab="tabW2') == 4
+    assert '>主動規則</button>' in page and '>主動對話</button>' in page
     assert 'id="tabW2Trigger"' not in page and 'data-tab="tabW2Trigger"' not in page
-    # Both halves are inside the surviving panel, in order.
-    panel = page.split('<div id="tabW2Policy"')[1].split("</section>")[0]
-    for heading in ("一、你只有兩個旋鈕", "二、跑她的一天", "三、真的開口", "四、產生今日摘要"):
-        assert heading in panel, heading
+    rules = page.split('<div id="tabW2Policy"')[1].split('<div id="tabW2Live"')[0]
+    live = page.split('<div id="tabW2Live"')[1].split("</section>")[0]
+    for heading in ("一、你只有兩個旋鈕", "二、跑她的一天"):
+        assert heading in rules and heading not in live, heading
+    for heading in ("一、真的開口", "二、產生今日摘要"):
+        assert heading in live and heading not in rules, heading
+    # Nothing on 主動規則 can make 豆豆 speak, and the two knobs stay with it.
+    assert 'id="triggerProactive"' in live and 'id="addSchedule"' in live
+    assert 'id="runTodaySummary"' in live and 'id="runTodaySummary"' not in rules
+    assert 'id="cooldown"' in rules and 'id="dailyLimit"' in rules
+    # Each half points at the other, so neither reads as the whole story.
+    assert "data-goto-live" in rules and "data-goto-policy" in live
+    assert 'switchTab("tabW2Live")' in script and 'switchTab("tabW2Policy")' in script
     # 執行 6 個情境 is gone, runner and all (spec §5.3 item 4).
     assert "執行 6 個情境" not in page
     assert "runProactiveTests" not in script and "/api/proactive-check" not in script

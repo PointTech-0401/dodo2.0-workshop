@@ -193,7 +193,8 @@
           <div class="tab-bar" role="tablist" aria-label="Workshop 2 設定">
             <button type="button" class="tab-button is-active" role="tab" aria-selected="true" aria-controls="tabW2Intake" data-tab="tabW2Intake">建檔</button>
             <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Prompt" data-tab="tabW2Prompt">對話規範</button>
-            <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Policy" data-tab="tabW2Policy">主動</button>
+            <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Policy" data-tab="tabW2Policy">主動規則</button>
+            <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Live" data-tab="tabW2Live">主動對話</button>
           </div>
         </div>
 
@@ -211,7 +212,7 @@
             <small>不想自己填、或中途才加入的人用這個：一次把秀蘭阿嬤的參考答案填進下面六區。<strong>還是要按「套用」才生效</strong>，填進來之後照樣可以改。</small>
           </p>
           <div id="intakeCompleteness" class="completeness" aria-live="polite" aria-label="建檔完整度"></div>
-          <p class="block-purpose">完整度只算<strong>數量</strong>，不判對錯。填得對不對，看「主動」分頁裡她的一天，以及每一區右上角「問豆豆這一區」她怎麼回答。</p>
+          <p class="block-purpose">完整度只算<strong>數量</strong>，不判對錯。填得對不對，看「主動規則」分頁裡她的一天，以及每一區右上角「問豆豆這一區」她怎麼回答。</p>
 
           <section class="intake-section" data-intake="basics">
             <header>
@@ -231,7 +232,7 @@
 
           <section class="intake-section" data-intake="routines">
             <header>
-              <div><h4>2. 作息</h4><small>落點：安靜與不打擾時段（主動分頁的帶狀圖由這裡算出）｜ 訪談 §1、§3</small></div>
+              <div><h4>2. 作息</h4><small>落點：安靜與不打擾時段（主動規則分頁的帶狀圖由這裡算出）｜ 訪談 §1、§3</small></div>
               <button type="button" class="ask-dodo" data-ask="我幾點睡？我午睡的時候可以找我聊天嗎？">問豆豆這一區</button>
             </header>
             <div class="field-row">
@@ -313,7 +314,7 @@
 
         <div id="tabW2Prompt" class="tab-panel" role="tabpanel" tabindex="0" hidden>
           <h3>對話規範：建檔決定資料，Prompt 只寫規範</h3>
-          <p class="block-purpose">四個小格是你可以改的——它們只寫豆豆<strong>怎麼</strong>記、<strong>怎麼</strong>開口。她的資料、她記得的事、禁區與程式規則四段由建檔與主動分頁自動生成，改資料請回到建檔。</p>
+          <p class="block-purpose">四個小格是你可以改的——它們只寫豆豆<strong>怎麼</strong>記、<strong>怎麼</strong>開口。她的資料、她記得的事、禁區與程式規則四段由建檔與主動規則分頁自動生成，改資料請回到建檔。</p>
           <div class="preset-row">
             <p class="preset-label">快速套用規範範例</p>
             <div id="rulePresets" class="preset-buttons"></div>
@@ -341,7 +342,7 @@
             <li><code># 長者資料</code><span>← 建檔 › 基本資料、作息、用藥與回診、緊急聯絡人（電話不進）</span></li>
             <li><code># 目前記得的事（三層記憶）</code><span>← 建檔 › 興趣與偏好、近期身體狀況，以及豆豆自己記的</span></li>
             <li><code># 不主動提起</code><span>← 建檔 › 只能她自己提</span></li>
-            <li><code># 主動訊息的程式規則</code><span>← 主動分頁的兩個數字＋建檔 › 作息</span></li>
+            <li><code># 主動訊息的程式規則</code><span>← 主動規則分頁的兩個數字＋建檔 › 作息</span></li>
           </ul>
           <!-- The demo the docs used to describe in prose: ask, change, apply,
                ask the same thing again, and read the two answers side by side. -->
@@ -361,7 +362,7 @@
 
         <div id="tabW2Policy" class="tab-panel policy-block" role="tabpanel" tabindex="0" hidden>
           <h3>實作二：她的一天</h3>
-          <p class="block-purpose"><strong>程式決定說不說，模型只決定怎麼說。</strong>下表就是那套程式規則的全部內容，按 <code>choose_event()</code> 的判斷順序排。中間那一欄是它存在的理由——拿掉它，下面「跑她的一天」裡就真的會發生那件事。</p>
+          <p class="block-purpose"><strong>程式決定說不說，模型只決定怎麼說。</strong>下表就是那套程式規則的全部內容，按 <code>choose_event()</code> 的判斷順序排。中間那一欄是它存在的理由——拿掉它，下面「跑她的一天」裡就真的會發生那件事。這一頁只定規則、只跑模擬，<strong>不會讓豆豆真的講話</strong>；那在下一頁「主動對話」。</p>
           <details class="why-details">
             <summary>為什麼會主動說話的 Agent 一定要有規則？</summary>
             <div>
@@ -462,9 +463,13 @@
             <div id="dayMissing" class="day-missing" aria-live="polite"></div>
             <div id="dayTimeline" class="day-timeline"></div>
           </details>
+          <p class="block-purpose">這兩個數字調到你滿意了，就到<button type="button" class="link-to-intake" data-goto-live>主動對話</button>讓豆豆用它們真的開口一次。</p>
+        </div>
 
-          <h4 class="sub-heading">三、真的開口</h4>
-          <p class="block-purpose">這裡是唯一會讓豆豆<strong>真的在聊天室先開口</strong>的地方。同一套 <code>choose_event</code> 先判斷，通過才送 <code>response.create</code> 讓它說話，被擋下來就只顯示理由。</p>
+        <div id="tabW2Live" class="tab-panel policy-block" role="tabpanel" tabindex="0" hidden>
+          <h3>實作三：讓豆豆真的開口</h3>
+          <p class="block-purpose">前一頁是規則，這一頁是規則被執行的地方——也是唯一會讓豆豆<strong>真的在聊天室先開口</strong>的地方。同一套 <code>choose_event</code> 先判斷，通過才送 <code>response.create</code> 讓它說話，被擋下來就只顯示理由。<button type="button" class="link-to-intake" data-goto-policy>回主動規則改那兩個數字</button></p>
+          <h4 class="sub-heading">一、真的開口</h4>
           <details class="why-details">
             <summary>先講清楚這裡「沒有」什麼</summary>
             <div>
@@ -522,7 +527,7 @@
           <div id="scheduleList" class="schedule-list" aria-live="polite"></div>
           <p class="block-purpose">真實累積量（排程與手動實際說出去的訊息都算在內）：<span id="proactiveLiveState" class="live-state"></span></p>
 
-          <h4 class="sub-heading">四、產生今日摘要（記憶 C 層）</h4>
+          <h4 class="sub-heading">二、產生今日摘要（記憶 C 層）</h4>
           <p class="block-purpose">C 層是<strong>唯一不是人打字寫進去的</strong>：它從今天的對話整理出來。按下去會把聊天室裡的對話送去摘要，寫成一筆 C 層記憶——回建檔的檢視器就看得到。</p>
           <div class="lab-actions">
             <button id="runTodaySummary" class="primary-button">產生今日摘要</button>
