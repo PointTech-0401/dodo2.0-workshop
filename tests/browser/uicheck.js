@@ -21,7 +21,8 @@ const realFetch = globalThis.fetch;
 globalThis.fetch = async (url, init) => {
   if (String(url).includes("/api/bootstrap")) return { json: async () => bootstrap };
   // The scheduler decides through the server, exactly as the classroom does.
-  if (String(url).includes("/api/proactive-decide")) {
+  if (String(url).includes("/api/proactive-decide")
+      || String(url).includes("/api/proactive-simulate")) {
     return realFetch(`http://127.0.0.1:${PORT}${url}`, init);
   }
   throw new Error(`unexpected fetch: ${url}`);
@@ -281,6 +282,57 @@ $("#revertWorkshop2").click();
 ok("取消變更 takes the band's numbers back too",
    $("#policySummary").textContent.includes("冷卻 30 分鐘"), $("#policySummary").textContent);
 
+// --- 事件優先權 is a field now, and the dropdown follows it before 套用 ------
+const priorityTypes = Object.keys(bootstrap.default_workspace.profile.proactive_policy.priorities);
+ok("事件優先權 renders one field per event type",
+   $("#priorityFields").querySelectorAll("[data-priority]").length === priorityTypes.length,
+   `${$("#priorityFields").querySelectorAll("[data-priority]").length}/${priorityTypes.length}`);
+$('#priorityFields [data-priority="news"]').value = "999";
+fire('#priorityFields [data-priority="news"]', "input");
+ok("raising a priority reaches the 觸發主動 dropdown without 套用",
+   [...$("#proactiveEventType").options][0].value === "news",
+   [...$("#proactiveEventType").options].map((o) => o.value).join(","));
+ok("...and the Prompt's 事件優先權 line with it",
+   $("#workshop2SystemPrompt").textContent.includes("news(999)"));
+ok("...and it counts as an unapplied change",
+   $('.tab-button[data-tab="tabW2Policy"]').classList.contains("is-dirty"));
+$("#revertWorkshop2").click();
+ok("取消變更 puts the priority rows back",
+   Number($('#priorityFields [data-priority="news"]').value)
+   === bootstrap.default_workspace.profile.proactive_policy.priorities.news);
+// The rows are re-sorted on revert, so the dirty check has to compare the
+// numbers rather than their order — otherwise 取消變更 leaves a phantom dot.
+ok("...leaving no phantom dirty dot behind",
+   !$('.tab-button[data-tab="tabW2Policy"]').classList.contains("is-dirty"));
+
+// --- 跑一整天 names the rule that did the blocking ------------------------
+// The most direct answer this page has to 「為什麼要設計這條規則」, so it has to
+// keep matching `choose_event`'s wording — the tally reads its sentences.
+$("#runDaySimulation").click();
+await new Promise((r) => setTimeout(r, 900));
+ok("跑一整天 names the rule that blocked the most",
+   $("#daySummary").textContent.includes("擋掉最多的是")
+   && $("#daySummary").textContent.includes("冷卻時間"),
+   $("#daySummary").textContent.slice(0, 160));
+ok("...and totals every rule that blocked something", ["安靜時段", "每日上限", "尊重拒絕"]
+   .every((label) => $("#daySummary").textContent.includes(label)),
+   $("#daySummary").textContent.slice(0, 240));
+ok("...with nothing falling through to 其他",
+   !$("#daySummary").textContent.includes("其他"));
+
+// --- 觸發主動: one event block, two modes, no A/B headings -----------------
+ok("觸發主動 opens on the real-clock mode",
+   shown("triggerModeSchedule") && !shown("triggerModeManual"));
+ok("...and the note says which clock decides", $("#triggerModeNote").textContent.includes("真實時鐘"));
+$('[data-trigger-mode="manual"]').click();
+ok("switching to 假設 mode swaps the fields",
+   shown("triggerModeManual") && !shown("triggerModeSchedule"));
+ok("...and the note follows the switch", $("#triggerModeNote").textContent.includes("假設"));
+ok("...but the pending list never hides with it", shown("scheduleList"));
+$('[data-trigger-mode="schedule"]').click();
+ok("switching back restores the schedule fields",
+   shown("triggerModeSchedule") && !shown("triggerModeManual"));
+
 // --- the manual trigger's fields carry the rule they are measured against --
 ok("距上次 names the cooldown it must beat", $("#sinceLastHint").textContent.includes("30 分鐘"));
 $("#proactiveSinceLast").value = "5"; fire("#proactiveSinceLast", "input");
@@ -300,6 +352,11 @@ $("#addSchedule").click();
 ok("adding a reminder creates a row", $("#scheduleList").querySelectorAll(".schedule-row").length === 1);
 ok("the row shows its time and topic", $("#scheduleList").textContent.includes("16:00")
    && $("#scheduleList").textContent.includes("要帶健保卡"));
+// 刪除 used to be pushed onto a line of its own by the status cell's column span.
+ok("刪除 rides on the row itself, with no reason line yet", (() => {
+  const row = $("#scheduleList").querySelector(".schedule-row");
+  return Boolean(row.querySelector(".schedule-delete")) && !row.querySelector(".schedule-reason");
+})());
 ok("the reminder is persisted with the project", (() => {
   const stored = JSON.parse(localStorage.getItem("dodo-workshop.project") || "{}");
   return (stored.scheduled || []).length === 1;
@@ -327,6 +384,8 @@ ok("...and records the rule's reason", Boolean(fired && fired.reason), fired && 
 ok("...and the TOOL row explains it", $("#messages").textContent.includes("待提醒觸發"));
 ok("...but says 保持安靜 rather than claiming it spoke with no API key",
    fired.status === "blocked" && fired.reason.includes("說不出話"), fired.reason);
+ok("...and a blocked row grows a second line for that reason",
+   Boolean($("#scheduleList").querySelector(".schedule-reason")));
 const firedTwice = $("#messages").textContent.split("待提醒觸發").length - 1;
 await new Promise((r) => setTimeout(r, 600));
 ok("a fired reminder never fires again",

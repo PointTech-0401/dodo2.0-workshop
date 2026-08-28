@@ -1234,7 +1234,9 @@ def test_proactive_event_types_are_rendered_from_the_project_priorities() -> Non
     assert '<option value="reminder">' not in page
     assert "function renderProactiveEventOptions()" in script
     render = script.split("function renderProactiveEventOptions() {")[1].split("\n}")[0]
-    assert "workspace.profile.proactive_policy.priorities" in render
+    # From the live fields, not the saved workspace: 事件優先權 is editable now,
+    # so lowering emergency has to reach this dropdown before 套用.
+    assert "proactivePolicyFromFields().priorities" in render
     assert "優先權 ${score}" in render
     assert "renderProactiveEventOptions();" in script.split("function loadFields() {")[1].split("\n}")[0]
     # And the panel says so, rather than leaving students to assume integrations.

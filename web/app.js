@@ -265,6 +265,8 @@ const APPLY_GROUPS = {
           $("#cooldown").value = policy.cooldown_minutes;
           $("#dailyLimit").value = policy.daily_message_limit;
           $("#maxSentences").value = policy.max_message_sentences;
+          renderPriorityFields(policy.priorities);
+          renderProactiveEventOptions();
         },
       },
     },
@@ -430,8 +432,34 @@ const PROACTIVE_EVENT_LABELS = {
   news: "news 新聞",
 };
 
+/** The six numbers behind 事件優先權. The docs told students to tune them and
+ *  the screen had no field for it — the only way in was editing the JSON by
+ *  hand. Rendered once per load (and per 取消變更): re-rendering on every
+ *  keystroke would re-sort the rows under the cursor. */
+function renderPriorityFields(priorities = workspace.profile.proactive_policy.priorities) {
+  const entries = Object.entries(priorities || {})
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]));
+  $("#priorityFields").innerHTML = entries.map(([type, score]) => `
+    <label class="priority-field">
+      <span>${escapeHtml(PROACTIVE_EVENT_LABELS[type] || type)}</span>
+      <input type="number" min="0" max="999" data-priority="${escapeHtml(type)}" value="${Number(score) || 0}">
+    </label>`).join("");
+}
+
+/** Keys come out alphabetically, not in DOM order: the dirty check compares
+ *  JSON strings, and a re-sorted 取消變更 would otherwise look like an edit. */
+function prioritiesFromFields() {
+  const inputs = [...document.querySelectorAll("#priorityFields [data-priority]")];
+  if (!inputs.length) return { ...(workspace.profile.proactive_policy.priorities || {}) };
+  return Object.fromEntries(inputs
+    .map((input) => [input.dataset.priority, Math.max(0, Number(input.value) || 0)])
+    .sort((left, right) => left[0].localeCompare(right[0])));
+}
+
 function renderProactiveEventOptions() {
-  const priorities = workspace.profile.proactive_policy.priorities || {};
+  // From the fields rather than the saved workspace, so lowering emergency shows
+  // up in this dropdown before 套用 — 「類型只是一個數字」stays visible.
+  const priorities = proactivePolicyFromFields().priorities || {};
   const selected = $("#proactiveEventType").value;
   $("#proactiveEventType").innerHTML = Object.entries(priorities)
     .sort((left, right) => right[1] - left[1])
@@ -804,6 +832,7 @@ function loadFields() {
   $("#cooldown").value = proactive.cooldown_minutes;
   $("#dailyLimit").value = proactive.daily_message_limit;
   $("#maxSentences").value = proactive.max_message_sentences;
+  renderPriorityFields(proactive.priorities);
   renderProactiveEventOptions();
   // Last: both previews read every field above, Workshop 2's included.
   rebuildSystemPrompt();
@@ -866,6 +895,7 @@ function proactivePolicyFromFields() {
     cooldown_minutes: Number($("#cooldown").value),
     daily_message_limit: Number($("#dailyLimit").value),
     max_message_sentences: Math.max(1, Number($("#maxSentences").value) || 2),
+    priorities: prioritiesFromFields(),
   };
 }
 
@@ -1597,7 +1627,6 @@ function renderPolicyPreview() {
     `可以開口 <b>${24 - quietCount}</b> 小時`,
     `冷卻 <b>${policy.cooldown_minutes}</b> 分鐘 → 最多容得下 <b>${cooldownCap === Infinity ? "不限" : cooldownCap}</b> 則`,
     `每日上限 <b>${policy.daily_message_limit}</b> 則`,
-    `每則最多 <b>${policy.max_message_sentences}</b> 句`,
   ].join(" ｜ ");
 
   // Which of the three limits is doing the work. Students change 冷卻 and see
@@ -1702,13 +1731,17 @@ function renderScheduleList() {
   }
   $("#scheduleList").innerHTML = items.map((item) => {
     const due = item.status === "pending" && item.time <= `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
-    const status = due ? "時間已到，等待觸發" : SCHEDULE_STATUS_LABELS[item.status] || item.status;
+    const status = due ? "時間已到" : SCHEDULE_STATUS_LABELS[item.status] || item.status;
+    // One line: 時間・類型・內容・狀態・×. The reason only takes a second line
+    // when there is one — that sentence names the rule that blocked it, which
+    // is the whole lesson, so it is never truncated away.
     return `<div class="schedule-row is-${item.status}${due ? " is-due" : ""}">
       <time>${escapeHtml(item.time)}</time>
-      <span class="schedule-kind">${escapeHtml(PROACTIVE_EVENT_LABELS[item.type] || item.type)}</span>
+      <span class="schedule-kind">${escapeHtml(DAY_EVENT_LABELS[item.type] || item.type)}</span>
       <span class="schedule-topic">${escapeHtml(item.topic || "（未填寫內容）")}</span>
-      <span class="schedule-status">${escapeHtml(status)}${item.reason ? `：${escapeHtml(item.reason)}` : ""}</span>
-      <button type="button" class="link-button" data-schedule-id="${escapeHtml(item.id)}">刪除</button>
+      <span class="schedule-status">${escapeHtml(status)}</span>
+      <button type="button" class="schedule-delete" data-schedule-id="${escapeHtml(item.id)}" title="刪除這一筆" aria-label="刪除 ${escapeHtml(item.time)} 的待提醒">×</button>
+      ${item.reason ? `<small class="schedule-reason">${escapeHtml(item.reason)}</small>` : ""}
     </div>`;
   }).join("");
 }
@@ -1820,6 +1853,27 @@ function startScheduler() {
   scheduleTimer = setInterval(tickScheduler, SCHEDULE_TICK_MS);
 }
 
+// =====================================================================
+// 觸發主動 had three stacked blocks: a shared 事件 form with no heading of its
+// own, then A and B. The only real difference between A and B is which clock
+// decides, so that became the switch and the headings went away.
+// =====================================================================
+const TRIGGER_MODE_NOTES = {
+  schedule: "用<strong>真實時鐘</strong>和真實累積量：時間到了，瀏覽器代替事件源推一次，跑的是同一個 <code>choose_event</code>。每一筆只觸發一次。",
+  manual: "下面四個欄位都是<strong>你假設的狀況</strong>，用來一次一次戳規則的邊界，例如「如果現在是凌晨三點呢」。不影響下面的待提醒清單。",
+};
+
+function switchTriggerMode(mode) {
+  const target = TRIGGER_MODE_NOTES[mode] ? mode : "schedule";
+  $$("[data-trigger-mode]").forEach((button) => {
+    const isActive = button.dataset.triggerMode === target;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+    document.getElementById(button.getAttribute("aria-controls")).hidden = !isActive;
+  });
+  $("#triggerModeNote").innerHTML = TRIGGER_MODE_NOTES[target];
+}
+
 async function runProactiveTests() {
   collectWorkshop2();
   setState("thinking", "正在執行 6 個主動情境");
@@ -1877,6 +1931,29 @@ function renderDayDelta(result) {
   ].join("、")}</p>`;
 }
 
+// `choose_event` returns a sentence, not a code. Matching on the distinctive
+// word is enough to total up which rule did the work — and that total is the
+// most direct answer this page has to 「為什麼要設計這條規則」.
+const BLOCK_RULES = [
+  ["安靜時段", "安靜時段"],
+  ["太近", "冷卻時間"],
+  ["上限", "每日上限"],
+  ["拒絕", "尊重拒絕"],
+];
+
+function renderDayBlockers(result) {
+  const tally = new Map();
+  result.steps.filter((step) => !step.spoke).forEach((step) => {
+    const hit = BLOCK_RULES.find(([needle]) => String(step.reason).includes(needle));
+    const label = hit ? hit[1] : "其他";
+    tally.set(label, (tally.get(label) || 0) + 1);
+  });
+  if (!tally.size) return '<p class="day-blockers">這一天沒有任何事件被擋下 —— 13 件全說出去了。</p>';
+  const ranked = [...tally.entries()].sort((left, right) => right[1] - left[1]);
+  const breakdown = ranked.map(([label, count]) => `${label} <b>${count}</b> 次`).join("・");
+  return `<p class="day-blockers">這一天擋掉最多的是〈<strong>${ranked[0][0]}</strong>〉：${breakdown}。</p>`;
+}
+
 /** Replay one scripted day through the student's rules. Deterministic and
  *  API-free, so the whole class can run it. Deliberately reports two numbers
  *  and no single grade: tightening the rules trades noise for misses, and there
@@ -1900,6 +1977,7 @@ async function runDaySimulation() {
         <span class="${result.missed_critical ? "is-worse" : "is-better"}">漏掉重要事 <b>${result.missed_critical}</b>／${result.critical_total}</span>
         <span class="${result.noise > 2 ? "is-worse" : ""}">打擾 <b>${result.noise}</b>／${result.optional_total}</span>
       </div>
+      ${renderDayBlockers(result)}
       ${renderDayDelta(result)}
       <p class="day-hint">兩個數字會互相拉扯：規則放寬，打擾變多；規則收緊，重要的事會被漏掉。沒有滿分答案。</p>`;
     $("#dayTimeline").innerHTML = result.steps.map((step) => `
@@ -2593,6 +2671,7 @@ async function initialize() {
   restoreLabPanelWidth();
   $("#proactiveNow").value = new Date().toTimeString().slice(0, 5);
   $("#scheduleTime").value = new Date().toTimeString().slice(0, 5);
+  switchTriggerMode("schedule");
   renderScheduleList();
   renderProactiveLiveState();
   renderTriggerHints();
@@ -2662,6 +2741,17 @@ bindFieldEvents(WORKSHOP2_FIELDS, () => {
   // 主動規則 is five numbers; the band and the hints are what make them legible.
   renderPolicyPreview();
   renderTriggerHints();
+});
+// Dynamic rows, so the listener lives on the container. Editing a priority
+// changes the Prompt, the 套用 state and the 觸發主動 dropdown — but never
+// re-renders these inputs, which would move the row being typed into.
+["input", "change"].forEach((event) => $("#priorityFields").addEventListener(event, () => {
+  rebuildWorkshop2Prompt();
+  refreshApplyState();
+  renderProactiveEventOptions();
+}));
+$$("[data-trigger-mode]").forEach((button) => {
+  button.addEventListener("click", () => switchTriggerMode(button.dataset.triggerMode));
 });
 // The manual trigger's own fields are half of every comparison in the hints.
 bindFieldEvents(["#proactiveNow", "#proactiveSinceLast", "#proactiveSentToday"], renderTriggerHints);

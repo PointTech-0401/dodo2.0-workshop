@@ -238,21 +238,83 @@
 
         <div id="tabW2Policy" class="tab-panel policy-block" role="tabpanel" tabindex="0" hidden>
           <h3>實作二：主動規則</h3>
-          <p class="block-purpose">這一頁在調的是「<strong>豆豆什麼時候可以不等你問就先開口</strong>」。下面五個欄位就是那套規則 —— 它們是<strong>程式</strong>在判斷，不是模型：程式先決定「說不說」，決定要說之後，模型才負責「怎麼說」。真正的主動開口在「觸發主動」分頁。</p>
-          <p class="block-purpose">為什麼需要規則？因為一個會主動說話的 Agent，最大的風險不是講錯，是<strong>在不該講的時候講</strong>：半夜、你剛說不想聊、五分鐘前才講過、今天已經煩你四次。這五個欄位就是在畫這條線。</p>
-          <div class="field-row">
-            <label>安靜開始<input id="quietStart" type="number" min="0" max="23"></label>
-            <label>安靜結束<input id="quietEnd" type="number" min="0" max="23"></label>
-          </div>
-          <div class="field-row">
-            <label>冷卻分鐘<input id="cooldown" type="number" min="0"></label>
-            <label>每日上限<input id="dailyLimit" type="number" min="1"></label>
-          </div>
-          <label>每則主動訊息最多幾句<input id="maxSentences" type="number" min="1" max="6"></label>
+          <p class="block-purpose"><strong>程式決定說不說，模型只決定怎麼說。</strong>下面就是那套程式規則的全部內容，按判斷順序排。中間那一欄是它存在的理由 —— 拿掉它，右邊「跑一整天」裡就真的會發生那件事。</p>
+          <details class="why-details">
+            <summary>為什麼會主動說話的 Agent 一定要有規則？</summary>
+            <div>
+              <p>最大的風險不是講錯，是<strong>在不該講的時候講</strong>：半夜、你剛說不想聊、五分鐘前才講過、今天已經煩你四次。</p>
+              <p>而且這幾條不能只寫在 Prompt 裡拜託模型自律 —— 模型可以不聽 Prompt，但過不了程式。所以它們寫在 <code>dodo_workshop/lesson2.py</code> 的 <code>choose_event()</code> 裡，判斷順序就是下表的順序。</p>
+            </div>
+          </details>
 
-          <!-- Five number fields said nothing about what they add up to. The band
-               and the summary line redraw on every keystroke, so a change to
-               安靜時段 or 冷卻 is visible before anything is run. -->
+          <!-- Five scattered number fields never said what they were for. The
+               middle column is the whole point of this page: every line names a
+               real event in 跑一整天 that the rule is there to stop. -->
+          <div class="rule-table">
+            <div class="rule-row is-head"><span>#</span><span>規則</span><span>沒有它會發生什麼</span><span>你的設定</span></div>
+            <div class="rule-row is-fixed">
+              <span class="rule-order">1</span>
+              <span class="rule-name">緊急事件豁免</span>
+              <span class="rule-why">23:40 偵測到跌倒，卻因為「現在是安靜時段」而不出聲。</span>
+              <span class="rule-set"><em>永遠放行</em></span>
+            </div>
+            <div class="rule-row is-fixed">
+              <span class="rule-order">2</span>
+              <span class="rule-name">尊重拒絕</span>
+              <span class="rule-why">13:20 剛說了不想聊，還是繼續講下午的老歌節目。</span>
+              <span class="rule-set"><em>一律不說</em></span>
+            </div>
+            <div class="rule-row">
+              <span class="rule-order">3</span>
+              <span class="rule-name">安靜時段</span>
+              <span class="rule-why">06:40 天還沒亮，就先播一則花卉展新聞。</span>
+              <span class="rule-set">
+                <input id="quietStart" type="number" min="0" max="23" aria-label="安靜時段開始（小時）">
+                <span class="rule-dash">–</span>
+                <input id="quietEnd" type="number" min="0" max="23" aria-label="安靜時段結束（小時）">
+                <span class="rule-unit">點</span>
+              </span>
+            </div>
+            <div class="rule-row">
+              <span class="rule-order">4</span>
+              <span class="rule-name">冷卻時間</span>
+              <span class="rule-why">08:10 剛講完血壓藥，08:35 又講一次記得帶傘。</span>
+              <span class="rule-set">
+                <input id="cooldown" type="number" min="0" aria-label="冷卻分鐘">
+                <span class="rule-unit">分鐘</span>
+              </span>
+            </div>
+            <div class="rule-row">
+              <span class="rule-order">5</span>
+              <span class="rule-name">每日上限</span>
+              <span class="rule-why">一天 13 件全講出去，重要的三件（血壓藥、回診、睡前藥）被埋在新聞和天氣裡。</span>
+              <span class="rule-set">
+                <input id="dailyLimit" type="number" min="1" aria-label="每日主動訊息上限">
+                <span class="rule-unit">則</span>
+              </span>
+            </div>
+            <div class="rule-row is-wide">
+              <span class="rule-order">6</span>
+              <span class="rule-name">事件優先權</span>
+              <span class="rule-why">回診提醒和新聞同時來、只能講一件時，講錯那一件。數字大的先講；<code>emergency</code> 另外套用第 1 條。</span>
+              <!-- Rendered from the student's own `priorities`, so the 觸發主動
+                   dropdown's numbers move the moment these do. The docs told
+                   students to tune priorities; the screen had no field for it. -->
+              <div id="priorityFields" class="priority-fields"></div>
+            </div>
+            <div class="rule-row is-model">
+              <span class="rule-order">7</span>
+              <span class="rule-name">每則句數</span>
+              <span class="rule-why">主動開口變成一段演講，長者記不住第三句。<strong>這是唯一交給模型執行的一條</strong> —— 程式只把句數寫進 Prompt。</span>
+              <span class="rule-set">
+                <input id="maxSentences" type="number" min="1" max="6" aria-label="每則主動訊息最多幾句">
+                <span class="rule-unit">句</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- The band and the two lines redraw on every keystroke, so a change
+               to 安靜時段 or 冷卻 is visible before anything is run. -->
           <div class="policy-preview">
             <p class="preview-label">這套規則現在長什麼樣</p>
             <div id="quietBand" class="quiet-band" aria-hidden="true"></div>
@@ -262,7 +324,11 @@
           </div>
 
           <h4 class="sub-heading">驗證一：規則寫對了嗎</h4>
-          <p class="block-purpose">「執行 6 個情境」＝<strong>把你的規則當程式來單元測試</strong>。6 個寫死的情境（深夜新聞、回診提醒撞上新聞、使用者剛拒絕、訊息太密集、深夜跌倒、今日已達上限）各有一個正確答案，跑完會告訴你幾個對。<strong>不呼叫模型、不需要 API Key</strong>，所以隨便改隨便跑。把安靜時段或冷卻改掉再跑一次，看哪幾個情境翻轉了 —— 那就是你剛剛真正改動的東西。</p>
+          <p class="block-purpose">6 個寫死的情境各有一個正確答案。<strong>不呼叫模型、不需要 API Key</strong>，所以隨便改隨便跑。</p>
+          <details class="why-details">
+            <summary>為什麼要跑這個</summary>
+            <div><p>這一步等於<strong>把你的規則當程式來單元測試</strong>，只回答「規則寫對了嗎」。把安靜時段或冷卻改掉再跑一次，看哪幾個情境翻轉了 —— 那就是你剛剛真正改動的東西。「改完之後好不好」留給下面的一整天。</p></div>
+          </details>
           <div class="lab-actions">
             <button id="runProactiveTests" class="primary-button">執行 6 個情境</button>
           </div>
@@ -272,8 +338,14 @@
           </details>
 
           <h4 class="sub-heading">驗證二：這套規則過完一天的代價</h4>
-          <p class="block-purpose">6 個情境有個盲點：<strong>每個都從乾淨狀態開始</strong>。真實的一天不是這樣 —— 冷卻與每日額度會累積下去，早上多聊一句，晚上的睡前藥提醒就少一次額度。「跑一整天」用你現在這份規則，一路跑完 24 小時的 13 個事件，然後給你兩個數字：<strong>漏掉重要事</strong>（提醒、緊急被擋掉幾次）和<strong>打擾</strong>（可有可無的訊息說出去幾次）。</p>
-          <p class="block-purpose">這兩個數字會互相拉扯，<strong>沒有滿分</strong>：規則放寬就少漏、但更煩；規則收緊就清靜、但會漏掉吃藥。這一題要的是你的取捨與理由，不是分數。</p>
+          <p class="block-purpose">用你現在這份規則跑完 24 小時的 13 個事件，回報兩個互相拉扯的數字：<strong>漏掉重要事</strong>與<strong>打擾</strong>。<strong>沒有滿分。</strong></p>
+          <details class="why-details">
+            <summary>為什麼要跑這個</summary>
+            <div>
+              <p>6 個情境有個盲點：<strong>每個都從乾淨狀態開始</strong>。真實的一天不是這樣 —— 冷卻與每日額度會累積下去，早上多聊一句，晚上的睡前藥提醒就少一次額度。</p>
+              <p>規則放寬就少漏、但更煩；規則收緊就清靜、但會漏掉吃藥。這一題要的是你的取捨與理由，不是分數。</p>
+            </div>
+          </details>
           <div class="lab-actions">
             <button id="runDaySimulation" class="primary-button">跑一整天</button>
           </div>
@@ -287,42 +359,67 @@
         <div id="tabW2Trigger" class="tab-panel policy-block" role="tabpanel" tabindex="0" hidden>
           <h3>現在觸發一次主動關心</h3>
           <p class="block-purpose">這裡是唯一會讓豆豆<strong>真的在聊天室先開口</strong>的地方。同一套規則（<code>choose_event</code>）先判斷這個情境，通過才送 <code>response.create</code> 讓它說話，被擋下來就只顯示理由。</p>
-          <p class="block-purpose"><strong>沒有排程器</strong>：真實的 dodo 由事件源在背後推事件，這裡由你按按鈕代替它。事件<strong>類型沒有串接任何資料來源</strong>（連 weather 都不會去查天氣），它只做兩件事 —— 決定優先權數字、以「事件類型：X」寫進這一輪的 Prompt。要說什麼完全來自你填的「事件內容」。</p>
-          <div class="field-row">
-            <label>事件類型
-              <select id="proactiveEventType"></select>
-              <small>括號是優先權，同時來好幾件事時數字大的先講；緊急事件不受安靜時段與額度限制。</small>
-            </label>
-            <label>事件內容<input id="proactiveTopic" placeholder="例如：16:00 回診，要帶健保卡"></label>
+          <details class="why-details">
+            <summary>先講清楚這裡「沒有」什麼</summary>
+            <div>
+              <p><strong>沒有排程器</strong>：真實的 dodo 由事件源在背後推事件，這裡由你排一筆待提醒代替它。</p>
+              <p>事件<strong>類型沒有串接任何資料來源</strong>（連 weather 都不會去查天氣），它只做兩件事 —— 決定優先權數字、以「事件類型：X」寫進這一輪的 Prompt。要說什麼完全來自你填的「事件內容」。</p>
+            </div>
+          </details>
+
+          <!-- One event block feeding both modes. It used to sit above an A/B
+               pair with no heading of its own, so nobody could tell which
+               section it belonged to. -->
+          <div class="event-card">
+            <p class="preview-label">這次要處理的事件</p>
+            <div class="field-row">
+              <label>類型<select id="proactiveEventType"></select></label>
+              <label>內容<input id="proactiveTopic" placeholder="例如：16:00 回診，要帶健保卡"></label>
+            </div>
           </div>
 
-          <h4 class="sub-heading">A. 待提醒項目（時間到了自己觸發）</h4>
-          <p class="block-purpose">用上面的事件類型與內容，加一筆排在<strong>真實時鐘</strong>上的提醒。到了時間就自己跑一次 <code>choose_event</code>：過了就讓豆豆開口，被擋下就在那一列寫理由。每筆只會觸發一次。</p>
-          <div class="schedule-add">
-            <label>提醒時間（真實時間）<input id="scheduleTime" type="time"><small>選過去的時間，下一次檢查就會立刻觸發，方便現場示範。</small></label>
-            <button id="addSchedule" type="button" class="secondary-button">加入待提醒</button>
+          <!-- A/B headings replaced by the one thing that actually separates
+               them: which clock decides. -->
+          <div class="mode-switch" role="tablist" aria-label="觸發方式">
+            <button type="button" class="mode-button is-active" role="tab" aria-selected="true" aria-controls="triggerModeSchedule" data-trigger-mode="schedule">⏰ 排到真實時間</button>
+            <button type="button" class="mode-button" role="tab" aria-selected="false" aria-controls="triggerModeManual" data-trigger-mode="manual">🧪 假設狀態試打一次</button>
           </div>
-          <label class="toggle-row"><input id="scheduleAuto" type="checkbox" checked>到時間自動觸發（每 5 秒對一次真實時鐘）</label>
-          <p id="scheduleClock" class="schedule-clock" aria-live="off"></p>
+          <p id="triggerModeNote" class="mode-explanation"></p>
+
+          <div id="triggerModeSchedule" class="trigger-mode" role="tabpanel" tabindex="0">
+            <div class="schedule-add">
+              <label>提醒時間（真實時間）<input id="scheduleTime" type="time"><small>選一個剛過去的時間，加進去就會立刻觸發，方便現場示範。</small></label>
+              <button id="addSchedule" type="button" class="secondary-button">加入待提醒</button>
+            </div>
+          </div>
+
+          <div id="triggerModeManual" class="trigger-mode" role="tabpanel" tabindex="0" hidden>
+            <!-- These four numbers are the ONLY inputs to the 安靜時段／冷卻／
+                 每日上限 rules, and the values they have to beat live one tab
+                 away in 主動規則. The hints carry them here, live. -->
+            <div class="field-row">
+              <label>模擬現在時間<input id="proactiveNow" type="time"><small id="nowHint"></small></label>
+              <label class="toggle-row"><input id="proactiveDeclined" type="checkbox">使用者剛剛拒絕聊天</label>
+            </div>
+            <div class="field-row">
+              <label>距上次主動訊息（分鐘）<input id="proactiveSinceLast" type="number" min="0" value="999"><small id="sinceLastHint"></small></label>
+              <label>今日已發送<input id="proactiveSentToday" type="number" min="0" value="0"><small id="sentTodayHint"></small></label>
+            </div>
+            <div class="lab-actions">
+              <button id="triggerProactive" class="primary-button">用上面的假設觸發一次</button>
+            </div>
+            <div id="proactiveDecision" class="single-result" aria-live="polite"></div>
+          </div>
+
+          <!-- Outside the switch on purpose: pending items fire on the real
+               clock whichever mode is showing, and hiding the list in 假設 mode
+               would read as "the scheduler stopped". -->
+          <h4 class="sub-heading">待提醒清單（照真實時鐘跑）</h4>
+          <div class="schedule-bar">
+            <p id="scheduleClock" class="schedule-clock" aria-live="off"></p>
+            <label class="toggle-row"><input id="scheduleAuto" type="checkbox" checked>到時自動觸發（每 5 秒對一次真實時鐘）</label>
+          </div>
           <div id="scheduleList" class="schedule-list" aria-live="polite"></div>
-
-          <h4 class="sub-heading">B. 手動測試一次（可以假設任何時間與狀態）</h4>
-          <p class="block-purpose">排程用的是真實時間與真實累積量；這裡相反 —— 四個欄位都是<strong>你假設的狀況</strong>，用來一次一次戳規則的邊界，例如「如果現在是凌晨三點呢」。</p>
-          <div class="field-row">
-            <label>模擬現在時間<input id="proactiveNow" type="time"><small id="nowHint"></small></label>
-            <label class="toggle-row"><input id="proactiveDeclined" type="checkbox">使用者剛剛拒絕聊天</label>
-          </div>
-          <!-- These two numbers are the ONLY inputs to the 冷卻 and 每日上限
-               rules, and nothing on screen said so — the value they have to beat
-               lives one tab away in 主動規則. The hints carry it here, live. -->
-          <div class="field-row">
-            <label>距上次主動訊息（分鐘）<input id="proactiveSinceLast" type="number" min="0" value="999"><small id="sinceLastHint"></small></label>
-            <label>今日已發送<input id="proactiveSentToday" type="number" min="0" value="0"><small id="sentTodayHint"></small></label>
-          </div>
-          <div class="lab-actions">
-            <button id="triggerProactive" class="primary-button">用上面的假設觸發一次</button>
-          </div>
-          <div id="proactiveDecision" class="single-result" aria-live="polite"></div>
           <p class="block-purpose">真實累積量（排程與手動實際說出去的訊息都算在內）：<span id="proactiveLiveState" class="live-state"></span></p>
         </div>
       </section>

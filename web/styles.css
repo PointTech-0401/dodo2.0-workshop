@@ -232,6 +232,38 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .policy-summary b { color: var(--ink); font-size: 15px !important; }
 .policy-binding { margin: 6px 0 0; padding: 9px 11px; background: var(--sky); line-height: 1.6; }
 
+/* 主動規則 as a table instead of five loose number fields: every row carries the
+   reason it exists, and the order is `choose_event`'s own judging order. */
+.rule-table { display: grid; gap: 1px; margin: 4px 0 18px; border: 1px solid var(--line); border-radius: 4px; background: var(--line); overflow: hidden; }
+.rule-row { display: grid; grid-template-columns: 20px 74px minmax(0, 1fr) minmax(84px, 132px); gap: 3px 8px; align-items: center; padding: 8px 10px; background: var(--white); }
+.rule-row.is-head { background: var(--paper); color: var(--ink-soft); font-size: 11px !important; font-weight: 800; letter-spacing: .06em; }
+.rule-row.is-head span { font-size: 11px !important; }
+.rule-order { color: var(--ink-soft); font: 700 12px/1 Consolas, monospace; font-variant-numeric: tabular-nums; }
+.rule-name { font-weight: 700; line-height: 1.35; }
+.rule-why { color: var(--ink-soft); font-size: 12px !important; line-height: 1.5; }
+.rule-why code { color: var(--blue); font-size: 11px !important; }
+.rule-set { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+.rule-set input { width: 100%; min-width: 0; padding: 6px 4px !important; text-align: center; font-variant-numeric: tabular-nums; }
+.rule-set .rule-dash, .rule-set .rule-unit { flex: 0 0 auto; color: var(--ink-soft); font-size: 12px !important; }
+/* The two hardwired rules have no field — saying so is the point. */
+.rule-row.is-fixed { background: #fbf7ef; }
+.rule-row.is-fixed .rule-set em { padding: 3px 6px; border: 1px solid var(--line); border-radius: 3px; color: var(--ink-soft); font-size: 11px !important; font-style: normal; white-space: nowrap; }
+.rule-row.is-model { border-left: 3px solid var(--mint); padding-left: 7px; }
+/* 事件優先權 needs six fields, so it takes the full width of its own row. */
+.rule-row.is-wide { grid-template-columns: 20px 74px minmax(0, 1fr); }
+.priority-fields { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 6px; margin-top: 6px; }
+.priority-field { display: grid; grid-template-columns: minmax(0, 1fr) 52px; gap: 6px; align-items: center; margin: 0 !important; }
+.priority-field span { color: var(--ink-soft); font-size: 11px !important; overflow-wrap: anywhere; }
+.priority-field input { margin-top: 0 !important; padding: 6px 4px !important; text-align: center; font-variant-numeric: tabular-nums; }
+
+/* Long explanations that used to be four stacked paragraphs of 說明. */
+.why-details { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 4px; background: var(--white); }
+.why-details > summary { padding: 9px 11px; color: var(--blue); font-size: 13px !important; font-weight: 700; cursor: pointer; }
+.why-details[open] > summary { border-bottom: 1px solid var(--line); }
+.why-details > div { padding: 10px 11px 2px; }
+.why-details p { margin: 0 0 9px; color: var(--ink-soft); line-height: 1.6; }
+.why-details code { color: var(--blue); }
+
 /* The 加入待提醒 button sits beside its time field. Not a grid cell: a pill
    button stretched to a grid row's height renders as a giant circle. */
 .schedule-add { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
@@ -242,14 +274,34 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .schedule-clock { margin: 8px 0 6px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .schedule-list { display: grid; gap: 3px; }
 .schedule-empty { margin: 0; padding: 11px 12px; border: 1px dashed var(--line); border-radius: 4px; color: var(--ink-soft); line-height: 1.55; }
-.schedule-row { display: grid; grid-template-columns: 52px 110px minmax(0, 1fr) auto; gap: 4px 8px; align-items: baseline; padding: 8px 9px; border-left: 3px solid var(--line); background: var(--white); line-height: 1.45; }
+.schedule-row { display: grid; grid-template-columns: 46px 66px minmax(0, 1fr) 56px 20px; gap: 2px 8px; align-items: center; padding: 7px 9px; border-left: 3px solid var(--line); background: var(--white); line-height: 1.45; }
 .schedule-row time { font-variant-numeric: tabular-nums; color: var(--ink-soft); }
-.schedule-row .schedule-status { grid-column: 2 / -1; color: var(--ink-soft); font-size: 13px !important; }
+.schedule-row .schedule-kind, .schedule-row .schedule-topic { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.schedule-row .schedule-status { color: var(--ink-soft); font-size: 12px !important; white-space: nowrap; }
 .schedule-row.is-pending { border-left-color: var(--apricot); }
 .schedule-row.is-due { border-left-color: var(--blue); background: var(--sky); }
 .schedule-row.is-spoken { border-left-color: var(--blue); }
 .schedule-row.is-blocked { background: transparent; color: var(--ink-soft); }
 .live-state { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* One event block feeding both modes, and a switch named after the only thing
+   that really separates them: which clock decides. */
+.event-card { margin-bottom: 14px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--white); }
+.event-card .field-row { gap: 10px; }
+.event-card label { margin-bottom: 0 !important; }
+.mode-switch { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: var(--white); }
+.mode-button { flex: 1 1 0; padding: 8px 10px; border: 0; border-radius: 999px; background: transparent; color: var(--ink-soft); font-weight: 700; }
+.mode-button:hover { color: var(--blue); }
+.mode-button.is-active { background: var(--sky); color: var(--ink); }
+.trigger-mode { margin-top: 14px; }
+.trigger-mode:focus-visible { outline: none; }
+/* Clock and the auto-trigger switch on one line — they used to take two. */
+.schedule-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; margin-bottom: 6px; }
+.schedule-bar .schedule-clock { margin: 0; }
+.schedule-bar .toggle-row { margin-bottom: 0 !important; font-size: 12px !important; }
+.schedule-delete { padding: 0; width: 20px; height: 20px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: var(--ink-soft); font: 700 14px/1 Consolas, monospace; }
+.schedule-delete:hover { border-color: var(--danger); color: var(--danger); }
+.schedule-reason { grid-column: 2 / -1; color: var(--ink-soft); font-size: 12px !important; line-height: 1.45; }
 
 /* One simulated day. Two competing numbers, never one grade. */
 .day-summary { margin-top: 14px; }
@@ -257,6 +309,8 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .day-score b { font-size: 17px; }
 .is-better { color: #287653; }
 .is-worse { color: var(--danger); }
+.day-blockers { margin: 8px 0 0; padding: 9px 12px; border-left: 4px solid var(--apricot); background: var(--white); line-height: 1.55; }
+.day-blockers b { font-variant-numeric: tabular-nums; }
 .day-delta { margin: 8px 0 0; padding: 9px 12px; background: var(--sky); line-height: 1.55; }
 .day-hint { margin: 8px 0 0; color: var(--ink-soft); line-height: 1.55; }
 .day-timeline { margin-top: 12px; display: grid; gap: 2px; }
