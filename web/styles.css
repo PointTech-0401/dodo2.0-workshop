@@ -171,12 +171,6 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .test-item { display: grid; grid-template-columns: 22px 1fr; gap: 6px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; line-height: 1.5; }
 .test-item.is-pass strong { color: #287653; }
 .test-item.is-fail strong { color: var(--danger); }
-/* Each of these now owns a whole tab, so the rule that used to separate them
-   from the block above is gone with the single-column layout. */
-.memory-block > p { color: var(--ink-soft); font-size: 12px; line-height: 1.5; }
-.memory-card { margin: 14px 0; }
-.memory-card p { margin: 0 0 6px; font-size: 13px; line-height: 1.45; }
-.memory-card select { width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
 .single-result { margin-top: 12px; font-weight: 700; }
 /* Results used to pile up under the button that made them with no way to close
    them. Collapsed still shows the headline, so the score survives the collapse. */
@@ -190,11 +184,6 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .result-panel .test-results { margin-top: 0; border-top: 0; }
 .block-purpose { margin: 0 0 14px; padding: 11px 12px; border-left: 4px solid var(--blue); background: var(--white); color: var(--ink-soft); line-height: 1.6; }
 .block-purpose code { color: var(--blue); }
-.memory-explanations { display: grid; gap: 8px; margin-top: 12px; }
-.memory-explanations div { padding: 9px 11px; border: 1px solid var(--line); border-left: 3px solid var(--line); border-radius: 4px; background: var(--white); line-height: 1.55; }
-.memory-explanations .is-pass { border-left-color: var(--mint); }
-.memory-explanations .is-fail { border-left-color: var(--danger); }
-.memory-explanations strong { display: block; margin-bottom: 3px; }
 .sub-heading { margin: 26px 0 8px; font-size: 15px; }
 .link-button { border: 0; background: transparent; color: var(--danger); font-weight: 700; text-decoration: underline; padding: 2px 4px; }
 .link-button:hover { color: var(--ink); }
@@ -215,9 +204,91 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .redteam-list { margin: 0 0 14px; padding-left: 22px; display: grid; gap: 8px; line-height: 1.55; }
 .redteam-list small { display: block; color: var(--ink-soft); }
 
-/* What the 記憶分類 exercise did with a right answer. */
-.card-stored { display: block; margin-top: 5px; color: #287653; font-size: 12px !important; line-height: 1.45; }
-.card-stored.is-refused { color: var(--ink-soft); }
+/* 建檔 — the caregiver's form. Six sections, each carrying where its data lands,
+   who writes it in the real dodo, and a 問豆豆 button of its own: the 35-minute
+   wait for any feedback was the deepest valley in the old timetable. */
+.intake-block > p { color: var(--ink-soft); font-size: 12px; line-height: 1.5; }
+/* 「建檔時你是護理員」 — the role has to be stated, or students fill the form as
+   themselves and the A-layer lock reads as the tool being broken. */
+.role-banner { margin: 0 0 14px; padding: 11px 12px; border-left: 4px solid var(--apricot); border-radius: 0 6px 6px 0; background: var(--white); color: var(--ink) !important; line-height: 1.6; }
+.interview-panel { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 4px; background: var(--white); }
+.interview-panel > summary { display: flex; gap: 9px; align-items: baseline; padding: 9px 11px; cursor: pointer; list-style: none; }
+.interview-panel > summary::-webkit-details-marker { display: none; }
+.interview-panel > summary > span { flex: 0 0 auto; padding: 3px 5px; border: 1px solid var(--blue); border-radius: 3px; color: var(--blue); font: 800 9px/1 Consolas, monospace; letter-spacing: .08em; }
+.interview-panel > summary small { color: var(--ink-soft); }
+.interview-panel[open] > summary { border-bottom: 1px solid var(--line); }
+/* Scrolls inside itself: at ~3,000 characters it would otherwise push the whole
+   form off screen, and the form is what the interview is read *for*. */
+.interview-text { max-height: 320px; overflow-y: auto; padding: 12px 13px; line-height: 1.75; }
+.interview-text h3 { margin: 0 0 8px; font-size: 15px; }
+.interview-text h4 { margin: 16px 0 6px; font-size: 13px; color: var(--blue); }
+.interview-text p { margin: 0 0 8px; }
+.interview-text blockquote { margin: 0 0 8px; padding-left: 11px; border-left: 3px solid var(--sky); color: var(--ink-soft); }
+.interview-text hr { margin: 14px 0; border: 0; border-top: 1px solid var(--line); }
+
+/* Counts, not a score: whether the content is *right* is answered by 她的一天
+   and by asking 豆豆, never by this row. */
+.completeness { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+
+.intake-section { margin: 0 0 16px; padding: 12px; border: 1px solid var(--line); border-left: 3px solid var(--blue); border-radius: 4px 12px 12px 4px; background: var(--white); }
+.intake-section > header { display: flex; gap: 10px; align-items: start; justify-content: space-between; margin-bottom: 10px; }
+.intake-section h4 { margin: 0; font-size: 14px; }
+/* 【落點】【正式 dodo 誰寫】【訪談 §幾找】 — the three things that turn a form field
+   into a decision the student can defend. */
+.intake-section header small { display: block; margin-top: 2px; color: var(--ink-soft); font-size: 10px; line-height: 1.5; }
+.ask-dodo { flex: 0 0 auto; padding: 6px 9px; border: 1px solid var(--blue); border-radius: 999px; background: var(--white); color: var(--blue); font-size: 11px; font-weight: 700; }
+.ask-dodo:hover { background: var(--sky); }
+.intake-section label { display: block; margin-top: 9px; font-size: 12px; }
+.intake-section label:first-child { margin-top: 0; }
+.intake-section input, .intake-section textarea, .intake-section select { width: 100%; margin-top: 4px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+.intake-section textarea { resize: vertical; line-height: 1.55; }
+.intake-section label small { display: block; margin-top: 3px; color: var(--ink-soft); font-size: 10px; line-height: 1.45; }
+.field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 9px; }
+.field-grid label, .field-row label { margin-top: 0 !important; }
+.field-row { display: flex; flex-wrap: wrap; gap: 9px; }
+.field-row > label { flex: 1 1 130px; }
+.contact-row { margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--line); }
+/* Fires the moment a section is filled: 症狀 →「這會變成健康關心候選」. Feedback
+   at the keystroke, not at the end of the hour. */
+.intake-hint { margin: 9px 0 0; min-height: 1.2em; color: var(--blue); font-size: 11px; line-height: 1.5; }
+.intake-hint:empty { min-height: 0; }
+.row-label { margin: 11px 0 5px; font-size: 12px; font-weight: 700; }
+.row-help { display: block; margin-top: 6px; color: var(--ink-soft); font-size: 10px; line-height: 1.45; }
+
+/* The list sections. Rows are re-rendered only on add／remove, so the row being
+   typed into never moves under the cursor. */
+.row-list { display: grid; gap: 6px; }
+.row-list.is-empty { display: none; }
+.row-item { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; padding: 7px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+/* The text inputs carry no `type` attribute, so the free-text case is the
+   unqualified rule and the fixed-width ones opt out of growing. */
+.row-item input { flex: 1 1 96px; min-width: 0; margin-top: 0 !important; }
+.row-item input[type="time"], .row-item input[type="date"], .row-item input[type="checkbox"] { flex: 0 0 auto; width: auto !important; }
+.row-item select { flex: 0 0 auto; width: auto !important; margin-top: 0 !important; }
+.row-dash { color: var(--ink-soft); }
+.row-check { display: flex !important; flex: 0 0 auto; gap: 4px; align-items: center; margin-top: 0 !important; white-space: nowrap; }
+.row-check input { width: auto !important; margin-top: 0 !important; }
+.row-remove { flex: 0 0 auto; margin-left: auto; border: 0; padding: 2px 6px; background: transparent; color: var(--danger); font-weight: 700; }
+.row-remove:hover { color: var(--ink); }
+.add-row { margin-top: 7px; padding: 6px 11px !important; border: 0; border-radius: 999px; font-size: 12px; }
+/* 星期全不勾＝每天, so seven boxes need to read as one control. */
+.weekday-boxes { display: inline-flex; flex: 0 0 auto; gap: 2px; }
+.weekday-boxes label { display: grid !important; place-items: center; width: 25px; margin-top: 0 !important; color: var(--ink-soft); font-size: 10px; }
+.weekday-boxes input { width: auto !important; margin: 2px 0 0 !important; }
+
+/* Who wrote a remembered row, and therefore who may change it. */
+.memory-source { color: var(--ink-soft); font-size: 11px !important; white-space: nowrap; }
+.memory-layer li.is-caregiver { border-left: 2px solid var(--apricot); padding-left: 6px; }
+/* Not a 刪除 button: a caregiver row is edited in the form above, and deleting it
+   here would only let the next 套用 write it straight back. */
+.memory-locked { color: var(--ink-soft); font-size: 11px !important; white-space: nowrap; }
+
+/* 態度 tab: which generated section each 建檔 answer ends up in. The four
+   editable blocks say *how* 豆豆 speaks; these four say where the data came from. */
+.generated-sections { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 5px; }
+.generated-sections li { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; padding: 7px 9px; border: 1px solid var(--line); border-radius: 4px; background: var(--white); }
+.generated-sections code { flex: 0 0 auto; color: var(--blue); font-weight: 700; }
+.generated-sections span { color: var(--ink-soft); font-size: 11px; line-height: 1.45; }
 
 /* 主動規則 as a picture. Five number fields never showed what they add up to:
    how much of the day is silenced, and which of the three limits actually bites. */

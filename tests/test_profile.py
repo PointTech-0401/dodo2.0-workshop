@@ -409,7 +409,11 @@ def test_no_output_token_cap_survives_anywhere_in_a_project() -> None:
     script = client_script()
     collect = script.split("function collectWorkshop1() {")[1].split("\n}")[0]
     assert "max_output_tokens" not in collect
-    assert "delete agent.max_output_tokens;" in script
+    # The browser no longer drops it itself: both hydration paths post to
+    # /api/workspace/normalize, so the server's pop above is the only
+    # implementation — there is no second one left to drift from it.
+    assert "delete agent.max_output_tokens;" not in script
+    assert script.count("normalizeWorkspace(") == 4  # helper + 匯入 + localStorage + 繼續上次
 
 
 def test_shipped_project_files_are_already_schema_two() -> None:

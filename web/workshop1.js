@@ -230,24 +230,6 @@ function rebuildSystemPrompt() {
   W2.rebuildWorkshop2Prompt();
 }
 
-function migrateAgent(agent) {
-  if (!agent.prompt_blocks || typeof agent.prompt_blocks !== "object") {
-    agent.prompt_blocks = structuredClone(DEFAULT_PROMPT_BLOCKS);
-    const legacyInstructions = agent.instructions?.trim();
-    const isOldWorkshopDefault = /只使用臺灣繁體中文|使用繁體中文/.test(legacyInstructions || "");
-    if (legacyInstructions && !isOldWorkshopDefault) {
-      agent.prompt_blocks.conversation_style += `\n${agent.instructions.trim()}`;
-    }
-  }
-  agent.prompt_blocks = { ...DEFAULT_PROMPT_BLOCKS, ...agent.prompt_blocks };
-  // Mirrors normalize_workspace: deepMerge keeps whatever a stored or imported
-  // project carries, so an output cap from an older build survives every save
-  // and lands back in 下載我的 Dodo. This project sets no cap anywhere.
-  delete agent.max_output_tokens;
-  agent.system_prompt = buildSystemPrompt(agent);
-  return agent;
-}
-
 /** Workshop 1's half of core's loadFields(): the persona fields and the turn
  *  fields. The previews that read them run afterwards, from core. */
 function loadFields() {
@@ -344,7 +326,6 @@ globalThis.W1 = {
   init,
   loadFields,
   collect: collectWorkshop1,
-  migrateAgent,
   agentFromFields,
   buildSystemPrompt,
   rebuildSystemPrompt,

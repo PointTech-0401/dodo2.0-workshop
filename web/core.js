@@ -46,7 +46,7 @@ const REALTIME_TOOLS = [
   {
     type: "function",
     name: "update_memory",
-    description: "保存或更新使用者主動提供的非敏感個人資訊。同一個 key 再存新內容時，A 層預設會「並存」，不會蓋掉舊的（例如興趣可以同時有唱歌和跳舞）；只有新內容真的取代舊內容時才傳 mode=\"replace\"。不得保存密碼、API Key、金融帳號或驗證碼（X 類一律不保存）。",
+    description: "保存或更新長者主動提供的非敏感個人資訊。同一個 key 再存新內容時，A 層預設會「並存」，不會蓋掉舊的（例如興趣可以同時有唱歌和跳舞）；只有新內容真的取代舊內容時才傳 mode=\"replace\"。護理員建檔寫的 A 層事實你不能改也不能刪（例如醫囑「少甜少油」）——她要求時就說這是護理員建的，請她告訴護理員。她自己說的近況不受此限：B 層症狀本來就該被最新狀態取代，聽到「膝蓋好多了」就用同一個 key 傳 mode=\"replace\" 換掉舊那筆，追問才會停。不得保存密碼、API Key、金融帳號或驗證碼，也不要保存第三人的健康狀況或對家人的情緒性評價（X 類一律不保存）。",
     parameters: {
       type: "object",
       properties: {
@@ -154,6 +154,15 @@ function revertGroup(groupName) {
   notify("已取消未套用的變更，欄位回到上次套用的內容。");
 }
 
+/** Re-baseline one tab. A memory tool write only touches 建檔's symptom rows, so
+ *  re-baselining the whole group would swallow edits still pending on another
+ *  tab — and re-baselining nothing would leave 建檔 dirty for a change the
+ *  student never made. */
+function markTabApplied(tabId) {
+  appliedSnapshots[tabId] = tabSnapshot(tabId);
+  refreshApplyState();
+}
+
 /** Freeze the current fields as「已經送出去了」. Called at load, after an import
  *  and after each successful 套用 — never from collectWorkshopN(). */
 function markApplied(groupName) {
@@ -246,18 +255,6 @@ function responseCreateEvent(instructions) {
   // brief; a normal reply passes nothing and keeps the session instructions.
   if (instructions) response.instructions = instructions;
   return { type: "response.create", response };
-}
-
-function deepMerge(defaultValue, suppliedValue) {
-  if (!defaultValue || typeof defaultValue !== "object" || Array.isArray(defaultValue)) {
-    return suppliedValue === undefined ? structuredClone(defaultValue) : suppliedValue;
-  }
-  const merged = structuredClone(defaultValue);
-  if (!suppliedValue || typeof suppliedValue !== "object" || Array.isArray(suppliedValue)) return merged;
-  Object.entries(suppliedValue).forEach(([key, value]) => {
-    merged[key] = key in merged ? deepMerge(merged[key], value) : value;
-  });
-  return merged;
 }
 
 function panelWidthBounds() {
@@ -363,6 +360,24 @@ function clampPanelWidths() {
 
 function saveProject() {
   localStorage.setItem(PROJECT_KEY, JSON.stringify(workspace));
+}
+
+/** The one migration path. localStorage hydration and 匯入 both post whatever
+ *  they have and store what comes back; the browser keeps no schema knowledge of
+ *  its own. Two hand-written migrations that had to agree was exactly the drift
+ *  the golden fixture exists to catch — so there is only one now, in Python.
+ *
+ *  Throws on a file that is not a Dodo project, which is what both callers
+ *  report to the student. */
+async function normalizeWorkspace(raw) {
+  const response = await fetch("/api/workspace/normalize", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ workspace: raw }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.detail || "這份作品讀不進來。");
+  return payload.workspace;
 }
 
 function setState(name, note) {
@@ -736,7 +751,17 @@ async function finishOnboarding() {
       return;
     }
     if (entry === "workshop1") workspace = structuredClone(bootstrapData.default_workspace);
-    if (entry === "continue") workspace = deepMerge(bootstrapData.default_workspace, storedProject);
+    // 繼續上次 hydrates from localStorage, so it is the same migration case as a
+    // page load and goes down the same one path. It used to deepMerge here
+    // instead, which is how a schema-1 project could reach schema-2 fields.
+    if (entry === "continue") {
+      try {
+        workspace = await normalizeWorkspace(storedProject);
+      } catch {
+        $("#onboardingError").textContent = "上次保存的作品讀不進來，請改用「匯入」或重新開始。";
+        return;
+      }
+    }
     if (entry === "workshop2") {
       workspace = structuredClone(bootstrapData.workshop2_starter);
       startStage = 2;
@@ -837,9 +862,9 @@ function finalizeVoiceDraft() {
 function realtimeInstructions() {
   // Workshop 1 (persona) + Workshop 2 (memory rules, elder data, proactive
   // rules), rebuilt from the blocks rather than read from the stored
-  // `system_prompt`. The onboarding paths assign `workspace` without running
-  // migrateAgent, so a stale stored string could win the deepMerge — and now
-  // that instructions ride along at mint time, that would hand OpenAI the wrong
+  // `system_prompt`. The onboarding paths assign `workspace` without going
+  // through /api/workspace/normalize, so a stale stored string could win — and
+  // now that instructions ride along at mint time, that would hand OpenAI the wrong
   // persona (which is exactly how 豆豆 ended up replying in English). The
   // Workshop 1 half can legitimately be empty if the student cleared every
   // block; the preview says so before they apply.
@@ -929,6 +954,12 @@ async function executeRealtimeTool(call) {
     // that slipped past it once could never be taken back out by 豆豆.
     if (String(args.mode || "").trim().toLowerCase() === "remove") {
       const result = W2.forgetMemory(args.layer, key, value);
+      // 紅隊「把『少甜少油』刪掉」lands here. The refusal has to name who *can*
+      // change it, or the student reads it as the tool being broken.
+      if (result.locked) {
+        addMessage("tool", `update_memory 已拒絕：${result.layerTitle}「${key}：${value}」是護理員建的，豆豆不能刪`, statusId);
+        return { removed: 0, key, value, layer: result.layer, remaining: result.remaining, error: `「${key}：${value}」是護理員建檔寫的，你不能刪。請告訴她這件事要找護理員改。` };
+      }
       if (!result.removed) {
         const found = result.remaining.length
           ? `目前「${key}」底下是：${result.remaining.join("、")}`
@@ -939,6 +970,7 @@ async function executeRealtimeTool(call) {
       saveProject();
       W2.rebuildWorkshop2Prompt();
       W2.renderMemoryViewer();
+      W2.syncIntakeAfterMemoryChange();
       const left = result.remaining.length ? `，同一個 key 還留著：${result.remaining.join("、")}` : "";
       addMessage("tool", `update_memory：已從 ${result.layerTitle} 移除「${key}：${value}」${left}`, statusId);
       return { removed: result.removed, key, value, layer: result.layer, remaining: result.remaining };
@@ -958,9 +990,19 @@ async function executeRealtimeTool(call) {
     // explicit replace throws the old value away.
     const mode = String(args.mode || "").trim().toLowerCase() === "replace" ? "supersede" : "";
     const result = W2.upsertMemory(args.layer, key, value, mode || undefined);
+    // The caregiver lock: A-layer facts the caregiver built are read-only to
+    // 豆豆. Nothing was written, so nothing downstream is re-rendered.
+    if (result.action === "locked") {
+      addMessage("tool", `update_memory：${W2.describeMemoryWrite(result, key, value)}`, statusId);
+      return { saved: false, key, value, layer: result.layer, error: `「${key}」底下的「${result.protectedValues.join("、")}」是護理員建檔寫的，你不能改。請告訴她這件事要找護理員。` };
+    }
     saveProject();
     W2.rebuildWorkshop2Prompt();
     W2.renderMemoryViewer();
+    // 「膝蓋好多了」 replaces a caregiver-seeded B symptom, so the 建檔 form has to
+    // stop listing it — otherwise the next 套用 seeds it again and the health
+    // follow-up never stops.
+    W2.syncIntakeAfterMemoryChange();
     addMessage("tool", `update_memory：${W2.describeMemoryWrite(result, key, value)}`, statusId);
     return {
       saved: true,
@@ -1274,10 +1316,9 @@ function exportProject() {
 async function importProject(file) {
   try {
     const imported = JSON.parse(await file.text());
-    if (imported.schema_version !== 1 || !imported.profile) throw new Error();
-    workspace = deepMerge(bootstrapData.default_workspace, imported);
-    workspace.profile.agent = W1.migrateAgent(workspace.profile.agent);
-    workspace.profile.workshop2_blocks = W2.migrateWorkshop2Blocks(workspace.profile.workshop2_blocks);
+    if (!imported?.profile) throw new Error();
+    // schema 1 and 2 both come in here; the server decides what that means.
+    workspace = await normalizeWorkspace(imported);
     saveProject();
     loadFields();
     switchStage(workspace.progress.workshop_1_completed ? 2 : 1);
@@ -1297,9 +1338,20 @@ async function initialize() {
   apiConfigured = bootstrapData.api_configured;
   weatherConfigured = bootstrapData.weather_configured;
   const storedProject = readStored(PROJECT_KEY);
-  workspace = deepMerge(bootstrapData.default_workspace, storedProject);
-  workspace.profile.agent = W1.migrateAgent(workspace.profile.agent);
-  workspace.profile.workshop2_blocks = W2.migrateWorkshop2Blocks(workspace.profile.workshop2_blocks);
+  // Same one path as 匯入. A stored project that the server rejects is one no
+  // longer readable at all, so starting clean beats rendering schema-1 data
+  // through schema-2 fields — and the student is told, not silently reset.
+  // Cloned, never aliased: `collectWorkshopN()` assigns into `workspace.profile`,
+  // and `bootstrapData.default_workspace` is read back as the pristine default by
+  // intakeFromFields() and by the prompt composer's block fallbacks.
+  try {
+    workspace = storedProject
+      ? await normalizeWorkspace(storedProject)
+      : structuredClone(bootstrapData.default_workspace);
+  } catch {
+    workspace = structuredClone(bootstrapData.default_workspace);
+    addMessage("system", "上次保存的作品讀不進來，已從預設開始。");
+  }
   setup = normalizeSetup(readStored(SETUP_KEY));
   // Options must exist before loadFields() assigns #agentVoice.value, or the
   // assignment hits an empty <select>, the picker falls back to its first entry,
@@ -1307,7 +1359,8 @@ async function initialize() {
   W1.renderVoiceOptions();
   W1.renderPresetButtons();
   loadFields();
-  W2.renderMemoryCards();
+  // 建檔 opens on the interview, so it has to be on screen before the tab is.
+  W2.renderInterview();
   applyMode();
   refreshApiUi();
   restoreLabPanelWidth();

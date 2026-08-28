@@ -377,4 +377,15 @@ Barry 對現在第二堂的判斷：「方向不好、過於枯燥」。三個�
 
 複雜度：**高**。估 4–5 個工作 session：階段 1–3 一個、階段 4 半個、階段 5–7 兩個、階段 8 半個。
 
-2026-08-28 進度：階段 1–4 完成（分支 `w2-persona`，見 git log）；階段 5、6 合併進行。階段 3 稽核抽出 `dodo_workshop/prompt_sections.py`（四段生成段落）；`MEMORY_PREVIEW_LIMIT` 改為 16（參考建檔有 13 筆 A 層事實，必須整份進得了模型），**前端 `app.js` 仍是 8，階段 7 必須同步並由 golden fixture 釘住**。
+2026-08-28 進度：階段 1–6 完成（分支 `w2-persona`，見 git log）。階段 3 稽核抽出 `dodo_workshop/prompt_sections.py`（四段生成段落）；`MEMORY_PREVIEW_LIMIT` 兩邊都是 16（參考建檔有 13 筆 A 層事實，必須整份進得了模型），由 golden fixture 逐字釘住。
+
+§7.1 必辦清單：1–7 完成，**8（帶狀圖由建檔算出）留給階段 7**；#3 的 `user_declined` 由 `declined_until` 算出也留給階段 7，因為「她剛說不想聊」按鈕是那一階段才長出來的。
+
+階段 5＋6 執行中發現、順手一起修掉的（都屬 §7.1 #3 的欄位改名同一類）：
+
+- 前端送 `minutes_since_last_message`／`messages_today`，後端 `ProactiveScenario` 收 `minutes_since_last`／`sent_today`。pydantic 忽略不認得的欄位，所以決策一直是拿**預設值**（「24 小時沒講話、今天還沒講過」）算的——每一關都通過，但理由是錯的。兩個端點現在也一起送 `elder_profile`，否則閘門是對著空作息表在判斷。
+- `/api/proactive-simulate` 回的是 `missed_health`／`health_total`／`chat_total`／`blocked_by`，前端還在讀 schema-1 的 `missed_critical`／`critical_total`／`optional_total`，畫面上是 `undefined／undefined`。`renderDayBlockers` 改讀 `blocked_by` ＋ bootstrap 的 `rule_labels`，不再從理由句子裡撈關鍵字（撈不到就靜靜掉進「其他」）。
+- 事件類型下拉原本從 `proactive_policy.priorities` 長出來，schema 2 沒有 priorities，所以下拉是**空的**，待提醒沒有東西可排。改讀 bootstrap 的 `event_types`（三種）。
+- `renderRows()` 改成在 `innerHTML` 之後才指派每個 `<select>` 的值。happy-dom 不套用 `<option selected>`（`selectedIndex` 一律回 1），§9 要求的「列表欄位取消變更後不髒」因此測不出來；真瀏覽器沒這問題，但寫死值本身也更穩。
+- `initialize()` 沒有 stored project 時改成 `structuredClone(default_workspace)`：直接指派會讓 `collectWorkshop2()` 就地改寫 bootstrap 的預設，而 `intakeFromFields()` 和 Prompt 組裝的 fallback 都會再讀那份預設。
+- 開場「繼續上次」原本用 `deepMerge` 而不是走正規化——schema-1 專案可以從那道門進到 schema-2 欄位。改走同一條路後 `deepMerge()` 成為死碼，刪除。

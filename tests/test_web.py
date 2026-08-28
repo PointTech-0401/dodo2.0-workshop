@@ -536,11 +536,15 @@ def test_interest_label_matches_the_separator_actually_used() -> None:
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
     script = client_script()
 
-    # The splitter always accepted 、, ， and , — only the label said 逗號.
-    assert "興趣（用「、」分隔，逗號也可以）" in page
-    assert "興趣（用逗號分隔）" not in page
+    # 興趣 moved out of one comma-joined box into A-layer rows, so the caregiver
+    # lock and the merge rules apply to it like to anything else. The one list
+    # still typed into a textbox is 她會的事, and its label has to name the
+    # separator the splitter actually accepts (、 ， and , all work).
+    assert "用「、」分隔" in page
+    assert 'id="elderExpertise"' in page
     assert "split(/[、,，]/)" in script
-    assert 'interests.join("、")' in script
+    # The old field is gone, not hidden: two places to type 興趣 is the drift.
+    assert 'id="elderInterests"' not in page
 
 
 def test_every_element_the_client_touches_exists_in_the_page() -> None:
@@ -635,14 +639,18 @@ def test_workshop2_has_its_own_viewable_editable_prompt_layer() -> None:
 
     # Editable blocks, plus the same read-only full-prompt VIEW as Workshop 1.
     assert '<textarea id="promptMemoryUse"' in page
-    assert '<textarea id="promptProactive"' in page
+    # 態度, not data: the four editable blocks say *how* 豆豆 records and speaks.
+    for block in ("promptAttitudeReminder", "promptAttitudeHealth", "promptAttitudeChat"):
+        assert f'<textarea id="{block}"' in page, block
+    # The schema-1 block that mixed rules and data in one box is retired.
+    assert 'id="promptProactive"' not in page
     assert "完整 System Prompt（Workshop 1 + 2）" in page
     assert '<pre id="workshop2SystemPrompt"' in page
     assert '<textarea id="workshop2SystemPrompt"' not in page
     assert 'id="elderCity"' in page and 'id="maxSentences"' in page
     assert "function buildWorkshop2Prompt(source)" in script
     assert "function rebuildWorkshop2Prompt()" in script
-    assert "workshop2_blocks: workshop2BlocksFromFields()" in script
+    assert "workspace.profile.workshop2_blocks = workshop2BlocksFromFields();" in script
     # The generated sections are what actually carry the Workshop 2 data.
     for section in ("# 長者資料", "# 目前記得的事（三層記憶）", "# 主動訊息的程式規則"):
         assert section in script
@@ -653,9 +661,16 @@ def test_workshop2_has_its_own_viewable_editable_prompt_layer() -> None:
     assert "MEMORY_PREVIEW_LIMIT" in script
 
 
-def test_memory_classification_drives_storage_and_shows_its_reasoning() -> None:
+def test_memory_layers_and_the_caregiver_lock_decide_who_may_write() -> None:
+    """The 記憶分類 quiz answered「存到哪一層」but never「誰能改」.
+
+    Schema 2 makes the second question the behavioural one: 建檔 seeds A and B as
+    the caregiver, and 豆豆 may add beside an A fact but never take it away. B is
+    deliberately NOT locked — a caregiver-seeded symptom is exactly what
+    「膝蓋好多了」 has to be able to replace, or the follow-up never stops.
+    """
+
     script = client_script()
-    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
 
     # A/B/C picks the list the value lands in, X is refused outright.
     assert 'enum: ["A", "B", "C"]' in script
@@ -663,9 +678,27 @@ def test_memory_classification_drives_storage_and_shows_its_reasoning() -> None:
     assert '["B", "events", "B 近期事件"]' in script
     assert '["C", "summaries", "C 跨日摘要"]' in script
     assert "update_memory 已拒絕（X 不保存）" in script
-    # The quiz explains itself now instead of only scoring.
-    assert 'id="memoryExplanations"' in page
-    assert "card.explanation" in script
+
+    # The lock is on A only, and only against a non-caregiver writer.
+    upsert = script.split("function upsertMemory(layerId, key, value, mode, options = {}) {")[1]
+    upsert = upsert.split("\n}\n")[0]
+    assert 'layer === "A" && entry?.source === "caregiver"' in upsert
+    assert 'action: "locked"' in upsert
+    # 刪除 is locked the same way, or 紅隊「把『少甜少油』刪掉」 would just succeed.
+    forget = script.split("function forgetMemory(layerId, key, value) {")[1].split("\n}\n")[0]
+    assert 'layer === "A" && target.source === "caregiver"' in forget
+
+    # A refusal has to name who *can* change it, or it reads as a broken tool.
+    assert "是護理員建檔寫的，你不能改" in script
+    assert "是護理員建檔寫的，你不能刪" in script
+    # And the model has to be told up front, not only when it is refused.
+    assert "護理員建檔寫的 A 層事實你不能改也不能刪" in script
+    assert "B 層症狀本來就該被最新狀態取代" in script
+
+    # A replaced B symptom must leave the 建檔 form, or the next 套用 seeds it
+    # again and the health follow-up never stops.
+    assert script.count("W2.syncIntakeAfterMemoryChange();") == 2
+    assert "function syncIntakeAfterMemoryChange()" in script
 
 
 def test_one_simulated_day_is_reachable_from_the_client() -> None:
@@ -689,8 +722,13 @@ def test_one_simulated_day_is_reachable_from_the_client() -> None:
     assert 'id="runDaySimulation"' in page
     assert 'id="dayTimeline"' in page and 'id="daySummary"' in page
     assert 'fetch("/api/proactive-simulate"' in script
-    # Two competing numbers, never combined into one grade.
-    assert "漏掉重要事" in script and "打擾" in script
+    # Two competing numbers, never combined into one grade. Named for what the
+    # schema-2 engine actually counts: the health check-ins that never happened.
+    assert "漏掉的健康關心" in script and "打擾" in script
+    # Read straight off the decider's own tally, so a reworded reason sentence
+    # can no longer drop a rule into 「其他」 unnoticed.
+    assert "result.blocked_by" in script
+    assert "bootstrapData?.rule_labels" in script
     assert "沒有滿分答案" in script
     # A re-run has to say what got better AND what got worse.
     assert "function renderDayDelta(result)" in script
@@ -721,10 +759,15 @@ def test_humans_can_delete_what_the_agent_remembered() -> None:
     assert "未進入 Prompt" in script
     # Memory values come from the model, so they are escaped before innerHTML.
     assert "const escapeHtml =" in script
-    assert "escapeHtml(memoryEntryText(entry))" in script
-    # Retention was dead schema; it is now a visible label on both sides.
-    assert "function memoryLayerHeadings(memoryPolicy)" in script
-    assert "保存 ${policy.fact_retention_days ?? 365} 天" in script
+    assert "const plain = memoryEntryText({ ...entry, source: null });" in script
+    assert "${escapeHtml(plain)" in script
+    # Retention left with schema 1. What labels a row now is its source, which is
+    # also what decides whether a human may delete it here: the caregiver's rows
+    # are edited in the 建檔 form and carry 在建檔區修改 instead of a 刪除 button.
+    assert "function memoryLayerHeadings(memoryPolicy)" not in script
+    assert "fact_retention_days" not in script
+    assert 'SOURCE_LABELS = { caregiver: "護理員建"' in script
+    assert "在建檔區修改" in script
     # The red-team prompts are in the page, unautomated on purpose.
     assert "紅隊挑戰" in page
     assert "後四碼" in page
@@ -813,7 +856,7 @@ def test_memory_writes_accumulate_instead_of_overwriting() -> None:
     # B is the only capped layer: 近期事件 that can never be refreshed are noise.
     assert "capacity: MEMORY_PREVIEW_LIMIT" in rules
 
-    upsert = script.split("function upsertMemory(layerId, key, value, mode) {")[1].split("\n}\n")[0]
+    upsert = script.split("function upsertMemory(layerId, key, value, mode, options = {}) {")[1].split("\n}\n")[0]
     # Same key AND same value is a no-op, which is what makes a re-run of the
     # 記憶分類 exercise idempotent instead of duplicating every card.
     assert "memoryEntryKey(entry) === key && memoryEntryValue(entry) === value" in upsert
@@ -855,39 +898,30 @@ def test_the_model_can_retract_exactly_one_remembered_value() -> None:
     # A miss must say what IS stored rather than silently reporting success.
     assert "找不到要移除的記錄" in tool
 
-def test_a_saved_project_learns_the_new_memory_merge_rule() -> None:
-    """A stored 記憶使用規則 wins over the default, so a project saved before the
-    累加／replace rule existed would show a block that contradicts the behaviour
-    its own memory now follows."""
+def test_the_browser_keeps_no_schema_migration_of_its_own() -> None:
+    """There used to be two migrations that had to agree: normalize_workspace in
+    Python, and migrateAgent／migrateWorkshop2Blocks in JavaScript. Keeping them
+    in step is exactly the drift class the golden fixture exists to catch, so the
+    browser now posts what it has to /api/workspace/normalize and stores what
+    comes back."""
 
     script = client_script()
-    profile_source = (
-        Path(__file__).resolve().parents[1] / "dodo_workshop" / "profile.py"
-    ).read_text(encoding="utf-8")
 
-    # Every inserted line must be a line the fresh default also carries.
-    assert "const MEMORY_USE_GUIDANCE = [" in script
-    block = script.split("const MEMORY_USE_GUIDANCE = [")[1].split("\n];")[0]
-    lines = [part.split("',")[0] for part in block.split("  '")[1:]]
-    assert len(lines) == 2, lines
-    # The backend now retires the whole schema-1 block by prefix instead of
-    # patching lines into it; the browser-side patcher leaves with the old tab.
-    assert "LEGACY_MEMORY_USE_PREFIX" in profile_source
+    # Both hydration paths — localStorage and 匯入 — go through the endpoint.
+    assert "async function normalizeWorkspace(raw)" in script
+    assert '"/api/workspace/normalize"' in script
+    # Every hydration path, not most of them: 匯入, a page load, and onboarding's
+    # 繼續上次 — which used to deepMerge instead, so a schema-1 project could reach
+    # schema-2 fields through that one door.
+    assert script.count("normalizeWorkspace(") == 4  # helper + the three callers
+    assert "function deepMerge(" not in script
 
-    migrate = script.split("function migrateWorkshop2Blocks(blocks) {")[1].split("\n}\n")[0]
-    # Empty stays empty (deleted on purpose), and a block the student rewrote
-    # past recognition is left alone.
-    assert "if (!stored) return blocks;" in migrate
-    assert "if (anchor < 0) return blocks;" in migrate
-    # Old revisions are stripped by prefix and replaced, NOT skipped. The first
-    # version gated on `mode="replace"` — a string every revision contains — so
-    # a project migrated once could never receive a later revision.
-    assert "MEMORY_USE_GUIDANCE_PREFIXES.some((prefix) => line.startsWith(prefix))" in migrate
-    assert 'stored.includes(\'mode="replace"\')' not in migrate
-    # Idempotent: an already-current block comes back untouched.
-    assert "return merged === stored ? blocks : " in migrate
-    # Both hydration paths run it, or an import would carry the stale text back.
-    assert script.count("migrateWorkshop2Blocks(workspace.profile.workshop2_blocks)") == 2
+    # No second implementation left to drift.
+    for gone in ("function migrateAgent(", "function migrateWorkshop2Blocks(",
+                 "MEMORY_USE_GUIDANCE", "delete agent.max_output_tokens;"):
+        assert gone not in script, gone
+    # 匯入 no longer hard-rejects schema 2 — the server decides what a version means.
+    assert "imported.schema_version !== 1" not in script
 
 
 def test_the_prompt_says_which_layer_a_preference_belongs_to() -> None:
@@ -919,7 +953,7 @@ def test_a_supersede_names_the_value_it_threw_away() -> None:
 
     script = client_script()
 
-    upsert = script.split("function upsertMemory(layerId, key, value, mode) {")[1].split("\n}\n")[0]
+    upsert = script.split("function upsertMemory(layerId, key, value, mode, options = {}) {")[1].split("\n}\n")[0]
     assert "const superseded = workspace.memory[field]" in upsert
     assert "const replaced = superseded.length;" in upsert
     describe = script.split("function describeMemoryWrite(result, key, value) {")[1].split("\n}\n")[0]
@@ -981,8 +1015,12 @@ def test_scheduled_reminders_fire_on_the_real_clock() -> None:
     fire = script.split("async function fireScheduledItem(item) {")[1].split("\n}\n")[0]
     # Real clock and real accumulated spend — that is what separates a scheduled
     # reminder from the manual what-if trigger.
-    assert "minutes_since_last_message: minutesSinceLastProactive()" in fire
-    assert "messages_today: proactiveState().sent_today" in fire
+    # The field names are the server's: pydantic ignores what it does not know,
+    # so the schema-1 spellings silently handed `choose_event` its defaults
+    # (「24 小時沒講話、今天還沒講過」) and every gate passed for the wrong reason.
+    assert "minutes_since_last: minutesSinceLastProactive()" in fire
+    assert "sent_today: proactiveState().sent_today" in fire
+    assert "minutes_since_last_message" not in script and "messages_today" not in script
     # The 剛被拒絕 checkbox is a what-if for the manual trigger only; reading it
     # here would let a hypothesis silently kill a real scheduled reminder.
     assert "user_declined: false," in fire
@@ -1135,20 +1173,24 @@ def test_lab_results_collapse_and_keep_their_score() -> None:
     script = client_script()
     styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
 
-    for panel in ("memoryOutcome", "proactiveOutcome", "dayOutcome"):
+    # 記憶分類 was a quiz with a score; 建檔 is a form with a completeness count,
+    # so it has no result panel to collapse. The two lab runs still do.
+    for panel in ("proactiveOutcome", "dayOutcome"):
         assert f'<details id="{panel}" class="result-panel" hidden>' in page, panel
+    assert 'id="memoryOutcome"' not in page
     # The existing result containers keep their ids; they are wrapped, not moved.
-    for kept in ("memoryExplanations", "proactiveResults", "daySummary", "dayTimeline"):
+    for kept in ("proactiveResults", "daySummary", "dayTimeline"):
         assert f'id="{kept}"' in page, kept
     assert "function showResult(panelSelector, headlineSelector, headline)" in script
-    assert script.count("showResult(") == 4  # definition + three call sites
+    assert script.count("showResult(") == 3  # definition + two call sites
     assert ".result-panel > summary" in styles
 
 
-def test_proactive_event_types_are_rendered_from_the_project_priorities() -> None:
-    """None of the six types is wired to a data source — not even weather. The
-    type only picks a priority number and a line of prompt text, so the numbers
-    are rendered from `proactive_policy.priorities` instead of being hardcoded."""
+def test_proactive_event_types_come_from_the_server_not_a_priority_list() -> None:
+    """schema 1 offered six types, each with a priority number the student typed;
+    schema 2 decides between three and has no priorities at all. Rendering the
+    dropdown from `proactive_policy.priorities` therefore left it *empty*, and an
+    empty dropdown means 待提醒 has nothing to schedule."""
 
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
     script = client_script()
@@ -1157,11 +1199,14 @@ def test_proactive_event_types_are_rendered_from_the_project_priorities() -> Non
     assert '<option value="reminder">' not in page
     assert "function renderProactiveEventOptions()" in script
     render = script.split("function renderProactiveEventOptions() {")[1].split("\n}")[0]
-    # From the live fields, not the saved workspace: 事件優先權 is editable now,
-    # so lowering emergency has to reach this dropdown before 套用.
-    assert "proactivePolicyFromFields().priorities" in render
-    assert "優先權 ${score}" in render
+    # The server's EVENT_TYPES is the one authority; nothing hardcodes the list.
+    assert "bootstrapData?.event_types" in render
+    assert "priorities" not in render
     assert "renderProactiveEventOptions();" in script.split("function loadFields() {")[1].split("\n}")[0]
+    # The retired schema-1 types are gone from the labels too, or 待提醒 would
+    # announce an empty event name.
+    for retired in ("emergency", "weather", "news", "reverse_mentor"):
+        assert retired not in script.split("const PROACTIVE_EVENT_LABELS = {")[1].split("};")[0], retired
     # And the panel says so, rather than leaving students to assume integrations.
     assert "沒有串接任何資料來源" in page
     assert "沒有排程器" in page

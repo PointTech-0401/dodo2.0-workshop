@@ -1,58 +1,313 @@
-// workshop2.js —— 第二堂：三層記憶、長者資料、主動關心規則與待提醒排程。
+// workshop2.js —— 第二堂：建檔、態度分塊、三層記憶、主動關心規則與待提醒排程。
 //
 // 整支包在 IIFE 裡，只掛一個全域；IIFE 內一律零縮排 —— tests/test_web.py 用 `\n}`
 // 切函式本體，多一層縮排就切不到。core.js 的頂層 const／let／function 在全域詞法
 // 環境裡，這裡直接讀得到；要呼叫另一堂則走 W1.* ／ W2.*。
 (() => {
-// A/B/C maps onto the three lists in `workspace.memory`, which is what makes the
-// Workshop 2 classification quiz do something instead of just scoring itself.
+// =====================================================================
+// 記憶：三層、來源、合併規則
+// =====================================================================
+// A/B/C maps onto the three lists in `workspace.memory`.
 const MEMORY_LAYERS = [
   ["A", "facts", "A 重要事實"],
   ["B", "events", "B 近期事件"],
   ["C", "summaries", "C 跨日摘要"],
 ];
-const MEMORY_PREVIEW_LIMIT = 8;
+// Everything from here to `composeRulesSection` mirrors dodo_workshop/
+// prompt_sections.py word for word; tests/fixtures/workshop2_prompt.txt pins
+// both sides, and tests/browser/uicheck.js compares this composer against it.
+const MEMORY_PREVIEW_LIMIT = 16;
+const MEMORY_LAYER_HEADINGS = {
+  facts: "A 重要事實（長期保存；標［護理員］的你不能改）",
+  events: "B 近期事件（會過期；同一件事新的取代舊的）",
+  summaries: "C 跨日摘要（由系統整理，不是人寫的）",
+};
+const SOURCE_MARKERS = { caregiver: "［護理員］", system: "［系統］" };
+const SOURCE_LABELS = { caregiver: "護理員建", dodo: "豆豆記的", system: "系統整理" };
+const MEMORY_TAG_LABELS = { interest: "興趣", preference: "偏好", medical_note: "醫囑", symptom: "症狀", note: "短期念頭" };
+const WEEKDAY_NAMES = { 1: "一", 2: "二", 3: "三", 4: "四", 5: "五", 6: "六", 7: "日" };
+const MAX_MESSAGE_SENTENCES = 2;
+const DEFAULT_PROACTIVE_POLICY = { interval_minutes: 30, daily_limit: 4 };
 // What「再存一次同一個 key」means is different in each layer, and that difference
-// is the real behavioural payload of the A/B/C classification:
-//   A 累加   —— 興趣：唱歌 and 興趣：跳舞 are both true, so both stay. Overwriting
-//               here is the bug students hit: the second fact ate the first.
-//   B 取代   —— 近期事件 IS the latest state.「今天想吃什麼」has one answer at a
-//               time, and B is also capped so stale days cannot pile up outside
-//               the prompt window.
+// is the real behavioural payload of A/B/C:
+//   A 累加   —— 興趣：唱歌 and 興趣：跳舞 are both true, so both stay. Caregiver
+//               facts are locked: the model may add beside them, never replace.
+//   B 取代   —— 近期事件 IS the latest state. 「膝蓋好多了」 replaces 「膝蓋痛」,
+//               which is what stops the 健康關心 follow-up. Capped so stale days
+//               cannot pile up outside the prompt window.
 //   C 重寫   —— a summary is recomputed from scratch, never appended to.
 const MEMORY_MERGE_RULES = {
-  A: { merge: "accumulate", label: "累加：同一個 key 可以並存多筆事實", capacity: 0 },
+  A: { merge: "accumulate", label: "累加：同一個 key 可以並存多筆事實；護理員建的豆豆不能改", capacity: 0 },
   B: { merge: "supersede", label: `取代：同一個 key 只留最新一筆，整層最多 ${MEMORY_PREVIEW_LIMIT} 筆`, capacity: MEMORY_PREVIEW_LIMIT },
-  C: { merge: "rewrite", label: "重寫：摘要每次重算，同一個 key 直接覆蓋", capacity: 0 },
+  C: { merge: "rewrite", label: "重寫：摘要由系統重算，同一個 key 直接覆蓋", capacity: 0 },
 };
-// Workshop 2's own editable blocks. Their default text lives only in
-// profile.py's DEFAULT_WORKSPACE and arrives via /api/bootstrap, so there is no
-// second copy to keep in sync.
+// Workshop 2's editable blocks: attitudes only. 建檔決定資料，Prompt 只寫態度.
+// Default text lives in profile.py and arrives via /api/bootstrap.
 const WORKSHOP2_BLOCKS = [
   ["memory_use", "記憶使用規則", "#promptMemoryUse"],
-  ["proactive", "主動關心規則", "#promptProactive"],
+  ["attitude_reminder", "重要提醒怎麼講", "#promptAttitudeReminder"],
+  ["attitude_health", "健康關心怎麼問", "#promptAttitudeHealth"],
+  ["attitude_chat", "閒聊從哪裡開始", "#promptAttitudeChat"],
 ];
+
+// =====================================================================
+// 建檔：六區表單。The scalar fields are plain inputs; the seven list sections
+// render rows into a container and are read back by kind. Interests and
+// symptoms are not part of `elder_profile` — they are caregiver-written memory
+// entries, so the memory viewer stays the single source of truth for what 豆豆
+// knows, and the merge rules apply to them like to anything else.
+// =====================================================================
+const INTAKE_SCALARS = [
+  ["#elderAddress", "address"], ["#elderName", "name"], ["#elderRoom", "room"], ["#elderCity", "city"],
+  ["#elderLanguage", "language"], ["#elderBackground", "background"],
+  ["#elderWake", "wake_time"], ["#elderBed", "bed_time"],
+];
+const FACT_TAGS = ["interest", "preference", "medical_note"];
+const SYMPTOM_TAGS = ["symptom", "note"];
+const ROW_KINDS = {
+  routine: { container: "#routineRows", empty: () => ({ label: "", start: "", end: "", do_not_disturb: true, weekdays: [] }) },
+  medication: { container: "#medicationRows", empty: () => ({ name: "", time: "", note: "" }) },
+  appointment: { container: "#appointmentRows", empty: () => ({ label: "", weekday: "", date: "", time: "", note: "" }) },
+  fact: { container: "#factRows", empty: () => ({ key: "", value: "", tag: "interest" }) },
+  symptom: { container: "#symptomRows", empty: () => ({ key: "", value: "", tag: "symptom" }) },
+  taboo: { container: "#tabooRows", empty: () => ({ topic: "", rule: "" }) },
+  declined: { container: "#declinedRows", empty: () => ({ text: "", reason: "" }) },
+};
+const attr = (value) => escapeHtml(String(value ?? ""));
+const textInput = (field, value, placeholder = "", extra = "") =>
+  `<input data-field="${field}" value="${attr(value)}" placeholder="${attr(placeholder)}" ${extra}>`;
+const timeInput = (field, value) => `<input type="time" data-field="${field}" value="${attr(value)}">`;
+const tagSelect = (tags, current) => `<select data-field="tag">${tags.map((tag) =>
+  `<option value="${tag}" ${tag === current ? "selected" : ""}>${MEMORY_TAG_LABELS[tag]}</option>`).join("")}</select>`;
+const weekdayBoxes = (checked) => `<span class="weekday-boxes" aria-label="星期">${Object.entries(WEEKDAY_NAMES).map(([day, name]) =>
+  `<label><input type="checkbox" data-weekday="${day}" ${checked.includes(Number(day)) ? "checked" : ""}>${name}</label>`).join("")}</span>`;
+
+const ROW_TEMPLATES = {
+  routine: (row) => `${textInput("label", row.label, "午睡、歌唱班…")}${timeInput("start", row.start)}<span class="row-dash">–</span>${timeInput("end", row.end)}
+    <label class="row-check"><input type="checkbox" data-field="do_not_disturb" ${row.do_not_disturb ? "checked" : ""}>不打擾</label>${weekdayBoxes(row.weekdays || [])}`,
+  medication: (row) => `${timeInput("time", row.time)}${textInput("name", row.name, "藥名")}${textInput("note", row.note, "備註：飯後、配溫水…")}`,
+  appointment: (row) => `${textInput("label", row.label, "復健、回診…")}<select data-field="weekday"><option value="">單次</option>${Object.entries(WEEKDAY_NAMES).map(([day, name]) =>
+    `<option value="${day}" ${String(row.weekday) === day ? "selected" : ""}>每週${name}</option>`).join("")}</select><input type="date" data-field="date" value="${attr(row.date)}">${timeInput("time", row.time)}${textInput("note", row.note, "要帶什麼")}`,
+  fact: (row) => `${textInput("key", row.key, "喜歡的歌、口味、醫囑…")}${textInput("value", row.value, "內容")}${tagSelect(FACT_TAGS, row.tag)}`,
+  symptom: (row) => `${textInput("key", row.key, "膝蓋、睡眠…")}${textInput("value", row.value, "現在怎麼樣、從什麼時候開始")}${tagSelect(SYMPTOM_TAGS, row.tag)}`,
+  taboo: (row) => `${textInput("topic", row.topic, "話題")}${textInput("rule", row.rule, "她自己提起才回應、不說教…")}`,
+  declined: (row) => `${textInput("text", row.text, "訪談稿裡那一句")}${textInput("reason", row.reason, "為什麼不記")}`,
+};
+
+function renderRows(kind, rows) {
+  const container = $(ROW_KINDS[kind].container);
+  const items = Array.isArray(rows) && rows.length ? rows : [];
+  container.innerHTML = items.map((row, index) => `
+    <div class="row-item row-${kind}" data-row="${index}">
+      ${ROW_TEMPLATES[kind]({ ...ROW_KINDS[kind].empty(), ...row })}
+      <button type="button" class="row-remove" data-remove="${index}" title="移除這一列" aria-label="移除第 ${index + 1} 列">×</button>
+    </div>`).join("");
+  // Every <select> is assigned after the markup rather than trusting
+  // `<option selected>` to survive innerHTML: happy-dom does not apply it (its
+  // selectedIndex comes back as 1 whatever the markup says), so tests/browser
+  // could not otherwise check that 取消變更 restores a list row. A select left on
+  // the wrong option is a 取消變更 that never finishes — read() would disagree
+  // with the snapshot forever and the dirty dot could never be cleared.
+  [...container.querySelectorAll(".row-item")].forEach((element, index) => {
+    const row = { ...ROW_KINDS[kind].empty(), ...items[index] };
+    element.querySelectorAll("select[data-field]").forEach((select) => {
+      select.value = String(row[select.dataset.field] ?? "");
+    });
+  });
+  container.classList.toggle("is-empty", !items.length);
+}
+
+/** One row back into an object. Everything the snapshot compares comes through
+ *  here, so it has to be deterministic: trimmed strings, numbers as numbers,
+ *  weekdays sorted — or 取消變更 would leave a phantom dirty dot. */
+function readRow(kind, element) {
+  const row = ROW_KINDS[kind].empty();
+  element.querySelectorAll("[data-field]").forEach((input) => {
+    const field = input.dataset.field;
+    row[field] = input.type === "checkbox" ? input.checked : input.value.trim();
+  });
+  if (kind === "routine") {
+    row.weekdays = [...element.querySelectorAll("[data-weekday]:checked")].map((box) => Number(box.dataset.weekday)).sort();
+  }
+  if (kind === "appointment") {
+    row.weekday = row.weekday ? Number(row.weekday) : "";
+  }
+  return row;
+}
+
+const ROW_TEXT_FIELDS = {
+  routine: ["label", "start", "end"], medication: ["name", "time", "note"], appointment: ["label", "date", "time", "note"],
+  fact: ["key", "value"], symptom: ["key", "value"], taboo: ["topic", "rule"], declined: ["text", "reason"],
+};
+const ROW_SORT_KEY = { routine: "start", medication: "time" };
+
+function readRows(kind) {
+  const rows = [...$(ROW_KINDS[kind].container).querySelectorAll(".row-item")]
+    .map((element) => readRow(kind, element))
+    // A row the student added and never filled is not data.
+    .filter((row) => ROW_TEXT_FIELDS[kind].some((field) => row[field]) || (kind === "appointment" && row.weekday));
+  const sortKey = ROW_SORT_KEY[kind];
+  return sortKey ? rows.sort((left, right) => String(left[sortKey]).localeCompare(String(right[sortKey]))) : rows;
+}
+
+function splitList(text) {
+  return String(text || "").split(/[、,，]/).map((item) => item.trim()).filter(Boolean);
+}
+
+/** The whole 建檔 as the backend's shapes: `elder_profile`, plus the caregiver-
+ *  written facts and events that go into `workspace.memory`. */
+function intakeFromFields() {
+  const elder = { ...structuredClone(bootstrapData.default_workspace.profile.elder_profile) };
+  INTAKE_SCALARS.forEach(([selector, field]) => { elder[field] = $(selector).value.trim(); });
+  elder.expertise = splitList($("#elderExpertise").value);
+  elder.routines = readRows("routine");
+  elder.medications = readRows("medication");
+  elder.appointments = readRows("appointment").map((row) => {
+    const item = { label: row.label, time: row.time, note: row.note };
+    if (row.weekday) item.weekday = row.weekday;
+    else if (row.date) item.date = row.date;
+    return item;
+  });
+  elder.emergency_contact = {
+    name: $("#contactName").value.trim(),
+    relation: $("#contactRelation").value.trim(),
+    phone: $("#contactPhone").value.trim(),
+  };
+  elder.taboos = readRows("taboo");
+  elder.declined_notes = readRows("declined");
+  const stamp = (row) => ({ key: row.key, value: row.value, tag: row.tag, source: "caregiver" });
+  return { elder, facts: readRows("fact").map(stamp), events: readRows("symptom").map(stamp) };
+}
+
+function caregiverEntries(field) {
+  return (workspace.memory?.[field] || []).filter((entry) => entry && entry.source === "caregiver");
+}
+
+/** The form owns the caregiver rows; whatever 豆豆 or the system wrote stays,
+ *  after them. A caregiver row that did not change keeps its timestamp. */
+function mergeCaregiver(existing, rows) {
+  const previous = Array.isArray(existing) ? existing : [];
+  const kept = previous.filter((entry) => !(entry && entry.source === "caregiver"));
+  const stamped = rows.map((row) => {
+    const same = previous.find((entry) => entry && entry.source === "caregiver" && entry.key === row.key && entry.value === row.value);
+    return { ...row, updated_at: same?.updated_at || new Date().toISOString() };
+  });
+  return [...stamped, ...kept];
+}
+
+function writeIntake({ elder, facts, events }) {
+  INTAKE_SCALARS.forEach(([selector, field]) => { $(selector).value = elder[field] || ""; });
+  $("#elderExpertise").value = (elder.expertise || []).join("、");
+  renderRows("routine", elder.routines);
+  renderRows("medication", elder.medications);
+  renderRows("appointment", elder.appointments);
+  $("#contactName").value = elder.emergency_contact?.name || "";
+  $("#contactRelation").value = elder.emergency_contact?.relation || "";
+  $("#contactPhone").value = elder.emergency_contact?.phone || "";
+  renderRows("fact", facts);
+  renderRows("symptom", events);
+  renderRows("taboo", elder.taboos);
+  renderRows("declined", elder.declined_notes);
+  renderIntakeHints();
+}
+
+// Per-section consequence lines: what filling this section in will *do*, shown
+// the moment it is filled — the 60-minute wait for feedback was the deepest
+// valley in the old timetable.
+function renderIntakeHints() {
+  const symptoms = readRows("symptom").filter((row) => row.tag === "symptom").length;
+  const taboos = readRows("taboo").length;
+  const declined = readRows("declined").length;
+  const quiet = readRows("routine").filter((row) => row.do_not_disturb).length;
+  const meds = readRows("medication").length;
+  $("#hintRoutines").textContent = quiet
+    ? `${quiet} 段不打擾時段會變成主動分頁帶狀圖上的灰色；只有重要提醒能穿過。`
+    : "還沒有不打擾時段：現在她的一天裡，豆豆什麼時候都能開口。";
+  $("#hintCare").textContent = meds
+    ? `${meds} 筆用藥會變成重要提醒 —— 不受間隔與上限限制，也不吃額度。`
+    : "還沒有用藥：她的一天裡不會有任何重要提醒。";
+  $("#hintSymptoms").textContent = symptoms
+    ? `${symptoms} 筆症狀會變成健康關心候選：豆豆會在一天裡挑時間追問「還好嗎」，她說好了就用 replace 換掉。`
+    : "還沒有症狀：她的一天裡不會有健康關心。";
+  $("#hintTaboos").textContent = `${taboos} 個禁區會進 Prompt 的「# 不主動提起」；${declined} 句決定不記，不會進任何地方。`;
+}
+
+let intakeCheckTimer = null;
+function scheduleIntakeCheck() {
+  clearTimeout(intakeCheckTimer);
+  intakeCheckTimer = setTimeout(runIntakeCheck, 400);
+}
+
+/** Counts per section against what the interview actually contains. Not a
+ *  grade: whether the content is right is answered by 她的一天 and by 豆豆. */
+async function runIntakeCheck() {
+  const { elder, facts, events } = intakeFromFields();
+  try {
+    const response = await fetch("/api/intake-check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ elder_profile: elder, memory: { facts, events } }),
+    });
+    if (!response.ok) return;
+    renderCompleteness(await response.json());
+  } catch {
+    // Offline: the chips just keep their last value.
+  }
+}
+
+function renderCompleteness(result) {
+  $("#intakeCompleteness").innerHTML = result.completeness.map((row) => `
+    <span class="check-chip ${row.done ? "is-done" : ""}">${escapeHtml(row.label)} <b>${row.have}</b>/${row.expected}</span>`).join("");
+}
+
+/** The interview is markdown with headings, bold, blockquotes and rules; that
+ *  is all this renders. Escaped first — it is content, not markup. */
+function renderInterview() {
+  const inline = (text) => escapeHtml(text).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  const html = String(bootstrapData?.interview_markdown || "").split(/\r?\n/).map((line) => {
+    if (!line.trim()) return "";
+    if (line.startsWith("## ")) return `<h4>${inline(line.slice(3))}</h4>`;
+    if (line.startsWith("# ")) return `<h3>${inline(line.slice(2))}</h3>`;
+    if (line.startsWith("> ")) return `<blockquote>${inline(line.slice(2))}</blockquote>`;
+    if (line.trim() === "---") return "<hr>";
+    return `<p>${inline(line)}</p>`;
+  }).join("");
+  $("#interviewText").innerHTML = html;
+}
+
+/** 「問豆豆這一區」: apply what is on screen, then ask one fixed question that
+ *  only the just-filled section can answer. Six small feedback loops instead of
+ *  one 35-minute form. */
+async function askDodo(question) {
+  await applyWorkshop2();
+  if (dataChannel?.readyState !== "open") {
+    notify("還沒連上 Realtime（需要 API Key），建檔已經保存；連線後再按一次就能問。");
+    return;
+  }
+  sendText(question);
+}
 
 registerApplyGroup("workshop2", {
   button: "#saveWorkshop2",
   revert: "#revertWorkshop2",
   tabs: {
+    tabW2Intake: {
+      read: () => intakeFromFields(),
+      write: (snapshot) => writeIntake(snapshot),
+    },
     tabW2Prompt: {
-      read: () => [elderProfileFromFields(), workshop2BlocksFromFields()],
-      write: ([elder, blocks]) => {
-        $("#elderAddress").value = elder.address;
-        $("#elderCity").value = elder.city || "";
-        $("#elderInterests").value = (elder.interests || []).join("、");
+      read: () => workshop2BlocksFromFields(),
+      write: (blocks) => {
         WORKSHOP2_BLOCKS.forEach(([key, , selector]) => { $(selector).value = blocks[key] ?? ""; });
       },
     },
     tabW2Policy: {
       read: () => proactivePolicyFromFields(),
       write: (policy) => {
+        $("#cooldown").value = policy.interval_minutes;
+        $("#dailyLimit").value = policy.daily_limit;
         $("#quietStart").value = policy.quiet_hours.start;
         $("#quietEnd").value = policy.quiet_hours.end;
-        $("#cooldown").value = policy.cooldown_minutes;
-        $("#dailyLimit").value = policy.daily_message_limit;
         $("#maxSentences").value = policy.max_message_sentences;
         renderPriorityFields(policy.priorities);
         renderProactiveEventOptions();
@@ -60,26 +315,19 @@ registerApplyGroup("workshop2", {
     },
   },
 });
-// Only Workshop 2 reads or writes this: 記憶分類 sets it, 執行 6 個情境 gates on it.
-let memoryPassed = false;
+// Only Workshop 2 reads or writes this: 執行 6 個情境 gates on it (dead until
+// the 主動 tab is rebuilt; the quiz that used to set it is gone).
+let memoryPassed = true;
 
-// The trigger dropdown is generated from `proactive_policy.priorities` rather
-// than hardcoded, so an imported project with its own numbers shows its own
-// numbers — and「類型只是一個優先權」stops being a claim and becomes visible.
+// The three types `choose_event` decides between. schema 1 had six, each with a
+// priority number; 緊急／天氣／新聞／反向請教 left with it.
 const PROACTIVE_EVENT_LABELS = {
-  emergency: "emergency 緊急",
-  reminder: "reminder 提醒",
+  reminder: "reminder 重要提醒",
   health: "health 健康關心",
-  weather: "weather 天氣",
-  reverse_mentor: "reverse_mentor 反向請教",
-  news: "news 新聞",
+  chat: "chat 閒聊",
 };
 
-/** The six numbers behind 事件優先權. The docs told students to tune them and
- *  the screen had no field for it — the only way in was editing the JSON by
- *  hand. Rendered once per load (and per 取消變更): re-rendering on every
- *  keystroke would re-sort the rows under the cursor. */
-function renderPriorityFields(priorities = workspace.profile.proactive_policy.priorities) {
+function renderPriorityFields(priorities = {}) {
   const entries = Object.entries(priorities || {})
     .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]));
   $("#priorityFields").innerHTML = entries.map(([type, score]) => `
@@ -89,86 +337,45 @@ function renderPriorityFields(priorities = workspace.profile.proactive_policy.pr
     </label>`).join("");
 }
 
-/** Keys come out alphabetically, not in DOM order: the dirty check compares
- *  JSON strings, and a re-sorted 取消變更 would otherwise look like an edit. */
 function prioritiesFromFields() {
   const inputs = [...document.querySelectorAll("#priorityFields [data-priority]")];
-  if (!inputs.length) return { ...(workspace.profile.proactive_policy.priorities || {}) };
   return Object.fromEntries(inputs
     .map((input) => [input.dataset.priority, Math.max(0, Number(input.value) || 0)])
     .sort((left, right) => left[0].localeCompare(right[0])));
 }
 
+/** The event types the backend actually decides between. schema 1 had six, each
+ *  with a priority number the student could type; schema 2 has three and no
+ *  priorities at all, so the list is the server's. Rendering it from
+ *  `proactive_policy.priorities` left the dropdown empty — and an empty dropdown
+ *  means 待提醒 has nothing to schedule. The 主動 tab rebuild folds this into the
+ *  merged single-line UI; here it only has to offer the real three. */
 function renderProactiveEventOptions() {
-  // From the fields rather than the saved workspace, so lowering emergency shows
-  // up in this dropdown before 套用 — 「類型只是一個數字」stays visible.
-  const priorities = proactivePolicyFromFields().priorities || {};
+  const types = bootstrapData?.event_types || {};
   const selected = $("#proactiveEventType").value;
-  $("#proactiveEventType").innerHTML = Object.entries(priorities)
-    .sort((left, right) => right[1] - left[1])
-    .map(([type, score]) => {
-      const label = `${PROACTIVE_EVENT_LABELS[type] || type}（優先權 ${score}）`;
-      return `<option value="${type}">${label}</option>`;
-    })
+  $("#proactiveEventType").innerHTML = Object.entries(types)
+    .map(([type, label]) => `<option value="${type}">${escapeHtml(`${type} ${label}`)}</option>`)
     .join("");
-  // Keep the student's pick across a re-render; fall back to the first option.
-  if (selected && priorities[selected]) $("#proactiveEventType").value = selected;
+  if (selected && types[selected]) $("#proactiveEventType").value = selected;
 }
 
-// Workshop 2's 記憶使用規則 gained a paragraph about 累加 vs mode="replace".
-// A stored project keeps whatever text it saved (non-empty wins over the
-// default), so a student who started before this change would sit and read a
-// block that never mentions the rule their memory now actually follows. Mirrors
-// the line in WORKSHOP2_PROMPT_BLOCKS["memory_use"] in profile.py.
-const MEMORY_USE_GUIDANCE = [
-  '同一個 key 再存一次時：新資訊和舊的都成立就直接存（預設會並存，例如興趣同時有唱歌和跳舞，不要為了塞進一筆而改寫舊的）；只有新內容真的取代舊內容（搬家、換藥、換聯絡人）才傳 mode="replace"；使用者否定某一筆已經記得的事時傳 mode="remove"，用一模一樣的 key 與 value 移除那一筆，不要新增一筆相反的記錄。',
-  '喜歡或不喜歡的食物、音樂、活動都是長期偏好，一律存 layer=A 讓它們並存；只有「今天中午想吃什麼」這種當下的一次性念頭才放 layer=B。放錯層會讓新的偏好直接吃掉舊的。',
-];
-// Every line the block manages starts with one of these, so an older revision
-// can be recognised and replaced instead of piling up beside the new one.
-const MEMORY_USE_GUIDANCE_PREFIXES = ["同一個 key 再存一次時：", "喜歡或不喜歡的食物"];
-const MEMORY_USE_ANCHOR = "提起記憶時要像家人記得";
-
-/** Keep the generated guidance lines current inside a stored block.
- *
- *  A stored 記憶使用規則 wins over the default, so nothing written here ever
- *  reaches a project that already exists — that is what this repairs. The first
- *  version gated on `mode="replace"`, a string every revision contains, so a
- *  project migrated once could never receive a later revision. Old variants are
- *  stripped by prefix and the current lines re-inserted, which makes the
- *  function idempotent and safe to revise again.
- *
- *  Only touches a block whose closing line is still recognisable: a student who
- *  rewrote it is left alone, and empty stays empty (deleted on purpose). */
-function migrateWorkshop2Blocks(blocks) {
-  const stored = String(blocks?.memory_use ?? "");
-  if (!stored) return blocks;
-  const lines = stored
-    .split("\n")
-    .filter((line) => !MEMORY_USE_GUIDANCE_PREFIXES.some((prefix) => line.startsWith(prefix)));
-  const anchor = lines.findIndex((line) => line.startsWith(MEMORY_USE_ANCHOR));
-  if (anchor < 0) return blocks;
-  const merged = [...lines.slice(0, anchor), ...MEMORY_USE_GUIDANCE, ...lines.slice(anchor)].join("\n");
-  return merged === stored ? blocks : { ...blocks, memory_use: merged };
-}
-
-/** Workshop 2's half of core's loadFields(): the elder profile, the two
- *  editable blocks and the proactive numbers. The previews that read them run
- *  afterwards, from core. */
+/** Workshop 2's half of core's loadFields(): the 建檔, the four attitude blocks
+ *  and the proactive numbers. The previews that read them run afterwards, from core. */
 function loadFields() {
   const { elder_profile: elder, proactive_policy: proactive } = workspace.profile;
-  $("#elderAddress").value = elder.address;
-  $("#elderCity").value = elder.city || "";
-  $("#elderInterests").value = elder.interests.join("、");
+  writeIntake({ elder, facts: caregiverEntries("facts"), events: caregiverEntries("events") });
   WORKSHOP2_BLOCKS.forEach(([key, , selector]) => {
     $(selector).value = workspace.profile.workshop2_blocks?.[key] ?? "";
   });
-  $("#quietStart").value = proactive.quiet_hours.start;
-  $("#quietEnd").value = proactive.quiet_hours.end;
-  $("#cooldown").value = proactive.cooldown_minutes;
-  $("#dailyLimit").value = proactive.daily_message_limit;
-  $("#maxSentences").value = proactive.max_message_sentences;
-  renderPriorityFields(proactive.priorities);
+  // The 主動 tab is rebuilt in the next phase; until then its two surviving
+  // fields carry the two knobs and the rest sit at fixed values.
+  $("#cooldown").value = proactive.interval_minutes;
+  $("#dailyLimit").value = proactive.daily_limit;
+  $("#quietStart").value = 22;
+  $("#quietEnd").value = 8;
+  $("#maxSentences").value = MAX_MESSAGE_SENTENCES;
+  renderPriorityFields({});
+  scheduleIntakeCheck();
 }
 
 function workshop2BlocksFromFields() {
@@ -178,48 +385,46 @@ function workshop2BlocksFromFields() {
   ]));
 }
 
-function elderProfileFromFields() {
-  return {
-    ...workspace.profile.elder_profile,
-    address: $("#elderAddress").value.trim() || "王奶奶",
-    city: $("#elderCity").value.trim(),
-    interests: $("#elderInterests").value
-      .split(/[、,，]/)
-      .map((item) => item.trim())
-      .filter(Boolean),
-  };
-}
-
+/** Two knobs — plus, until the 主動 tab is rebuilt, the legacy preview fields
+ *  the old band and hints still read. Only the two knobs are ever stored. */
 function proactivePolicyFromFields() {
   return {
-    ...workspace.profile.proactive_policy,
+    interval_minutes: Math.max(0, Number($("#cooldown").value) || 0),
+    daily_limit: Math.max(0, Number($("#dailyLimit").value) || 0),
     quiet_hours: { start: Number($("#quietStart").value), end: Number($("#quietEnd").value) },
-    cooldown_minutes: Number($("#cooldown").value),
-    daily_message_limit: Number($("#dailyLimit").value),
-    max_message_sentences: Math.max(1, Number($("#maxSentences").value) || 2),
+    cooldown_minutes: Math.max(0, Number($("#cooldown").value) || 0),
+    daily_message_limit: Math.max(0, Number($("#dailyLimit").value) || 0),
+    max_message_sentences: MAX_MESSAGE_SENTENCES,
     priorities: prioritiesFromFields(),
   };
 }
 
 function collectWorkshop2() {
-  workspace.profile.elder_profile = elderProfileFromFields();
+  const { elder, facts, events } = intakeFromFields();
+  workspace.profile.elder_profile = elder;
+  workspace.memory.facts = mergeCaregiver(workspace.memory.facts, facts);
+  workspace.memory.events = mergeCaregiver(workspace.memory.events, events);
   workspace.profile.workshop2_blocks = workshop2BlocksFromFields();
-  workspace.profile.proactive_policy = proactivePolicyFromFields();
+  const { interval_minutes, daily_limit } = proactivePolicyFromFields();
+  workspace.profile.proactive_policy = { interval_minutes, daily_limit };
   saveProject();
 }
 
+// =====================================================================
+// Prompt 組裝 —— mirrors prompt_sections.py. Change the fixture, not one side.
+// =====================================================================
+const clean = (value) => String(value ?? "").trim();
+
+/** `key：value［護理員］` — the marker tells the model which A facts it may not touch. */
 function memoryEntryText(entry) {
-  if (entry && typeof entry === "object") {
-    const key = String(entry.key || "").trim();
-    const value = String(entry.value || "").trim();
-    return key && value ? `${key}：${value}` : key || value;
-  }
-  return String(entry ?? "").trim();
+  if (!(entry && typeof entry === "object")) return String(entry ?? "").trim();
+  const key = clean(entry.key);
+  const value = clean(entry.value);
+  const text = key && value ? `${key}：${value}` : key || value;
+  return text ? text + (SOURCE_MARKERS[entry.source] || "") : "";
 }
 
-/** HH:MM of a stored write, for the viewer only. The prompt context keeps the
- *  plain `key：value` shape that `buildMemoryContext` and `compose_memory_context`
- *  must agree on. */
+/** HH:MM of a stored write, for the viewer only. */
 function memoryEntryTime(entry) {
   const stamp = entry && typeof entry === "object" ? entry.updated_at : null;
   if (!stamp) return "";
@@ -227,27 +432,10 @@ function memoryEntryTime(entry) {
   return Number.isNaN(when.getTime()) ? "" : when.toTimeString().slice(0, 5);
 }
 
-/** Layer titles carrying their retention window. `memory_policy` was dead
- *  schema until now; nothing ages during a 165-minute class, so retention is a
- *  label rather than a simulation —「保存 365 天」next to「保存 30 天」is what
- *  makes A and B different at all. Mirrors `memory_layer_headings`. */
-function memoryLayerHeadings(memoryPolicy) {
-  const policy = memoryPolicy || {};
-  return {
-    facts: `A 重要事實（保存 ${policy.fact_retention_days ?? 365} 天）`,
-    events: `B 近期事件（保存 ${policy.event_retention_days ?? 30} 天）`,
-    summaries: "C 跨日摘要（由多次對話整理）",
-  };
-}
-
-/** Render the three memory layers exactly as the model receives them. Capped:
- *  these instructions are re-sent on every 套用. Mirrors
- *  `compose_memory_context` in dodo_workshop/profile.py. */
-function buildMemoryContext(memory, memoryPolicy) {
-  const headings = memoryLayerHeadings(memoryPolicy);
+/** Render the three memory layers exactly as the model receives them. */
+function buildMemoryContext(memory) {
   const lines = [];
-  MEMORY_LAYERS.forEach(([, field]) => {
-    const title = headings[field];
+  Object.entries(MEMORY_LAYER_HEADINGS).forEach(([field, title]) => {
     const texts = (memory?.[field] || []).map(memoryEntryText).filter(Boolean);
     if (!texts.length) {
       lines.push(`${title}：（目前沒有任何記錄）`);
@@ -261,65 +449,134 @@ function buildMemoryContext(memory, memoryPolicy) {
   return lines.join("\n");
 }
 
-/** Workshop 2's half of the instructions: two editable blocks plus three
- *  generated sections. Without this, 長者資料、三層記憶 and the proactive rules
- *  never reached the model — they only existed for the CLI and for whatever
- *  read_memory happened to return. Mirrors `compose_workshop2_prompt`. */
+function weekdaysText(weekdays) {
+  const days = (weekdays || []).filter((day) => String(day).trim()).map(Number);
+  return days.length ? `週${days.map((day) => WEEKDAY_NAMES[day] ?? String(day)).join("、")}` : "";
+}
+
+function routineText(routine) {
+  const text = `${routine.label || "作息"} ${routine.start ?? ""}–${routine.end ?? ""}`;
+  const days = weekdaysText(routine.weekdays);
+  return days ? `${text}（${days}）` : text;
+}
+
+function medicationText(medication) {
+  const text = `${medication.time ?? ""} ${medication.name || "用藥"}`.trim();
+  const note = clean(medication.note);
+  return note ? `${text}（${note}）` : text;
+}
+
+function appointmentText(appointment) {
+  const when = appointment.weekday
+    ? `每週${WEEKDAY_NAMES[Number(appointment.weekday)] ?? appointment.weekday}`
+    : String(appointment.date ?? "");
+  const text = `${when} ${appointment.time ?? ""} ${appointment.label || "回診"}`.trim();
+  const note = clean(appointment.note);
+  return note ? `${text}（${note}）` : text;
+}
+
+/** `# 長者資料`, generated from the 建檔. The emergency phone never enters the
+ *  prompt: it is the caregiver's, not 豆豆's. */
+function composeElderSection(elder, address) {
+  const lines = [`稱呼：${address}`];
+  const name = clean(elder.name);
+  const room = clean(elder.room);
+  if (name) lines.push(`姓名：${name}${room ? `（房號 ${room}）` : ""}`);
+  else if (room) lines.push(`房號：${room}`);
+  lines.push(`居住城市：${elder.city || "未提供"}（問天氣沒有指定城市時用這個）`);
+  [["語言", "language"], ["背景", "background"]].forEach(([label, key]) => {
+    if (clean(elder[key])) lines.push(`${label}：${clean(elder[key])}`);
+  });
+  const expertise = (elder.expertise || []).map(clean).filter(Boolean);
+  if (expertise.length) lines.push(`她會的事（可以請教）：${expertise.join("、")}`);
+  const wake = clean(elder.wake_time);
+  const bed = clean(elder.bed_time);
+  if (wake || bed) lines.push(`作息：${wake || "？"} 起床、${bed || "？"} 上床`);
+  const quiet = (elder.routines || []).filter((routine) => routine.do_not_disturb && routine.start);
+  if (quiet.length) lines.push(`不打擾時段：${quiet.map(routineText).join("、")}`);
+  const medications = (elder.medications || []).filter((item) => item.time || item.name);
+  if (medications.length) lines.push(`用藥：${medications.map(medicationText).join("；")}`);
+  const appointments = (elder.appointments || []).filter((item) => item.time || item.label);
+  if (appointments.length) lines.push(`回診／復健：${appointments.map(appointmentText).join("；")}`);
+  const contact = elder.emergency_contact || {};
+  if (clean(contact.name)) {
+    const relation = clean(contact.relation);
+    lines.push(`緊急聯絡人：${relation ? `${relation} ` : ""}${contact.name}（電話由照護員保管，不要向長者複誦）`);
+  }
+  return `# 長者資料\n${lines.join("\n")}`;
+}
+
+/** `# 不主動提起`: remembered, known to the model, never raised first. */
+function composeTabooSection(taboos) {
+  const items = (taboos || []).filter((item) => clean(item.topic));
+  if (!items.length) return "# 不主動提起\n（建檔沒有填。她自己提起的事都可以接著聊。）";
+  return `# 不主動提起\n${items.map((item) => `- ${clean(item.topic)}${clean(item.rule) ? `：${clean(item.rule)}` : ""}`).join("\n")}`;
+}
+
+/** `# 主動訊息的程式規則` — stated to the model even though the program enforces them. */
+function composeRulesSection(policy, elder) {
+  const interval = Number(policy.interval_minutes);
+  const limit = Number(policy.daily_limit);
+  const wake = clean(elder.wake_time);
+  const bed = clean(elder.bed_time);
+  const quietLabels = (elder.routines || []).filter((routine) => routine.do_not_disturb).map((routine) => String(routine.label || "作息"));
+  const lines = [
+    "主動訊息分三類：重要提醒（不受任何限制、不算額度）、健康關心（追問還沒好的身體狀況）、閒聊。",
+    `健康關心與閒聊：兩則之間至少間隔 ${interval} 分鐘，每天最多 ${limit} 則。`,
+    wake && bed ? `她上床（${bed}）到起床（${wake}）之間只送重要提醒。` : "建檔沒有填起床與上床時間，所以沒有安靜時段。",
+  ];
+  if (quietLabels.length) lines.push(`不打擾時段（${quietLabels.join("、")}）只送重要提醒。`);
+  lines.push(
+    "她剛說不想聊時，健康關心與閒聊都不送。",
+    `每則主動訊息最多 ${MAX_MESSAGE_SENTENCES} 句。`,
+    "這些條件由程式先判斷；你收到主動事件時才開口，措辭要符合上面的態度。",
+  );
+  return `# 主動訊息的程式規則\n${lines.join("\n")}`;
+}
+
+/** Workshop 2's half of the instructions: four attitude blocks, then four
+ *  generated sections. Mirrors `compose_workshop2_prompt`. */
 function buildWorkshop2Prompt(source) {
-  const { agent, elder_profile: elder, proactive_policy: policy } = source.profile;
-  const address = elder.address || agent.address || "王奶奶";
-  const replacements = { "{AGENT_NAME}": agent.name || "豆豆", "{USER_ADDRESS}": address };
-  const blocks = source.profile.workshop2_blocks || {};
+  const profile = source.profile || {};
+  const agent = profile.agent || {};
+  const elder = profile.elder_profile || {};
+  const policy = { ...DEFAULT_PROACTIVE_POLICY, ...(profile.proactive_policy || {}) };
+  const address = String(elder.address || agent.address || "長者");
+  const replacements = { "{AGENT_NAME}": String(agent.name || "豆豆"), "{USER_ADDRESS}": address };
+  const defaults = bootstrapData?.default_workspace?.profile?.workshop2_blocks || {};
+  const blocks = profile.workshop2_blocks || {};
   const sections = WORKSHOP2_BLOCKS.map(([key, title]) => {
-    let content = String(blocks[key] ?? "").trim();
+    let content = clean(key in blocks ? blocks[key] : defaults[key]);
     if (!content) return null; // cleared on purpose — drop the whole section
     Object.entries(replacements).forEach(([placeholder, value]) => {
       content = content.replaceAll(placeholder, value);
     });
     return `# ${title}\n${content}`;
   }).filter(Boolean);
-
-  const interests = (elder.interests || []).filter(Boolean);
-  sections.push([
-    "# 長者資料",
-    `稱呼：${address}`,
-    `居住城市：${elder.city || "未提供"}（問天氣沒有指定城市時用這個）`,
-    `興趣：${interests.length ? interests.join("、") : "未提供"}`,
-  ].join("\n"));
-  sections.push(
-    `# 目前記得的事（三層記憶）\n${buildMemoryContext(source.memory, source.profile.memory_policy)}`,
-  );
-
-  const pad = (value) => String(value).padStart(2, "0");
-  const order = Object.entries(policy.priorities || {})
-    .sort((left, right) => right[1] - left[1])
-    .map(([name, score]) => `${name}(${score})`)
-    .join("、");
-  sections.push([
-    "# 主動訊息的程式規則",
-    `安靜時段：${pad(policy.quiet_hours.start)}:00–${pad(policy.quiet_hours.end)}:00（緊急事件除外）`,
-    `主動訊息冷卻：${policy.cooldown_minutes} 分鐘`,
-    `每日主動訊息上限：${policy.daily_message_limit} 則`,
-    `每則主動訊息最多 ${policy.max_message_sentences} 句`,
-    `事件優先權：${order || "未設定"}`,
-    "這些條件由程式先判斷；你收到主動事件時才開口，措辭仍要符合上面的規則。",
-  ].join("\n"));
+  sections.push(composeElderSection(elder, address));
+  sections.push(`# 目前記得的事（三層記憶）\n${buildMemoryContext(source.memory || {})}`);
+  sections.push(composeTabooSection(elder.taboos || []));
+  sections.push(composeRulesSection(policy, elder));
   return sections.join("\n\n");
 }
 
-/** A workspace-shaped snapshot of the current fields, so the Workshop 2 preview
- *  shows unsaved edits the same way Workshop 1's does. */
+/** A workspace-shaped snapshot of the current fields, so the preview shows
+ *  unsaved edits — including caregiver rows not yet applied. */
 function workshop2Draft() {
+  const { elder, facts, events } = intakeFromFields();
+  const { interval_minutes, daily_limit } = proactivePolicyFromFields();
   return {
     profile: {
       agent: W1.agentFromFields(),
       workshop2_blocks: workshop2BlocksFromFields(),
-      elder_profile: elderProfileFromFields(),
-      // Not editable in the UI, but it decides the retention labels.
-      memory_policy: workspace.profile.memory_policy,
-      proactive_policy: proactivePolicyFromFields(),
+      elder_profile: elder,
+      proactive_policy: { interval_minutes, daily_limit },
     },
-    memory: workspace.memory,
+    memory: {
+      facts: mergeCaregiver(workspace.memory.facts, facts),
+      events: mergeCaregiver(workspace.memory.events, events),
+      summaries: workspace.memory.summaries || [],
+    },
   };
 }
 
@@ -327,6 +584,9 @@ function rebuildWorkshop2Prompt() {
   $("#workshop2SystemPrompt").textContent = composeInstructions(workshop2Draft());
 }
 
+// =====================================================================
+// 記憶寫入：the one place anything writes memory.
+// =====================================================================
 function memoryEntryKey(entry) {
   return entry && typeof entry === "object" ? String(entry.key || "").trim() : "";
 }
@@ -335,21 +595,28 @@ function memoryEntryValue(entry) {
   return entry && typeof entry === "object" ? String(entry.value || "").trim() : String(entry ?? "").trim();
 }
 
+function layerFor(layerId) {
+  return MEMORY_LAYERS.find(([id]) => id === String(layerId || "").toUpperCase()) || MEMORY_LAYERS[0];
+}
+
 /** The single place anything writes memory — the Realtime `update_memory` tool
- *  and the 記憶分類 exercise both come through here, so the two can never drift.
+ *  and the 建檔 form both come through here, so the two can never drift.
  *
  *  `mode` overrides the layer's own rule for one write: the model passes
- *  "replace" when a fact really is superseded (搬家、換藥). Re-saving the exact
- *  same key+value is a no-op beyond the timestamp, which is what makes clicking
- *  「檢查記憶分類」 twice idempotent instead of duplicating every card.
+ *  "replace" when a fact really is superseded (搬家、換藥、膝蓋好多了). Re-saving
+ *  the exact same key+value is a no-op beyond the timestamp.
+ *
+ *  Caregiver lock: A-layer facts written by the caregiver cannot be replaced by
+ *  the model — it may add beside them, never take them away. B is not locked:
+ *  a caregiver-seeded symptom is exactly what 「好多了」 has to be able to replace.
  *
  *  Returns what happened so the caller can say it out loud. */
-function upsertMemory(layerId, key, value, mode) {
-  const [layer, field, layerTitle] =
-    MEMORY_LAYERS.find(([id]) => id === String(layerId || "").toUpperCase()) || MEMORY_LAYERS[0];
+function upsertMemory(layerId, key, value, mode, options = {}) {
+  const [layer, field, layerTitle] = layerFor(layerId);
   const rule = MEMORY_MERGE_RULES[layer];
   if (!Array.isArray(workspace.memory[field])) workspace.memory[field] = [];
   const updatedAt = new Date().toISOString();
+  const source = options.source || "dodo";
 
   const identical = workspace.memory[field].find(
     (entry) => memoryEntryKey(entry) === key && memoryEntryValue(entry) === value,
@@ -360,6 +627,12 @@ function upsertMemory(layerId, key, value, mode) {
   }
 
   const accumulate = (mode || rule.merge) === "accumulate";
+  const protectedValues = accumulate || source === "caregiver" ? [] : workspace.memory[field]
+    .filter((entry) => layer === "A" && entry?.source === "caregiver" && memoryEntryKey(entry) === key)
+    .map(memoryEntryValue);
+  if (protectedValues.length) {
+    return { layer, field, layerTitle, action: "locked", locked: true, protectedValues, replaced: 0, dropped: 0, sameKey: 0 };
+  }
   const kept = accumulate
     ? workspace.memory[field]
     : workspace.memory[field].filter((entry) => memoryEntryKey(entry) !== key);
@@ -369,7 +642,8 @@ function upsertMemory(layerId, key, value, mode) {
     .filter((entry) => !kept.includes(entry))
     .map(memoryEntryValue);
   const replaced = superseded.length;
-  let entries = [...kept, { key, value, updated_at: updatedAt }];
+  const written = { key, value, updated_at: updatedAt, source, tag: options.tag || null };
+  let entries = [...kept, written];
   // B is 近期事件: without a ceiling the oldest days survive forever, silently
   // parked outside the prompt window where nothing can ever refresh them.
   const dropped = rule.capacity ? Math.max(0, entries.length - rule.capacity) : 0;
@@ -388,22 +662,19 @@ function upsertMemory(layerId, key, value, mode) {
   };
 }
 
-/** Retract exactly one remembered value.
- *
- *  This is the operation the accumulate rule created a need for:「我不喜歡吃西瓜」
- *  cannot be handled by writing another fact, and rewriting the whole key with
- *  mode="replace" would throw away 鳳梨 and 芭樂 along with it. Matches on
- *  key AND value, so nothing else under that key is touched.
+/** Retract exactly one remembered value. Matches on key AND value, so nothing
+ *  else under that key is touched. Caregiver A facts are locked here too.
  *
  *  Returns what is left under the key, so a near-miss on the value can be
  *  retried precisely instead of the model guessing again. */
 function forgetMemory(layerId, key, value) {
-  const [layer, field, layerTitle] =
-    MEMORY_LAYERS.find(([id]) => id === String(layerId || "").toUpperCase()) || MEMORY_LAYERS[0];
+  const [layer, field, layerTitle] = layerFor(layerId);
   const entries = Array.isArray(workspace.memory[field]) ? workspace.memory[field] : [];
-  const kept = entries.filter(
-    (entry) => !(memoryEntryKey(entry) === key && memoryEntryValue(entry) === value),
-  );
+  const target = entries.find((entry) => memoryEntryKey(entry) === key && memoryEntryValue(entry) === value);
+  if (target && layer === "A" && target.source === "caregiver") {
+    return { layer, field, layerTitle, removed: 0, locked: true, remaining: entries.filter((entry) => memoryEntryKey(entry) === key).map(memoryEntryValue) };
+  }
+  const kept = entries.filter((entry) => entry !== target);
   const removed = entries.length - kept.length;
   if (removed) workspace.memory[field] = kept;
   return {
@@ -419,6 +690,7 @@ function forgetMemory(layerId, key, value) {
  *  merge rule at the moment it applies instead of only in the docs. */
 function describeMemoryWrite(result, key, value) {
   const tail = result.dropped ? `（B 已滿，捲出最舊 ${result.dropped} 筆）` : "";
+  if (result.action === "locked") return `已拒絕：「${key}」底下的「${result.protectedValues.join("、")}」是護理員建的，豆豆不能改，請告訴護理員`;
   if (result.action === "unchanged") return `${result.layerTitle}「${key}：${value}」已經記得，只更新時間`;
   if (result.action === "replaced") {
     return `已取代 ${result.layerTitle}「${key}」＝「${value}」（丟掉了：${result.superseded.join("、")}）${tail}`;
@@ -428,8 +700,7 @@ function describeMemoryWrite(result, key, value) {
 }
 
 /** Push memory into the live session. Baked instructions still hold the old
- *  state until a session.update replaces them, so a write made outside the
- *  conversation (刪除、記憶分類) would otherwise look like it did nothing. */
+ *  state until a session.update replaces them. */
 function pushMemoryToSession() {
   if (dataChannel?.readyState !== "open") return false;
   pendingRealtimeApply = true;
@@ -437,33 +708,33 @@ function pushMemoryToSession() {
   return true;
 }
 
-/** Show every stored memory with a way for a *human* to delete it.
- *  Until now only the model could write memory and nobody could correct it,
- *  which quietly contradicted the lesson's own question:「誰能寫入或修改？」
+/** Every stored memory, with who wrote it. Caregiver rows are edited in the
+ *  建檔 form, so they carry no 刪除 here; what 豆豆 wrote, a human can delete.
  *  Entries outside the prompt window are marked, or deleting one would look
  *  like it changed nothing. */
 function renderMemoryViewer() {
-  const headings = memoryLayerHeadings(workspace.profile.memory_policy);
   $("#memoryViewer").innerHTML = MEMORY_LAYERS.map(([layer, field]) => {
     const entries = workspace.memory?.[field] || [];
     const firstShown = Math.max(0, entries.length - MEMORY_PREVIEW_LIMIT);
     const rows = entries.length
       ? entries.map((entry, index) => {
         const time = memoryEntryTime(entry);
+        const source = entry?.source || "dodo";
+        const plain = memoryEntryText({ ...entry, source: null });
         return `
-          <li class="${index < firstShown ? "is-outside" : ""}">
-            <span>${escapeHtml(memoryEntryText(entry)) || "（空白）"}</span>
+          <li class="${index < firstShown ? "is-outside" : ""} is-${source}">
+            <span>${escapeHtml(plain) || "（空白）"}</span>
+            <small class="memory-source">${escapeHtml(SOURCE_LABELS[source] || source)}${entry?.tag ? `・${escapeHtml(MEMORY_TAG_LABELS[entry.tag] || entry.tag)}` : ""}</small>
             ${time ? `<time>${time}</time>` : ""}
             ${index < firstShown ? "<em>未進入 Prompt</em>" : ""}
-            <button type="button" class="link-button" data-memory-layer="${layer}" data-memory-entry="${index}">刪除</button>
+            ${source === "caregiver"
+              ? '<em class="memory-locked">在建檔區修改</em>'
+              : `<button type="button" class="link-button" data-memory-layer="${layer}" data-memory-entry="${index}">刪除</button>`}
           </li>`;
       }).join("")
       : '<li class="is-empty">（目前沒有任何記錄）</li>';
-    // The merge rule is printed next to the layer it governs: it is the only
-    // place A、B and C actually behave differently, and it is invisible until a
-    // student saves the same key twice.
     return `<div class="memory-layer">
-      <h4>${escapeHtml(headings[field])}</h4>
+      <h4>${escapeHtml(MEMORY_LAYER_HEADINGS[field])}</h4>
       <p class="memory-rule">${escapeHtml(MEMORY_MERGE_RULES[layer].label)}</p>
       <ul>${rows}</ul>
     </div>`;
@@ -471,15 +742,14 @@ function renderMemoryViewer() {
 }
 
 /** Delete one memory entry on the human's behalf, and push the change into the
- *  live session — the baked instructions still hold the deleted fact until a
- *  session.update replaces them, which would make「刪除」look broken. */
+ *  live session. Caregiver rows are not deletable here by design. */
 function deleteMemoryEntry(layer, index) {
   const found = MEMORY_LAYERS.find(([id]) => id === layer);
   if (!found) return;
   const [, field, title] = found;
   const entries = workspace.memory?.[field];
-  if (!Array.isArray(entries) || !entries[index]) return;
-  const removed = memoryEntryText(entries[index]);
+  if (!Array.isArray(entries) || !entries[index] || entries[index].source === "caregiver") return;
+  const removed = memoryEntryText({ ...entries[index], source: null });
   workspace.memory[field] = entries.filter((_, position) => position !== index);
   saveProject();
   renderMemoryViewer();
@@ -488,93 +758,21 @@ function deleteMemoryEntry(layer, index) {
   notify(`已從 ${title} 刪除「${removed}」，並更新豆豆的記憶。人可以覆寫 AI 記得的事。`);
 }
 
-/** Whoever 豆豆 is talking to, by name. The cards, the Workshop 2 prompt and the
- *  memory writes all have to agree — hardcoded 王奶奶 in the card text meant
- *  renaming the elder left the exercise talking about a stranger. */
+/** After the model replaced or removed a caregiver-seeded symptom (「膝蓋好多了」),
+ *  the form must stop listing it — otherwise the next 套用 would seed it again
+ *  and the follow-up would never stop. Core calls this after memory tool writes. */
+function syncIntakeAfterMemoryChange() {
+  renderRows("symptom", caregiverEntries("events"));
+  renderIntakeHints();
+  markTabApplied("tabW2Intake");
+}
+
+/** Whoever 豆豆 is talking to, by name. */
 function elderAddress() {
   return $("#elderAddress")?.value.trim()
     || workspace?.profile?.elder_profile?.address
     || $("#agentAddress")?.value.trim()
     || "長者";
-}
-
-function memoryCardText(card) {
-  return String(card.text || "").replaceAll("{USER_ADDRESS}", elderAddress());
-}
-
-function renderMemoryCards() {
-  // Re-rendered whenever 長者稱呼 changes, so answers already chosen have to
-  // survive the innerHTML rebuild — otherwise renaming mid-quiz wipes the work.
-  const chosen = bootstrapData.memory_cards.map(
-    (_, index) => $(`[data-memory-index="${index}"]`)?.value || "",
-  );
-  $("#memoryCards").innerHTML = bootstrapData.memory_cards.map((card, index) => `
-    <div class="memory-card">
-      <p>${index + 1}. ${escapeHtml(memoryCardText(card))}</p>
-      <select data-memory-index="${index}" aria-label="第 ${index + 1} 題分類">
-        <option value="">選擇分類</option>
-        <option value="A">A 重要事實</option>
-        <option value="B">B 近期事件</option>
-        <option value="C">C 跨日摘要</option>
-        <option value="X">X 不保存</option>
-      </select>
-    </div>
-  `).join("");
-  chosen.forEach((value, index) => {
-    if (value) $(`[data-memory-index="${index}"]`).value = value;
-  });
-}
-
-const MEMORY_LAYER_LABELS = {
-  A: "A 重要事實",
-  B: "B 近期事件",
-  C: "C 跨日摘要",
-  X: "X 不保存",
-};
-
-/** Classify, then live with the consequence. A right answer on an A/B/C card
- *  writes that card into `workspace.memory` on the layer the student chose, so
- *  「豆豆現在記得什麼」 fills up as they work and the same 累加／取代／重寫 rules
- *  the model hits apply here too. X cards write nothing — refusing to store is
- *  the correct behaviour, and seeing 提款卡密碼 land in memory would teach the
- *  opposite. `upsertMemory` makes a re-check idempotent, which matters because
- *  the UI invites 「修改後再檢查一次」. */
-function checkMemory() {
-  let score = 0;
-  const written = [];
-  // The cards always carried an `explanation`; the browser used to throw it away
-  // and show only a score, which left 「為什麼」 —— the actual lesson —— invisible.
-  const rows = bootstrapData.memory_cards.map((card, index) => {
-    const passed = $(`[data-memory-index="${index}"]`).value === card.answer;
-    if (passed) score += 1;
-    let stored = "";
-    if (passed && card.answer !== "X" && card.key && card.value) {
-      const result = upsertMemory(card.answer, card.key, card.value);
-      if (result.action !== "unchanged") written.push(`${result.layerTitle}「${card.key}」`);
-      stored = `<span class="card-stored">已寫進 ${escapeHtml(result.layerTitle)}：${escapeHtml(card.key)}：${escapeHtml(card.value)}</span>`;
-    } else if (passed && card.answer === "X") {
-      stored = '<span class="card-stored is-refused">沒有寫進任何一層 —— X 的正確行為就是拒絕保存</span>';
-    }
-    return `<div class="${passed ? "is-pass" : "is-fail"}">
-      <strong>${index + 1}. ${passed ? "✓" : "×"} 建議分類：${MEMORY_LAYER_LABELS[card.answer]}</strong>
-      ${card.explanation}
-      ${stored}
-    </div>`;
-  });
-  memoryPassed = score === bootstrapData.memory_cards.length;
-  $("#memoryExplanations").innerHTML = rows.join("");
-  showResult("#memoryOutcome", "#memoryResult", memoryPassed
-    ? `✓ ${score}/${bootstrapData.memory_cards.length}，記憶分類完成`
-    : `${score}/${bootstrapData.memory_cards.length}，修改後再檢查一次`);
-
-  if (!written.length) return;
-  saveProject();
-  renderMemoryViewer();
-  rebuildWorkshop2Prompt();
-  // Unlike a model-driven `update_memory`, this write happens outside the
-  // conversation — without the session.update the live 豆豆 never learns it.
-  const live = pushMemoryToSession();
-  notify(`分類正確的 ${written.length} 筆已寫進「豆豆現在記得什麼」：${written.join("、")}。${live ? "已同步到正在進行的 session。" : "下次連線時生效。"}`);
 }
 
 const pad2 = (value) => String(value).padStart(2, "0");
@@ -783,13 +981,13 @@ async function fireScheduledItem(item) {
   const policy = workspace.profile.proactive_policy;
   const decision = await decideProactive(policy, {
     time,
-    minutes_since_last_message: minutesSinceLastProactive(),
-    messages_today: proactiveState().sent_today,
+    type: item.type,
+    minutes_since_last: minutesSinceLastProactive(),
+    sent_today: proactiveState().sent_today,
     // NOT the 剛被拒絕 checkbox: that belongs to the manual what-if trigger, and
     // this client has no real signal for it. Reading it here would let a
     // hypothesis ticked in section B silently kill a scheduled 吃藥提醒.
     user_declined: false,
-    events: [event],
   });
   if (!decision) {
     // A dead backend must not burn the item; it stays pending and retries.
@@ -892,14 +1090,9 @@ async function runProactiveTests() {
 // only sees the latest numbers cannot tell a trade from an improvement.
 let lastDayRun = null;
 
-const DAY_EVENT_LABELS = {
-  reminder: "提醒",
-  health: "健康",
-  weather: "天氣",
-  news: "新聞",
-  reverse_mentor: "反向請教",
-  emergency: "緊急",
-};
+// The three types schema 2 decides between — same set as bootstrap's
+// `event_types`, shortened for the timeline's narrow column.
+const DAY_EVENT_LABELS = { reminder: "提醒", health: "健康", chat: "閒聊" };
 
 function renderDayDelta(result) {
   if (!lastDayRun) return "";
@@ -911,7 +1104,7 @@ function renderDayDelta(result) {
     return `<b class="${better ? "is-better" : "is-worse"}">${label} ${arrow}（${before} → ${after}）</b>`;
   };
   return `<p class="day-delta">和上一次比較：${[
-    describe("漏掉重要事", lastDayRun.missed_critical, result.missed_critical),
+    describe("漏掉的健康關心", lastDayRun.missed_health, result.missed_health),
     describe("打擾", lastDayRun.noise, result.noise),
   ].join("、")}</p>`;
 }
@@ -919,24 +1112,21 @@ function renderDayDelta(result) {
 // `choose_event` returns a sentence, not a code. Matching on the distinctive
 // word is enough to total up which rule did the work — and that total is the
 // most direct answer this page has to 「為什麼要設計這條規則」.
-const BLOCK_RULES = [
-  ["安靜時段", "安靜時段"],
-  ["太近", "冷卻時間"],
-  ["上限", "每日上限"],
-  ["拒絕", "尊重拒絕"],
-];
-
+/** Which rule did the blocking, counted by the decider itself.
+ *
+ *  This used to sniff substrings out of each reason sentence, so a reworded
+ *  reason fell through to 「其他」 without saying so. `blocked_by` is the decider's
+ *  own tally, keyed by rule code, and `rule_labels` names them — one vocabulary
+ *  for the band, the tally and the timeline. */
 function renderDayBlockers(result) {
-  const tally = new Map();
-  result.steps.filter((step) => !step.spoke).forEach((step) => {
-    const hit = BLOCK_RULES.find(([needle]) => String(step.reason).includes(needle));
-    const label = hit ? hit[1] : "其他";
-    tally.set(label, (tally.get(label) || 0) + 1);
-  });
-  if (!tally.size) return '<p class="day-blockers">這一天沒有任何事件被擋下 —— 13 件全說出去了。</p>';
-  const ranked = [...tally.entries()].sort((left, right) => right[1] - left[1]);
-  const breakdown = ranked.map(([label, count]) => `${label} <b>${count}</b> 次`).join("・");
-  return `<p class="day-blockers">這一天擋掉最多的是〈<strong>${ranked[0][0]}</strong>〉：${breakdown}。</p>`;
+  const labels = bootstrapData?.rule_labels || {};
+  const name = (rule) => labels[rule] || rule;
+  const ranked = Object.entries(result.blocked_by || {}).sort((left, right) => right[1] - left[1]);
+  if (!ranked.length) {
+    return `<p class="day-blockers">這一天沒有任何事件被擋下 —— ${result.steps.length} 件全說出去了。</p>`;
+  }
+  const breakdown = ranked.map(([rule, count]) => `${name(rule)} <b>${count}</b> 次`).join("・");
+  return `<p class="day-blockers">這一天擋掉最多的是〈<strong>${name(ranked[0][0])}</strong>〉：${breakdown}。</p>`;
 }
 
 /** Replay one scripted day through the student's rules. Deterministic and
@@ -951,7 +1141,13 @@ async function runDaySimulation() {
     const response = await fetch("/api/proactive-simulate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ policy: workspace.profile.proactive_policy }),
+      body: JSON.stringify({
+        policy: workspace.profile.proactive_policy,
+        // The shared 星期二 is grown from the reference 建檔, but her own file is
+        // what supplies the schedule the gates read.
+        elder_profile: workspace.profile.elder_profile,
+        memory: workspace.memory,
+      }),
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.detail || "模擬失敗。");
@@ -959,41 +1155,29 @@ async function runDaySimulation() {
       <div class="day-score">
         <span>說出 <b>${result.spoken}</b> 則</span>
         <span>擋下 <b>${result.blocked}</b> 則</span>
-        <span class="${result.missed_critical ? "is-worse" : "is-better"}">漏掉重要事 <b>${result.missed_critical}</b>／${result.critical_total}</span>
-        <span class="${result.noise > 2 ? "is-worse" : ""}">打擾 <b>${result.noise}</b>／${result.optional_total}</span>
+        <span class="${result.missed_health ? "is-worse" : "is-better"}">漏掉的健康關心 <b>${result.missed_health}</b>／${result.health_total}</span>
+        <span class="${result.noise > 2 ? "is-worse" : ""}">打擾 <b>${result.noise}</b>／${result.chat_total}</span>
       </div>
       ${renderDayBlockers(result)}
       ${renderDayDelta(result)}
       <p class="day-hint">兩個數字會互相拉扯：規則放寬，打擾變多；規則收緊，重要的事會被漏掉。沒有滿分答案。</p>`;
+    // 重要提醒 is the type the rules never ration, which is what makes it the
+    // one worth marking on the timeline.
     $("#dayTimeline").innerHTML = result.steps.map((step) => `
-      <div class="day-row ${step.spoke ? "is-spoken" : "is-blocked"} ${step.importance === "critical" ? "is-critical" : ""}">
+      <div class="day-row ${step.spoke ? "is-spoken" : "is-blocked"} ${step.type === "reminder" ? "is-critical" : ""}">
         <time>${step.time}</time>
-        <span class="day-kind">${DAY_EVENT_LABELS[step.event_type] || step.event_type}${step.importance === "critical" ? "・重要" : ""}</span>
+        <span class="day-kind">${DAY_EVENT_LABELS[step.type] || step.type}</span>
         <span class="day-topic">${escapeHtml(step.topic)}</span>
         <span class="day-verdict">${step.spoke ? "說出" : "擋下"}：${escapeHtml(step.reason)}</span>
       </div>`).join("");
     showResult("#dayOutcome", "#dayScore",
-      `漏掉重要事 ${result.missed_critical}／${result.critical_total} · 打擾 ${result.noise}／${result.optional_total}`);
+      `漏掉的健康關心 ${result.missed_health}／${result.health_total} · 打擾 ${result.noise}／${result.chat_total}`);
     lastDayRun = result;
   } catch (error) {
     $("#daySummary").textContent = error.message || "無法連接本機服務。";
   } finally {
     button.disabled = false;
   }
-}
-
-async function applyWorkshop2() {
-  collectWorkshop2();
-  await connectRealtime();
-  const live = dataChannel?.readyState === "open";
-  if (live) {
-    pendingRealtimeApply = true;
-    dataChannel.send(JSON.stringify({ type: "session.update", session: realtimeSessionUpdate() }));
-  }
-  markApplied("workshop2");
-  notify(live
-    ? "第二堂設定已套用：長者資料、三層記憶與主動規則都寫進了同一份 instructions，正在確認更新…"
-    : "第二堂設定已保存（尚未連線，下次連線時生效）。");
 }
 
 /** The brief for one proactive turn. Response-level `instructions` *replace* the
@@ -1023,7 +1207,10 @@ async function decideProactive(policy, scenario) {
     const response = await fetch("/api/proactive-decide", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ policy, scenario }),
+      // 建檔 travels with it: schema 2 derives the 安靜／不打擾 windows from her
+      // 作息 rather than from a quiet-hours field, so a decision made without
+      // the profile is a decision made against no schedule at all.
+      body: JSON.stringify({ policy, scenario, elder_profile: workspace.profile.elder_profile }),
     });
     const decision = await response.json();
     if (!response.ok) throw new Error(decision.detail || "主動決策失敗。");
@@ -1071,10 +1258,10 @@ async function triggerProactive() {
   };
   const decision = await decideProactive(policy, {
     time,
-    minutes_since_last_message: Number($("#proactiveSinceLast").value) || 0,
-    messages_today: Number($("#proactiveSentToday").value) || 0,
+    type: event.type,
+    minutes_since_last: Number($("#proactiveSinceLast").value) || 0,
+    sent_today: Number($("#proactiveSentToday").value) || 0,
     user_declined: $("#proactiveDeclined").checked,
-    events: [event],
   });
   if (!decision) return;
 
@@ -1088,26 +1275,66 @@ async function triggerProactive() {
   if (decision.should_speak) await speakProactive(event, time, policy);
 }
 
+async function applyWorkshop2() {
+  collectWorkshop2();
+  await connectRealtime();
+  const live = dataChannel?.readyState === "open";
+  if (live) {
+    pendingRealtimeApply = true;
+    dataChannel.send(JSON.stringify({ type: "session.update", session: realtimeSessionUpdate() }));
+  }
+  markApplied("workshop2");
+  notify(live
+    ? "第二堂設定已套用：建檔、記憶、態度與主動規則都寫進了同一份 instructions，正在確認更新…"
+    : "第二堂設定已保存（尚未連線，下次連線時生效）。");
+}
+
 // Workshop 2's half of the field list core's bindFieldEvents() wires up.
 const WORKSHOP2_FIELDS = [
-  "#elderAddress", "#elderCity", "#elderInterests", ...WORKSHOP2_BLOCKS.map(([, , selector]) => selector),
+  ...INTAKE_SCALARS.map(([selector]) => selector),
+  "#elderExpertise", "#contactName", "#contactRelation", "#contactPhone",
+  ...WORKSHOP2_BLOCKS.map(([, , selector]) => selector),
   "#quietStart", "#quietEnd", "#cooldown", "#dailyLimit", "#maxSentences",
 ];
+
+function onIntakeChange() {
+  rebuildWorkshop2Prompt();
+  refreshApplyState();
+  renderIntakeHints();
+  scheduleIntakeCheck();
+}
 
 /** Everything this lesson listens to. Called once, from core's initialize(). */
 function init() {
   // Workshop 2 fields feed the composed instructions, so the VIEW panel has to
   // follow them live the same way Workshop 1's does.
   bindFieldEvents(WORKSHOP2_FIELDS, () => {
-    rebuildWorkshop2Prompt();
-    refreshApplyState();
-    // 主動規則 is five numbers; the band and the hints are what make them legible.
+    onIntakeChange();
+    // 主動規則 is numbers; the band and the hints are what make them legible.
     renderPolicyPreview();
     renderTriggerHints();
   });
-  // Dynamic rows, so the listener lives on the container. Editing a priority
-  // changes the Prompt, the 套用 state and the 觸發主動 dropdown — but never
-  // re-renders these inputs, which would move the row being typed into.
+  // List rows are re-rendered only on add／remove, so the listeners live on the
+  // containers and the row being typed into never moves under the cursor.
+  Object.values(ROW_KINDS).forEach(({ container }) => {
+    ["input", "change"].forEach((event) => $(container).addEventListener(event, onIntakeChange));
+    $(container).addEventListener("click", (event) => {
+      const button = event.target.closest("[data-remove]");
+      if (!button) return;
+      const kind = Object.keys(ROW_KINDS).find((name) => ROW_KINDS[name].container === container);
+      const rows = [...$(container).querySelectorAll(".row-item")].map((element) => readRow(kind, element));
+      renderRows(kind, rows.filter((_, index) => index !== Number(button.dataset.remove)));
+      onIntakeChange();
+    });
+  });
+  $$("[data-add]").forEach((button) => button.addEventListener("click", () => {
+    const kind = button.dataset.add;
+    const rows = [...$(ROW_KINDS[kind].container).querySelectorAll(".row-item")].map((element) => readRow(kind, element));
+    renderRows(kind, [...rows, ROW_KINDS[kind].empty()]);
+    $(ROW_KINDS[kind].container).querySelector(".row-item:last-child input")?.focus();
+    refreshApplyState();
+  }));
+  $$("[data-ask]").forEach((button) => button.addEventListener("click", () => askDodo(button.dataset.ask)));
   ["input", "change"].forEach((event) => $("#priorityFields").addEventListener(event, () => {
     rebuildWorkshop2Prompt();
     refreshApplyState();
@@ -1118,10 +1345,7 @@ function init() {
   });
   // The manual trigger's own fields are half of every comparison in the hints.
   bindFieldEvents(["#proactiveNow", "#proactiveSinceLast", "#proactiveSentToday"], renderTriggerHints);
-  // The quiz cards address the elder by name, so they follow 長者稱呼 live.
-  ["input", "change"].forEach((event) => $("#elderAddress").addEventListener(event, renderMemoryCards));
 
-  $("#checkMemory").addEventListener("click", checkMemory);
   $("#saveWorkshop2").addEventListener("click", applyWorkshop2);
   $("#runProactiveTests").addEventListener("click", runProactiveTests);
   $("#runDaySimulation").addEventListener("click", runDaySimulation);
@@ -1151,12 +1375,11 @@ globalThis.W2 = {
   init,
   loadFields,
   collect: collectWorkshop2,
-  migrateWorkshop2Blocks,
   buildWorkshop2Prompt,
   rebuildWorkshop2Prompt,
+  renderInterview,
   renderProactiveEventOptions,
   renderMemoryViewer,
-  renderMemoryCards,
   renderPolicyPreview,
   renderTriggerHints,
   renderProactiveLiveState,
@@ -1167,11 +1390,14 @@ globalThis.W2 = {
   upsertMemory,
   forgetMemory,
   describeMemoryWrite,
+  syncIntakeAfterMemoryChange,
   MEMORY_LAYERS,
   MEMORY_MERGE_RULES,
   // No production caller outside this file; tests/browser/uicheck.js drives
-  // these two directly to check the merge rules and the quiet-hour wrap-around.
+  // these directly to check the merge rules, the quiet-hour wrap-around and
+  // the golden-fixture parity of the prompt composer.
   memoryEntryText,
   isQuietHour,
+  intakeFromFields,
 };
 })();

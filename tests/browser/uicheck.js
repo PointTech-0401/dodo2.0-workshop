@@ -23,9 +23,11 @@ for (const key of ["window", "document", "localStorage", "location", "history", 
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (url, init) => {
   if (String(url).includes("/api/bootstrap")) return { json: async () => bootstrap };
-  // The scheduler decides through the server, exactly as the classroom does.
-  if (String(url).includes("/api/proactive-decide")
-      || String(url).includes("/api/proactive-simulate")) {
+  // The scheduler decides through the server, exactly as the classroom does —
+  // and so do schema migration and the 建檔 completeness count, which are the
+  // browser's two other server round-trips.
+  if (["/api/proactive-decide", "/api/proactive-simulate",
+       "/api/workspace/normalize", "/api/intake-check"].some((path) => String(url).includes(path))) {
     return realFetch(`http://127.0.0.1:${PORT}${url}`, init);
   }
   throw new Error(`unexpected fetch: ${url}`);
@@ -44,7 +46,8 @@ globalThis.__t = {
   upsertMemory: W2.upsertMemory, forgetMemory: W2.forgetMemory,
   describeMemoryWrite: W2.describeMemoryWrite, isQuietHour: W2.isQuietHour,
   renderMemoryViewer: W2.renderMemoryViewer, memoryEntryText: W2.memoryEntryText,
-  migrateWorkshop2Blocks: W2.migrateWorkshop2Blocks,
+  // §4 前後端同文: the browser composer, driven straight off a fixture workspace.
+  buildWorkshop2Prompt: W2.buildWorkshop2Prompt, intakeFromFields: W2.intakeFromFields,
   get workspace() { return workspace; },
 };
 // eval() never fires DOMContentLoaded, so start the app by hand — fire and
@@ -60,7 +63,8 @@ const defaults = bootstrap.default_workspace.profile.agent;
 
 ok("app.js + initialize() ran clean", failures.length === 0, failures.join(" | "));
 ok("W1 opens on the persona tab", shown("tabPersona") && !shown("tabTurn"));
-ok("W2 opens on the C Prompt tab", shown("tabW2Prompt") && !shown("tabW2Memory"));
+ok("W2 opens on the 建檔 tab", shown("tabW2Intake") && !shown("tabW2Prompt"));
+ok("the interview is on screen before the form", $("#interviewText").textContent.includes("秀蘭"));
 ok("fields populated from bootstrap", $("#agentName").value === defaults.name, `agentName="${$("#agentName").value}"`);
 ok("W1 prompt preview rendered", $("#agentSystemPrompt").textContent.includes("# 角色與身分"));
 ok("W1+2 preview rendered", $("#workshop2SystemPrompt").textContent.includes("# 主動訊息的程式規則"));
@@ -98,9 +102,9 @@ ok("dot lands on the policy tab", $('.tab-button[data-tab="tabW2Policy"]').class
 ok("W1 套用 still hidden", $("#saveWorkshop1").hidden);
 
 // --- tabs -----------------------------------------------------------------
-$('.tab-button[data-tab="tabW2Memory"]').click();
-ok("clicking a tab shows it", shown("tabW2Memory") && !shown("tabW2Prompt"));
-ok("aria-selected follows the click", $('.tab-button[data-tab="tabW2Memory"]').getAttribute("aria-selected") === "true");
+$('.tab-button[data-tab="tabW2Prompt"]').click();
+ok("clicking a tab shows it", shown("tabW2Prompt") && !shown("tabW2Intake"));
+ok("aria-selected follows the click", $('.tab-button[data-tab="tabW2Prompt"]').getAttribute("aria-selected") === "true");
 ok("one active tab per bar", [...document.querySelectorAll(".tab-bar")]
   .every((bar) => bar.querySelectorAll(".is-active").length === 1));
 ok("dirty dot survives switching away", $('.tab-button[data-tab="tabW2Policy"]').classList.contains("is-dirty"));
@@ -145,29 +149,124 @@ ok("revert left the other group alone", $('.tab-button[data-tab="tabW2Policy"]')
 $("#cooldown").value = "45"; fire("#cooldown", "input");
 $("#revertWorkshop2").click();
 ok("W2 revert restores the policy field",
-   Number($("#cooldown").value) === bootstrap.default_workspace.profile.proactive_policy.cooldown_minutes);
+   Number($("#cooldown").value) === bootstrap.default_workspace.profile.proactive_policy.interval_minutes);
 ok("W2 buttons hide after revert", $("#revertWorkshop2").hidden && $("#saveWorkshop2").hidden);
 
+// --- 建檔's list rows survive a 取消變更 round-trip ------------------------
+// The list sections share the same JSON snapshot as every scalar field, which
+// only works if read() normalizes: an unfilled row is not data, times come back
+// as zero-padded strings, weekdays as numbers, and rows sorted by start time. If
+// read(write(x)) !== x the tab stays dirty forever — a dot nothing can clear.
+const routineRows = () => $("#routineRows").querySelectorAll(".row-item").length;
+const intakeDirty = () => $('.tab-button[data-tab="tabW2Intake"]').classList.contains("is-dirty");
+const baselineRoutines = routineRows();
+ok("建檔 starts clean and applied", !intakeDirty() && $("#saveWorkshop2").hidden);
+
+$('[data-add="routine"]').click();
+ok("＋ adds a row", routineRows() === baselineRoutines + 1);
+// An empty row is not data, so it must not ask to be applied.
+ok("...but a blank row is not an unapplied change", !intakeDirty() && $("#saveWorkshop2").hidden);
+
+const added = [...$("#routineRows").querySelectorAll(".row-item")].at(-1);
+added.querySelector('[data-field="label"]').value = "歌唱班";
+added.querySelector('[data-field="start"]').value = "09:30";
+added.querySelector('[data-field="end"]').value = "10:30";
+fire("#routineRows", "input");
+ok("filling it in does", intakeDirty() && !$("#saveWorkshop2").hidden);
+ok("...and the hint says what the section will do", $("#hintRoutines").textContent.length > 0);
+
+$("#revertWorkshop2").click();
+ok("取消變更 drops the added row", routineRows() === baselineRoutines, `${routineRows()} rows`);
+ok("...leaving no phantom dirty dot behind", !intakeDirty());
+ok("...and hiding both buttons", $("#revertWorkshop2").hidden && $("#saveWorkshop2").hidden);
+// Round-trip stability on the asymmetric row shape: an appointment keeps EITHER
+// `weekday` or `date`, never both, so read() emits a different key set depending
+// on which one is filled. If write(read(x)) does not re-read identically, the dot
+// comes back on its own and 套用 can never be satisfied.
+const appointmentRows = () => [...$("#appointmentRows").querySelectorAll(".row-item")];
+$('[data-add="appointment"]').click();
+const appt = appointmentRows().at(-1);
+appt.querySelector('[data-field="label"]').value = "復健";
+appt.querySelector('[data-field="weekday"]').value = "5";   // 每週五, so `date` drops out
+appt.querySelector('[data-field="time"]').value = "14:00";
+fire("#appointmentRows", "input");
+ok("a weekly appointment is an unapplied change", intakeDirty());
+// 套用 is async — it connects before it re-freezes the baseline.
+$("#saveWorkshop2").click();
+await new Promise((r) => setTimeout(r, 300));
+ok("套用 then re-reading the form is a fixed point", !intakeDirty() && $("#saveWorkshop2").hidden);
+ok("...and the applied row is still on screen", appointmentRows().length === 1
+   && appt.querySelector('[data-field="weekday"]').value === "5");
+ok("...and it reached the saved project", (() => {
+  const stored = JSON.parse(localStorage.getItem("dodo-workshop.project") || "{}");
+  const saved = stored.profile?.elder_profile?.appointments || [];
+  return saved.length === 1 && saved[0].weekday === 5 && !("date" in saved[0]);
+})(), JSON.stringify(JSON.parse(localStorage.getItem("dodo-workshop.project") || "{}")
+  .profile?.elder_profile?.appointments || []));
+// Now revert an edit made on top of a populated list.
+appt.querySelector('[data-field="time"]').value = "16:00";
+fire("#appointmentRows", "input");
+ok("editing an applied row dots the tab again", intakeDirty());
+$("#revertWorkshop2").click();
+ok("取消變更 restores the applied row rather than dropping it",
+   appointmentRows().length === 1
+   && appointmentRows()[0].querySelector('[data-field="time"]').value === "14:00",
+   appointmentRows().map((r) => r.querySelector('[data-field="time"]').value).join(","));
+// The <select> is the part a re-render loses most easily, and losing it means the
+// dot can never be cleared: read() would keep disagreeing with the snapshot.
+ok("...including the <select> it was set to",
+   appointmentRows()[0].querySelector('[data-field="weekday"]').value === "5",
+   appointmentRows()[0].querySelector('[data-field="weekday"]').value);
+ok("...with no dot left over", !intakeDirty());
+
+// A routine carries both a checkbox and seven weekday boxes — the other two
+// control types a re-render has to bring back.
+$('[data-add="routine"]').click();
+const routine = [...$("#routineRows").querySelectorAll(".row-item")].at(-1);
+routine.querySelector('[data-field="label"]').value = "午睡";
+routine.querySelector('[data-field="start"]').value = "13:00";
+routine.querySelector('[data-field="end"]').value = "14:30";
+routine.querySelector('[data-weekday="2"]').checked = true;
+routine.querySelector('[data-weekday="4"]').checked = true;
+fire("#routineRows", "input");
+$("#saveWorkshop2").click();
+await new Promise((r) => setTimeout(r, 300));
+ok("a routine with weekdays applies cleanly", !intakeDirty() && $("#saveWorkshop2").hidden);
+ok("...and 不打擾 defaults to ticked", (() => {
+  const stored = JSON.parse(localStorage.getItem("dodo-workshop.project") || "{}");
+  const saved = (stored.profile?.elder_profile?.routines || [])[0];
+  return saved && saved.do_not_disturb === true && String(saved.weekdays) === "2,4";
+})(), JSON.stringify((JSON.parse(localStorage.getItem("dodo-workshop.project") || "{}")
+  .profile?.elder_profile?.routines || [])[0]));
+// Untick 不打擾 and revert: the checkbox has to come back ticked.
+const dnd = () => $("#routineRows").querySelector('[data-field="do_not_disturb"]');
+dnd().checked = false;
+fire("#routineRows", "change");
+ok("unticking 不打擾 is an unapplied change", intakeDirty());
+$("#revertWorkshop2").click();
+ok("取消變更 re-ticks it", dnd().checked === true);
+ok("...restores the weekday boxes", [...$("#routineRows").querySelectorAll("[data-weekday]:checked")]
+   .map((b) => b.dataset.weekday).join(",") === "2,4",
+   [...$("#routineRows").querySelectorAll("[data-weekday]:checked")].map((b) => b.dataset.weekday).join(","));
+ok("...and clears the dot for good", !intakeDirty());
+
 // --- collapsible results --------------------------------------------------
-ok("memory result starts hidden", $("#memoryOutcome").hidden);
+// 記憶分類 was a quiz with a score; 建檔 is a form with a completeness count, so
+// it has no result panel. The two lab runs still collapse.
 ok("6-scenario result starts hidden", $("#proactiveOutcome").hidden);
 ok("day result starts hidden", $("#dayOutcome").hidden);
-$("#checkMemory").click();
-ok("checking memory reveals the panel", !$("#memoryOutcome").hidden && $("#memoryOutcome").open);
-ok("the score lives in the summary, so it survives collapsing",
-   $("#memoryOutcome").querySelector("summary").contains($("#memoryResult")) && /\d\/\d/.test($("#memoryResult").textContent));
-$("#memoryOutcome").open = false;
-ok("panel can be collapsed with the score still readable",
-   !$("#memoryOutcome").open && $("#memoryResult").textContent.length > 0);
 
-// --- 觸發主動: priorities render from the project, not hardcoded -----------
-const priorities = bootstrap.default_workspace.profile.proactive_policy.priorities;
+// --- 觸發主動: the three event types the backend decides between -----------
+// schema 1 offered six with a student-typed priority each; schema 2 has three
+// and no priorities, so the list comes from the server.
 const options = [...$("#proactiveEventType").options];
-ok("every priority becomes an option", options.length === Object.keys(priorities).length,
-   `${options.length} vs ${Object.keys(priorities).length}`);
-ok("options are ordered by priority", options[0].value === "emergency");
-ok("each label shows its own priority number",
-   options.every((o) => o.textContent.includes(String(priorities[o.value]))));
+ok("the dropdown offers the server's event types",
+   options.length === Object.keys(bootstrap.event_types).length,
+   `${options.length} vs ${Object.keys(bootstrap.event_types).length}`);
+ok("...and only the three that exist", options.every((o) => o.value in bootstrap.event_types),
+   options.map((o) => o.value).join(","));
+ok("...never the retired schema-1 types",
+   !options.some((o) => ["emergency", "weather", "news", "reverse_mentor"].includes(o.value)));
 
 // --- an audio m-line is always offered ------------------------------------
 // text/text used to produce a data-channel-only offer, which OpenAI rejects
@@ -211,10 +310,15 @@ $t.upsertMemory("B", "睡眠狀況", "今天睡得好");
 ok("B supersedes the same key by default", layerTexts("events").length === 1, layerTexts("events").join(" / "));
 ok("B keeps the newest", layerTexts("events")[0] === "睡眠狀況：今天睡得好");
 
-for (let i = 0; i < 12; i += 1) $t.upsertMemory("B", `事件${i}`, `內容${i}`);
-ok("B is capped so old days cannot pile up outside the prompt", layerTexts("events").length === 8,
+// The cap is MEMORY_PREVIEW_LIMIT, which is 16 on both sides now — 秀蘭阿嬤's
+// reference file alone carries 13 A-layer facts, so a window of 8 would have cut
+// her own care file in half before it ever reached the model.
+const CAP = 16;
+for (let i = 0; i < CAP + 6; i += 1) $t.upsertMemory("B", `事件${i}`, `內容${i}`);
+ok("B is capped so old days cannot pile up outside the prompt", layerTexts("events").length === CAP,
    `${layerTexts("events").length} entries`);
-ok("the cap drops the oldest, not the newest", layerTexts("events").includes("事件11：內容11"));
+ok("the cap drops the oldest, not the newest", layerTexts("events").includes(`事件${CAP + 5}：內容${CAP + 5}`));
+ok("...and the cap agrees with the prompt window", script.includes(`const MEMORY_PREVIEW_LIMIT = ${CAP};`));
 
 $t.upsertMemory("C", "睡眠趨勢", "第一版摘要");
 $t.upsertMemory("C", "睡眠趨勢", "重算後的摘要");
@@ -234,42 +338,6 @@ ok("a value that is not stored removes nothing", miss.removed === 0 && layerText
 ok("...and hands back the real values so it can be retried", miss.remaining.join("、") === "鳳梨、芭樂");
 ok("an unknown key removes nothing", $t.forgetMemory("A", "沒這個 key", "x").removed === 0
    && layerTexts("facts").length === 2);
-
-// --- 記憶分類 writes into 豆豆現在記得什麼 --------------------------------
-$t.workspace.memory = { facts: [], events: [], summaries: [] };
-$t.renderMemoryViewer();
-const cards = bootstrap.memory_cards;
-cards.forEach((card, index) => {
-  const select = $(`[data-memory-index="${index}"]`);
-  select.value = card.answer;
-  fire(`[data-memory-index="${index}"]`, "change");
-});
-$("#checkMemory").click();
-const viewer = () => $("#memoryViewer").textContent;
-ok("a right A answer lands in 重要事實", viewer().includes("過敏：花生嚴重過敏"));
-ok("a right C answer lands in 跨日摘要", $t.workspace.memory.summaries.length === 2,
-   `${$t.workspace.memory.summaries.length} summaries`);
-ok("長期偏好 lands in A alongside the other facts, not in the superseding B",
-   $t.workspace.memory.facts.map($t.memoryEntryText).includes("音樂偏好：喜歡鄧麗君的歌"),
-   $t.workspace.memory.facts.map($t.memoryEntryText).join(" / "));
-ok("the X card writes nothing anywhere",
-   !JSON.stringify($t.workspace.memory).includes("提款卡"));
-const afterFirst = JSON.stringify($t.workspace.memory).length;
-$("#checkMemory").click();
-ok("re-checking does not duplicate the cards",
-   JSON.stringify($t.workspace.memory).length === afterFirst);
-ok("the result rows say where each card was stored", $("#memoryExplanations").textContent.includes("已寫進"));
-ok("每一層 shows its own merge rule", $("#memoryViewer").textContent.includes("累加")
-   && $("#memoryViewer").textContent.includes("取代") && $("#memoryViewer").textContent.includes("重寫"));
-
-// --- the cards address the elder by the student's own 稱呼 ----------------
-ok("cards start with the configured 長者稱呼", $("#memoryCards").textContent.includes("王奶奶"));
-const keptAnswer = $('[data-memory-index="0"]').value;
-$("#elderAddress").value = "陳爺爺"; fire("#elderAddress", "input");
-ok("renaming the elder renames the cards", $("#memoryCards").textContent.includes("陳爺爺")
-   && !$("#memoryCards").textContent.includes("王奶奶"));
-ok("...without wiping answers already chosen", $('[data-memory-index="0"]').value === keptAnswer);
-ok("no placeholder leaks through", !$("#memoryCards").textContent.includes("{USER_ADDRESS}"));
 
 // --- 主動規則 draws itself ------------------------------------------------
 $("#quietStart").value = "22"; fire("#quietStart", "input");
@@ -293,43 +361,25 @@ $("#revertWorkshop2").click();
 ok("取消變更 takes the band's numbers back too",
    $("#policySummary").textContent.includes("冷卻 30 分鐘"), $("#policySummary").textContent);
 
-// --- 事件優先權 is a field now, and the dropdown follows it before 套用 ------
-const priorityTypes = Object.keys(bootstrap.default_workspace.profile.proactive_policy.priorities);
-ok("事件優先權 renders one field per event type",
-   $("#priorityFields").querySelectorAll("[data-priority]").length === priorityTypes.length,
-   `${$("#priorityFields").querySelectorAll("[data-priority]").length}/${priorityTypes.length}`);
-$('#priorityFields [data-priority="news"]').value = "999";
-fire('#priorityFields [data-priority="news"]', "input");
-ok("raising a priority reaches the 觸發主動 dropdown without 套用",
-   [...$("#proactiveEventType").options][0].value === "news",
-   [...$("#proactiveEventType").options].map((o) => o.value).join(","));
-ok("...and the Prompt's 事件優先權 line with it",
-   $("#workshop2SystemPrompt").textContent.includes("news(999)"));
-ok("...and it counts as an unapplied change",
-   $('.tab-button[data-tab="tabW2Policy"]').classList.contains("is-dirty"));
-$("#revertWorkshop2").click();
-ok("取消變更 puts the priority rows back",
-   Number($('#priorityFields [data-priority="news"]').value)
-   === bootstrap.default_workspace.profile.proactive_policy.priorities.news);
-// The rows are re-sorted on revert, so the dirty check has to compare the
-// numbers rather than their order — otherwise 取消變更 leaves a phantom dot.
-ok("...leaving no phantom dirty dot behind",
-   !$('.tab-button[data-tab="tabW2Policy"]').classList.contains("is-dirty"));
-
 // --- 跑一整天 names the rule that did the blocking ------------------------
-// The most direct answer this page has to 「為什麼要設計這條規則」, so it has to
-// keep matching `choose_event`'s wording — the tally reads its sentences.
+// The most direct answer this page has to 「為什麼要設計這條規則」. The tally is the
+// decider's own `blocked_by`, named through bootstrap's `rule_labels`, so a
+// reworded reason sentence can no longer drop a rule into 「其他」 unnoticed.
 $("#runDaySimulation").click();
 await new Promise((r) => setTimeout(r, 900));
+const daySummary = () => $("#daySummary").textContent;
 ok("跑一整天 names the rule that blocked the most",
-   $("#daySummary").textContent.includes("擋掉最多的是")
-   && $("#daySummary").textContent.includes("冷卻時間"),
-   $("#daySummary").textContent.slice(0, 160));
-ok("...and totals every rule that blocked something", ["安靜時段", "每日上限", "尊重拒絕"]
-   .every((label) => $("#daySummary").textContent.includes(label)),
-   $("#daySummary").textContent.slice(0, 240));
-ok("...with nothing falling through to 其他",
-   !$("#daySummary").textContent.includes("其他"));
+   daySummary().includes("擋掉最多的是"), daySummary().slice(0, 160));
+ok("...and every rule it names is one the server defined",
+   Object.values(bootstrap.rule_labels).some((label) => daySummary().includes(label)),
+   daySummary().slice(0, 240));
+ok("...with nothing falling through to 其他", !daySummary().includes("其他"));
+// The two scores that pull against each other — neither may read `undefined`.
+ok("both scores are real numbers", /漏掉的健康關心\s*\d+／\d+/.test(daySummary())
+   && /打擾\s*\d+／\d+/.test(daySummary()), daySummary().slice(0, 200));
+ok("the timeline names each event's type", [...$("#dayTimeline").querySelectorAll(".day-kind")]
+   .every((cell) => ["提醒", "健康", "閒聊"].includes(cell.textContent.trim())),
+   [...$("#dayTimeline").querySelectorAll(".day-kind")].map((c) => c.textContent).join(","));
 
 // --- 觸發主動: one event block, two modes, no A/B headings -----------------
 ok("觸發主動 opens on the real-clock mode",
@@ -402,65 +452,21 @@ await new Promise((r) => setTimeout(r, 600));
 ok("a fired reminder never fires again",
    $("#messages").textContent.split("待提醒觸發").length - 1 === firedTwice);
 
-// A quiet-hours reminder is refused by the rules, not by the transport.
+// A due item can be refused by the rules rather than by the transport — and the
+// window that refuses it is now derived from 建檔 作息, not typed into a
+// quiet-hours field. 重要提醒 deliberately skips every gate, so the one that gets
+// blocked has to be a 閒聊: that asymmetry IS the lesson.
 $t.workspace.scheduled.length = 0;
-$("#quietStart").value = "0"; fire("#quietStart", "input");
-$("#quietEnd").value = "23"; fire("#quietEnd", "input");
+$("#elderBed").value = "00:01"; fire("#elderBed", "input");
+$("#elderWake").value = "23:58"; fire("#elderWake", "input");
 $("#saveWorkshop2").click();
+$("#proactiveEventType").value = "chat";
+$("#proactiveTopic").value = "今天天氣不錯";
 $("#scheduleTime").value = nowText;
 $("#addSchedule").click();
 await new Promise((r) => setTimeout(r, 600));
-ok("the rules can block a due reminder outright",
-   $t.workspace.scheduled[0].reason.includes("安靜"), $t.workspace.scheduled[0].reason);
-
-// --- a project saved before the merge rule existed gets told about it ------
-const OLD_BLOCK = [
-  "用 read_memory 讀取 {USER_ADDRESS} 的三層記憶，用 update_memory 保存新資訊，並在保存時指定層級：",
-  "A 重要事實（layer=A）：過敏、慢性病、緊急聯絡人、長期偏好；由真人確認管理，不要自行推測或改寫。",
-  "提起記憶時要像家人記得，而不是唸資料庫；不確定的事先問一句，不要假裝記得。",
-].join("\n");
-ok("a legacy block gains the guidance lines", (() => {
-  const migrated = globalThis.__t.migrateWorkshop2Blocks({ memory_use: OLD_BLOCK });
-  const lines = migrated.memory_use.split("\n");
-  return migrated.memory_use.includes('mode="replace"')
-    && migrated.memory_use.includes('mode="remove"')
-    && migrated.memory_use.includes("一律存 layer=A")
-    && lines.length === 5
-    // Inserted above the closing line, not appended after it.
-    && lines[4].startsWith("提起記憶時要像家人記得");
-})());
-ok("running it twice changes nothing more", (() => {
-  const once = globalThis.__t.migrateWorkshop2Blocks({ memory_use: OLD_BLOCK });
-  const twice = globalThis.__t.migrateWorkshop2Blocks(once);
-  return once.memory_use === twice.memory_use;
-})());
-// The first migration gated on `mode="replace"`, which its own inserted line
-// contained — so a project migrated once was frozen at that revision forever.
-ok("a project stuck on the first revision is brought forward", (() => {
-  const V1 = [
-    "用 read_memory 讀取 {USER_ADDRESS} 的三層記憶，用 update_memory 保存新資訊，並在保存時指定層級：",
-    '同一個 key 再存一次時：新資訊和舊的都成立就直接存；只有新內容真的取代舊內容才傳 mode="replace"。',
-    "提起記憶時要像家人記得，而不是唸資料庫；不確定的事先問一句，不要假裝記得。",
-  ].join("\n");
-  const migrated = globalThis.__t.migrateWorkshop2Blocks({ memory_use: V1 });
-  const lines = migrated.memory_use.split("\n");
-  return migrated.memory_use.includes('mode="remove"')
-    && migrated.memory_use.includes("一律存 layer=A")
-    // The stale revision is replaced, not left sitting beside the new one.
-    && lines.filter((l) => l.startsWith("同一個 key 再存一次時：")).length === 1
-    && lines.length === 4;
-})());
-ok("a deliberately emptied block stays empty",
-   globalThis.__t.migrateWorkshop2Blocks({ memory_use: "" }).memory_use === "");
-ok("a block the student rewrote is left alone", (() => {
-  const mine = { memory_use: "我自己寫的規則。" };
-  return globalThis.__t.migrateWorkshop2Blocks(mine).memory_use === "我自己寫的規則。";
-})());
-ok("a fresh project already has it and is not touched", (() => {
-  const fresh = bootstrap.default_workspace.profile.workshop2_blocks;
-  return fresh.memory_use.includes('mode="replace"')
-    && globalThis.__t.migrateWorkshop2Blocks(fresh) === fresh;
-})());
+ok("her 作息 can block a due 閒聊 outright",
+   /還沒起床|已經上床/.test($t.workspace.scheduled[0].reason), $t.workspace.scheduled[0].reason);
 
 // --- a supersede has to name what it discarded ----------------------------
 $t.workspace.memory = { facts: [], events: [], summaries: [] };
@@ -471,6 +477,32 @@ ok("B reports the value it threw away by name", ate.superseded.join("、") === "
 ok("...and the TOOL sentence says it out loud",
    $t.describeMemoryWrite(ate, "今天想吃的東西", "柳丁").includes("丟掉了：芭樂"),
    $t.describeMemoryWrite(ate, "今天想吃的東西", "柳丁"));
+
+// --- 前後端同文: one fixture, two composers -------------------------------
+// Spec §4. `compose_workshop2_prompt` is pinned against this same .txt in
+// tests/test_profile.py, so the two halves cannot drift apart: whichever side
+// changes wording, this comparison fails until the fixture is regenerated and
+// the other side follows. A comment saying 「keep in sync」 never did that.
+const fixtureWorkspace = JSON.parse(
+  readFileSync(new URL("../fixtures/workshop2_workspace.json", import.meta.url).pathname
+    .replace(/^\/(?=[A-Za-z]:)/, ""), "utf8"));
+// CRLF-normalized: the fixture is LF in the repo, but core.autocrlf checks it out
+// with CRLF on Windows. Python's read_text() translates newlines and this does
+// not, so without this the two consumers would disagree about a file neither of
+// them actually differs on.
+const fixturePrompt = readFileSync(
+  new URL("../fixtures/workshop2_prompt.txt", import.meta.url).pathname
+    .replace(/^\/(?=[A-Za-z]:)/, ""), "utf8").replace(/\r\n/g, "\n");
+const composed = $t.buildWorkshop2Prompt(fixtureWorkspace);
+ok("the browser composes the backend's prompt byte for byte", composed === fixturePrompt, (() => {
+  if (composed === fixturePrompt) return "";
+  const mine = composed.split("\n");
+  const theirs = fixturePrompt.split("\n");
+  const at = mine.findIndex((line, i) => line !== theirs[i]);
+  return at < 0
+    ? `same lines, length ${composed.length} vs ${fixturePrompt.length}`
+    : `first difference on line ${at + 1}:\n    browser: ${JSON.stringify(mine[at])}\n    fixture: ${JSON.stringify(theirs[at])}`;
+})());
 
 // --- the header block stays put while the fields scroll -------------------
 ok("both panels have a sticky header", document.querySelectorAll(".lab-sticky").length === 2);
