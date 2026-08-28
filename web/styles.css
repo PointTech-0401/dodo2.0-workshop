@@ -50,7 +50,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .state-list .is-current span { background: var(--blue); box-shadow: 0 0 0 4px rgba(57,125,159,.16); }
 .connection-note { margin: 0; font-size: 12px; line-height: 1.6; color: var(--ink-soft); }
 
-.conversation-panel { min-width: 0; display: flex; flex-direction: column; padding: 38px 42px 28px; background: var(--white); }
+.conversation-panel { position: relative; min-width: 0; display: flex; flex-direction: column; padding: 38px 42px 28px; background: var(--white); }
 .panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
 .eyebrow { color: var(--blue); }
 h1, h2, h3, p { overflow-wrap: anywhere; }
@@ -206,17 +206,18 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 /* 「建檔時你是護理員」 — the role has to be stated, or students fill the form as
    themselves and the A-layer lock reads as the tool being broken. */
 .role-banner { margin: 0 0 14px; padding: 11px 12px; border-left: 4px solid var(--apricot); border-radius: 0 6px 6px 0; background: var(--white); color: var(--ink) !important; line-height: 1.6; }
-.interview-panel { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 4px; background: var(--white); }
-.interview-panel > summary { display: flex; gap: 9px; align-items: baseline; padding: 9px 11px; cursor: pointer; list-style: none; }
-.interview-panel > summary::-webkit-details-marker { display: none; }
-.interview-panel > summary > span { flex: 0 0 auto; padding: 3px 5px; border: 1px solid var(--blue); border-radius: 3px; color: var(--blue); font: 800 9px/1 Consolas, monospace; letter-spacing: .08em; }
-.interview-panel > summary small { color: var(--ink-soft); }
-.interview-panel[open] > summary { border-bottom: 1px solid var(--line); }
-/* Scrolls inside itself: at ~3,000 characters it would otherwise push the whole
-   form off screen, and the form is what the interview is read *for*. */
-.interview-text { max-height: 320px; overflow-y: auto; padding: 12px 13px; line-height: 1.75; }
-.interview-text h3 { margin: 0 0 8px; font-size: 15px; }
-.interview-text h4 { margin: 16px 0 6px; font-size: 13px; color: var(--blue); }
+/* The transcript covers the chat, never the lab panel: reading it and filling
+   the form on the right is one action, so it is an overlay, not a modal. */
+.interview-overlay { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; background: var(--white); }
+.interview-overlay-head { display: flex; gap: 16px; align-items: flex-end; justify-content: space-between; padding: 38px 42px 14px; border-bottom: 1px solid var(--line); }
+.interview-overlay-head h2 { margin: 4px 0 0; font-size: 21px; }
+.interview-cue { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin: 0 0 16px; }
+.interview-cue small { flex: 1 1 220px; color: var(--ink-soft); }
+/* Scrolls inside the overlay, not with the page: the header with 關閉 has to
+   stay reachable however far down the transcript the reader is. */
+.interview-text { flex: 1; overflow-y: auto; padding: 18px 42px 28px; line-height: 1.85; }
+.interview-text h3 { margin: 0 0 8px; font-size: 16px; }
+.interview-text h4 { margin: 20px 0 8px; font-size: 14px; color: var(--blue); }
 .interview-text p { margin: 0 0 8px; }
 .interview-text blockquote { margin: 0 0 8px; padding-left: 11px; border-left: 3px solid var(--sky); color: var(--ink-soft); }
 .interview-text hr { margin: 14px 0; border: 0; border-top: 1px solid var(--line); }

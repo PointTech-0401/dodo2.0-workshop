@@ -59,6 +59,19 @@
         <button id="pushToTalk" class="ptt-button" type="button" hidden>按住說話</button>
         <button type="submit" class="send-button">送出</button>
       </form>
+
+      <!-- 訪談稿蓋住聊天區，不蓋右邊：一邊讀訪談、一邊填建檔是這一堂的主要動作，
+           所以它是覆蓋層而不是 modal —— 右側表單在它開著的時候照樣可以填。 -->
+      <aside id="interviewOverlay" class="interview-overlay" hidden aria-labelledby="interviewOverlayTitle">
+        <header class="interview-overlay-head">
+          <div>
+            <p class="eyebrow">建檔用的原始資料</p>
+            <h2 id="interviewOverlayTitle">訪談稿</h2>
+          </div>
+          <button id="closeInterview" type="button" class="secondary-button">關閉</button>
+        </header>
+        <article id="interviewText" class="interview-text"></article>
+      </aside>
     </section>
 
     <div
@@ -187,10 +200,10 @@
         <div id="tabW2Intake" class="tab-panel intake-block" role="tabpanel" tabindex="0">
           <h3>實作一：幫她建檔</h3>
           <p class="role-banner"><strong>建檔時你是護理員。</strong>這些資料豆豆只能讀，不能改；她自己說的近況，才由豆豆寫進 B 層。讀完訪談稿，把該記的放進對應的區，把不該記的寫在最後一區——並說出為什麼。</p>
-          <details id="interviewPanel" class="interview-panel" open>
-            <summary><span>讀</span><strong>訪談稿</strong><small>約 3,000 字；每一區都寫著「訪談 §幾找」。</small></summary>
-            <article id="interviewText" class="interview-text"></article>
-          </details>
+          <p class="interview-cue">
+            <button id="showInterview" type="button" class="secondary-button">顯示訪談稿</button>
+            <small>會蓋住左邊的聊天區，這張表單照樣可以填；讀完按「關閉」就回到聊天。每一區都寫著「訪談 §幾找」。</small>
+          </p>
           <div id="intakeCompleteness" class="completeness" aria-live="polite" aria-label="建檔完整度"></div>
           <p class="block-purpose">完整度只算<strong>數量</strong>，不判對錯。填得對不對，看「主動」分頁裡她的一天，以及每一區右上角「問豆豆這一區」她怎麼回答。</p>
 

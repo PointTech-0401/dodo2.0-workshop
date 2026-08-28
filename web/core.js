@@ -491,6 +491,9 @@ function switchStage(stage) {
   $("#workshop2Panel").hidden = isFirst;
   $$(".stage-button").forEach((button) => button.classList.toggle("is-active", Number(button.dataset.stage) === Number(stage)));
   $("#conversationTitle").textContent = isFirst ? "讓 Dodo 聽完，再回答" : "再讓它記得你，適時主動關心";
+  // The transcript belongs to Workshop 2's 建檔; leaving the stage with it open
+  // would hide the chat behind a panel with no visible way back.
+  if (isFirst) W2.hideInterview();
   // Every entry point routes through here, so remembering the stage here is what
   // makes F5 keep the student where they were.
   localStorage.setItem(STAGE_KEY, isFirst ? "1" : "2");
@@ -1368,7 +1371,8 @@ async function initialize() {
   W1.renderVoiceOptions();
   W1.renderPresetButtons();
   loadFields();
-  // 建檔 opens on the interview, so it has to be on screen before the tab is.
+  // The overlay starts closed, but its content is rendered at boot: 顯示訪談稿
+  // must never show an empty panel while a fetch it does not do finishes.
   W2.renderInterview();
   applyMode();
   refreshApiUi();
@@ -1427,8 +1431,10 @@ function bindEvents() {
   $("#closeOnboarding").addEventListener("click", closeOnboarding);
   $("#apiSettingsButton").addEventListener("click", () => showOnboarding(true));
   document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape" || $("#onboarding").hidden) return;
-    closeOnboarding();
+    if (event.key !== "Escape") return;
+    // Onboarding sits above the interview overlay, so it closes first.
+    if (!$("#onboarding").hidden) closeOnboarding();
+    else W2.hideInterview();
   });
 
   $$(".tab-button").forEach((button) => button.addEventListener("click", () => switchTab(button.dataset.tab)));

@@ -275,6 +275,23 @@ function renderInterview() {
   $("#interviewText").innerHTML = html;
 }
 
+/** The transcript covers the chat area, not the lab panel — reading it and
+ *  filling 建檔 is one action, so the form on the right stays live while it is
+ *  open. Toggled with `hidden` so both states are observable from a test. */
+function showInterview() {
+  $("#interviewOverlay").hidden = false;
+  $("#interviewText").scrollTop = 0;
+  $("#closeInterview").focus();
+}
+
+function hideInterview() {
+  if ($("#interviewOverlay").hidden) return;
+  $("#interviewOverlay").hidden = true;
+  // Only pull focus back when the button that opened it is actually on screen:
+  // 關閉 also fires from Esc and from leaving the stage.
+  if (!$("#workshop2Panel").hidden && !$("#tabW2Intake").hidden) $("#showInterview").focus();
+}
+
 /** 「問豆豆這一區」: apply what is on screen, then ask one fixed question that
  *  only the just-filled section can answer. Six small feedback loops instead of
  *  one 35-minute form. */
@@ -1633,6 +1650,8 @@ function init() {
     refreshApplyState();
   }));
   $$("[data-ask]").forEach((button) => button.addEventListener("click", () => askDodo(button.dataset.ask)));
+  $("#showInterview").addEventListener("click", showInterview);
+  $("#closeInterview").addEventListener("click", hideInterview);
   // 安靜與不打擾 live in 建檔, so the band has to redraw when 作息 changes — and
   // the band is on a different tab, which is exactly why it is easy to forget.
   Object.values(ROW_KINDS).forEach(({ container }) => {
@@ -1695,6 +1714,8 @@ globalThis.W2 = {
   buildWorkshop2Prompt,
   rebuildWorkshop2Prompt,
   renderInterview,
+  showInterview,
+  hideInterview,
   renderProactiveEventOptions,
   renderMemoryViewer,
   renderPolicyPreview,

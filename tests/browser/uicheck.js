@@ -79,7 +79,23 @@ const defaults = bootstrap.default_workspace.profile.agent;
 ok("app.js + initialize() ran clean", failures.length === 0, failures.join(" | "));
 ok("W1 opens on the persona tab", shown("tabPersona") && !shown("tabTurn"));
 ok("W2 opens on the 建檔 tab", shown("tabW2Intake") && !shown("tabW2Prompt"));
-ok("the interview is on screen before the form", $("#interviewText").textContent.includes("秀蘭"));
+// 訪談稿 is an overlay over the chat, not a panel inside the form: it starts
+// closed, 顯示 covers the conversation, 關閉 gives it back. The lab panel is
+// never covered — 建檔 is filled while the transcript is up.
+ok("the interview overlay starts closed", !shown("interviewOverlay"));
+ok("...but its content is already rendered", $("#interviewText").textContent.includes("秀蘭"));
+$("#showInterview").click();
+ok("顯示 covers the chat area", shown("interviewOverlay"));
+ok("...and the form stays reachable behind it", shown("tabW2Intake") && !$("#elderAddress").disabled);
+$("#closeInterview").click();
+ok("關閉 gives the chat back", !shown("interviewOverlay"));
+$("#showInterview").click();
+// This harness has no API key, so the un-dismissable first-run sheet is still
+// up and owns Esc. A student who got as far as 建檔 does not have it — put the
+// page in that state before checking the overlay's own Esc.
+$("#onboarding").hidden = true;
+document.dispatchEvent(new win.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+ok("Esc closes it too", !shown("interviewOverlay"));
 ok("fields populated from bootstrap", $("#agentName").value === defaults.name, `agentName="${$("#agentName").value}"`);
 ok("W1 prompt preview rendered", $("#agentSystemPrompt").textContent.includes("# 角色與身分"));
 ok("W1+2 preview rendered", $("#workshop2SystemPrompt").textContent.includes("# 主動訊息的程式規則"));
