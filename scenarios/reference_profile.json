@@ -1,0 +1,82 @@
+{
+  "_comment": "秀蘭阿嬤的參考建檔（答案卷）。從 scenarios/interview.md 整理，學生看不到；用來跑投影機上的共同一天、算完整度、以及列出學生漏掉的用藥／回診。人物為虛構。",
+  "interviewed_on": "2026-08-25",
+  "simulated_weekday": 2,
+  "elder_profile": {
+    "name": "邱秀蘭",
+    "address": "秀蘭阿嬤",
+    "room": "305",
+    "city": "苗栗",
+    "background": "客家人，苗栗公館市場賣麵三十年（熬湯頭、切滷味、記客人）；先生三年前過世；一子一女、兩孫",
+    "language": "國語為主，夾雜客語",
+    "wake_time": "05:00",
+    "bed_time": "21:30",
+    "routines": [
+      {"label": "走廊運動", "start": "05:30", "end": "06:00", "do_not_disturb": false, "weekdays": []},
+      {"label": "早餐", "start": "06:30", "end": "07:00", "do_not_disturb": true, "weekdays": []},
+      {"label": "午餐", "start": "11:00", "end": "11:30", "do_not_disturb": true, "weekdays": []},
+      {"label": "午睡", "start": "12:30", "end": "14:00", "do_not_disturb": true, "weekdays": []},
+      {"label": "歌唱班", "start": "15:00", "end": "16:00", "do_not_disturb": true, "weekdays": [2, 4]},
+      {"label": "晚餐", "start": "17:00", "end": "17:30", "do_not_disturb": true, "weekdays": []},
+      {"label": "八點檔", "start": "20:00", "end": "21:00", "do_not_disturb": true, "weekdays": []}
+    ],
+    "medications": [
+      {"name": "血壓藥、血糖藥", "time": "07:00", "note": "早餐後，配溫水"},
+      {"name": "安眠藥半顆", "time": "21:00", "note": ""}
+    ],
+    "appointments": [
+      {"label": "復健（膝蓋電療、熱敷）", "weekday": 3, "time": "09:30", "note": "復健師來帶，做一個小時"},
+      {"label": "回診 新陳代謝科", "date": "2026-09-04", "time": "09:00", "note": "帶健保卡、藥袋，護理師陪"}
+    ],
+    "emergency_contact": {"name": "邱志明", "relation": "兒子", "phone": ""},
+    "taboos": [
+      {"topic": "先生臥床六年與過世", "rule": "她自己提起才回應，不主動問"},
+      {"topic": "兒子多久來一次", "rule": "不主動問，她會替兒子辯護"},
+      {"topic": "膝蓋不會好了", "rule": "不說教、不糾正，先接住情緒"}
+    ],
+    "declined_notes": [
+      {"text": "隔壁床阿桂糖尿病比她嚴重、偷吃糖", "reason": "第三人的健康資料，沒有人同意過"},
+      {"text": "存摺印章放衣櫃最下層、毛巾包著", "reason": "財物位置不該進陪伴 AI 的記憶"},
+      {"text": "媳婦很現實、不太理她", "reason": "對家人的情緒性評價，存成事實就會被反覆提起"},
+      {"text": "新來的照服員做事粗", "reason": "對員工的評價，不是長者本人的資料"}
+    ]
+  },
+  "memory": {
+    "facts": [
+      {"key": "喜歡的歌", "value": "《望春風》", "tag": "interest", "source": "caregiver"},
+      {"key": "喜歡的歌", "value": "《雨夜花》", "tag": "interest", "source": "caregiver"},
+      {"key": "喜歡的歌", "value": "鳳飛飛《掌聲響起》（最愛）", "tag": "interest", "source": "caregiver"},
+      {"key": "喜歡的歌", "value": "鄧麗君的歌", "tag": "interest", "source": "caregiver"},
+      {"key": "興趣", "value": "唱歌（歌唱班星期二、四下午三點）", "tag": "interest", "source": "caregiver"},
+      {"key": "興趣", "value": "看歌唱節目與八點檔", "tag": "interest", "source": "caregiver"},
+      {"key": "興趣", "value": "窗台種九層塔、辣椒", "tag": "interest", "source": "caregiver"},
+      {"key": "興趣", "value": "四色牌（以前打，現在沒人打）", "tag": "interest", "source": "caregiver"},
+      {"key": "口味", "value": "清淡，但愛鹹（鹹粥、鹹菜）", "tag": "preference", "source": "caregiver"},
+      {"key": "懷念的食物", "value": "客家小炒", "tag": "preference", "source": "caregiver"},
+      {"key": "懷念的食物", "value": "粄條", "tag": "preference", "source": "caregiver"},
+      {"key": "醫囑", "value": "少甜、少油、多喝水", "tag": "medical_note", "source": "caregiver"},
+      {"key": "醫囑", "value": "膝蓋不要蹲", "tag": "medical_note", "source": "caregiver"}
+    ],
+    "events": [
+      {"key": "膝蓋", "value": "右膝這幾天更痛，下雨天更痛（上週開始）", "tag": "symptom", "source": "caregiver"},
+      {"key": "頭暈", "value": "站起來會暈一下，扶著站一下就好（這兩天）", "tag": "symptom", "source": "caregiver"},
+      {"key": "睡眠", "value": "這禮拜兩三點就醒，醒了睡不回去", "tag": "symptom", "source": "caregiver"},
+      {"key": "想吃的東西", "value": "鹹粥（這兩天）", "tag": "note", "source": "caregiver"}
+    ]
+  },
+  "discussion": [
+    {
+      "text": "「有時候人家給我一顆糖我還是吃。妳不要跟護理師講喔。」",
+      "note": "陪伴 AI 該記嗎？該告訴護理員嗎？沒有標準答案 —— 記了會變成監視，不記就是替她瞞著血糖。課堂討論用。"
+    }
+  ],
+  "expected_counts": {
+    "medications": 2,
+    "routines": 6,
+    "symptoms": 3,
+    "interests": 4,
+    "taboos": 2,
+    "declined_notes": 3,
+    "emergency_contact": 1
+  }
+}
