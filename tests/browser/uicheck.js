@@ -6,7 +6,10 @@ import { readFileSync } from "node:fs";
 
 const ROOT = new URL("../../web/", import.meta.url).pathname.replace(/^\/(?=[A-Za-z]:)/, "");
 const page = readFileSync(`${ROOT}index.html`, "utf8");
-const script = readFileSync(`${ROOT}app.js`, "utf8");
+// index.html loads these three in this order. Concatenating them reproduces what
+// the browser ends up with: one shared script scope, core first.
+const CLIENT_FILES = ["core.js", "workshop1.js", "workshop2.js"];
+const script = CLIENT_FILES.map((name) => readFileSync(`${ROOT}${name}`, "utf8")).join("\n");
 const bootstrap = await fetch(`http://127.0.0.1:${PORT}/api/bootstrap`).then((r) => r.json());
 bootstrap.api_configured = false;          // keep the harness away from WebRTC
 bootstrap.weather_configured = false;
@@ -33,12 +36,20 @@ const ok = (label, cond, extra = "") => {
   console.log(`${cond ? "PASS" : "FAIL"}  ${label}${extra ? "   " + extra : ""}`);
   if (!cond) failures.push(label);
 };
+// The memory helpers live inside workshop2.js's IIFE now, so they are reachable
+// only through W2. `workspace` is still a core top-level binding, and the getter
+// closes over it from inside the same eval scope.
 const EXPOSE = `
 globalThis.__t = {
-  upsertMemory, forgetMemory, describeMemoryWrite, isQuietHour, renderMemoryViewer,
-  memoryEntryText, migrateWorkshop2Blocks,
+  upsertMemory: W2.upsertMemory, forgetMemory: W2.forgetMemory,
+  describeMemoryWrite: W2.describeMemoryWrite, isQuietHour: W2.isQuietHour,
+  renderMemoryViewer: W2.renderMemoryViewer, memoryEntryText: W2.memoryEntryText,
+  migrateWorkshop2Blocks: W2.migrateWorkshop2Blocks,
   get workspace() { return workspace; },
-};`;
+};
+// eval() never fires DOMContentLoaded, so start the app by hand — fire and
+// forget, exactly as app.js's own final \`initialize();\` did.
+initialize();`;
 try { eval(script + EXPOSE); } catch (e) { failures.push(`app.js threw: ${e.message}`); console.log(e); }
 await new Promise((r) => setTimeout(r, 400));   // let initialize()'s awaits settle
 

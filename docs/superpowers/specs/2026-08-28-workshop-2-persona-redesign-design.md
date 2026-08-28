@@ -339,8 +339,7 @@ Barry 對現在第二堂的判斷：「方向不好、過於枯燥」。三個�
 | 2 新引擎（只加不改） | `dodo_workshop/proactive.py`、`dodo_workshop/intake.py`、`tests/test_proactive.py` | `build_schedule`、三類型 `choose_event`（分鐘級、ISO weekday、`<` 邊界、規則代碼）、`build_day`、新分數、G1–G5 掃描測試、完整度、漏掉的提醒。舊 `lesson2.py` 原樣保留，所以這個 commit 之後舊測試仍綠 |
 | 3 切換 | `dodo_workshop/profile.py`、`dodo_workshop/web.py`、`dodo_workshop/lesson2.py`（退場）、`app.py`、`tests/test_profile.py`、`tests/test_lesson2.py`（退場）、`tests/test_web.py`、`tests/fixtures/*`、`starter/workshop2-default-dodo.json`；刪 `memory_cards.json`／`proactive_scenarios.json`／`day_timeline.json` | schema 2、遷移（pop／冪等／fixed-point）、四個分塊、四段生成、A 層護理員鎖、golden fixture、端點接上新引擎（含對照模式、`declined_until`）、CLI 的 quiz／lab 退場 |
 | 4 拆檔 | `web/core.js`、`web/workshop1.js`、`web/workshop2.js`、`index.html` | 零行為變更；`registerApplyTab`；`uicheck.js` 全綠 |
-| 5 建檔分頁 | `web/workshop2.js`、`index.html`、`styles.css` | 訪談稿面板、六區表單＋問豆豆＋即時提示、完整度、檢視器來源標記、紅隊 |
-| 6 態度分頁 | `web/workshop2.js`、`index.html` | 四個小格、來源標籤 |
+| 5＋6 建檔＋態度分頁 | `web/workshop2.js`、`web/core.js`（工具描述、normalize 端點接線）、`index.html`、`styles.css`、`tests/test_web.py`、`tests/browser/uicheck.js` | 兩階段合併：`elder_profile` 形狀一變，`buildWorkshop2Prompt` 就必須重寫成四段（那正是態度分頁的核心），分開做會讓中間狀態壞兩次。內容：訪談稿面板、六區表單＋問豆豆＋即時提示、完整度、檢視器來源標記（護理員建的在表單改、豆豆記的才可刪）、紅隊；四個態度小格＋四段自動生成（帶來源標籤）；前端 Prompt 組裝逐字對齊 `prompt_sections.py`，uicheck 用 golden fixture 釘住；瀏覽器端遷移改走 `/api/workspace/normalize` |
 | 7 主動分頁 | `web/workshop2.js`、`index.html`、`styles.css` | 合併、按鈕、帶狀圖由建檔算、她的一天＋對照＋漏掉的提醒、三類型觸發、今日摘要按鈕 |
 | 8 文件與收尾 | `docs/workshop-2.md`、`docs/instructor-guide.md`、`README.md`、`tests/browser/uicheck.js` | 全部重寫第二堂；成功標準改寫；講師口頭舉例的註記 |
 
@@ -378,4 +377,4 @@ Barry 對現在第二堂的判斷：「方向不好、過於枯燥」。三個�
 
 複雜度：**高**。估 4–5 個工作 session：階段 1–3 一個、階段 4 半個、階段 5–7 兩個、階段 8 半個。
 
-2026-08-28 進度：階段 1–3 完成（分支 `w2-persona`，見 git log）。階段 3 稽核抽出 `dodo_workshop/prompt_sections.py`（四段生成段落）；`MEMORY_PREVIEW_LIMIT` 改為 16（參考建檔有 13 筆 A 層事實，必須整份進得了模型），**前端 `app.js` 仍是 8，階段 7 必須同步並由 golden fixture 釘住**。
+2026-08-28 進度：階段 1–4 完成（分支 `w2-persona`，見 git log）；階段 5、6 合併進行。階段 3 稽核抽出 `dodo_workshop/prompt_sections.py`（四段生成段落）；`MEMORY_PREVIEW_LIMIT` 改為 16（參考建檔有 13 筆 A 層事實，必須整份進得了模型），**前端 `app.js` 仍是 8，階段 7 必須同步並由 golden fixture 釘住**。

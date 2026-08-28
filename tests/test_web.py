@@ -16,11 +16,22 @@ from dodo_workshop.web import (
     weather_tool,
 )
 
+# The browser client is three files now, split by workshop. Concatenated in the
+# order index.html loads them, they are the one script the browser ends up with,
+# so every assertion below still reads as「這支前端程式裡有沒有這段」.
+CLIENT_FILES = ("core.js", "workshop1.js", "workshop2.js")
+
+
+def client_script() -> str:
+    return "\n".join(
+        (WEB_DIR / name).read_text(encoding="utf-8") for name in CLIENT_FILES
+    )
+
 
 def test_shared_client_and_bootstrap_are_available() -> None:
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
     styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
     data = bootstrap()
 
     assert "同一個 Dodo，持續升級" in page
@@ -114,7 +125,7 @@ def test_realtime_voice_matches_dodo_default(monkeypatch) -> None:
 
 def test_settings_ui_has_separate_input_output_and_api_actions() -> None:
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
 
     assert '>測試</button>' in page
     assert 'id="weatherApiKeyInput" type="password"' in page
@@ -175,7 +186,7 @@ def test_persona_rides_along_at_mint_time_and_errors_are_never_swallowed() -> No
     persona — English replies, default voice.
     """
 
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
     server = (Path(__file__).resolve().parents[1] / "dodo_workshop" / "web.py").read_text(
         encoding="utf-8"
     )
@@ -222,7 +233,7 @@ def test_persona_rides_along_at_mint_time_and_errors_are_never_swallowed() -> No
 
 def test_api_settings_sheet_closes_and_saves_from_one_button() -> None:
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
 
     # X + Esc, but only once there is a working setup behind the sheet — closing
     # on first run would leave an app with no API key and no way to set one.
@@ -248,7 +259,7 @@ def test_typing_interrupts_a_reply_in_progress() -> None:
     """`interrupt_response` only covers VAD voice input, so a typed message used
     to queue behind whatever 豆豆 was already saying."""
 
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
 
     assert "function interruptResponse()" in script
     # sendText cancels before it enqueues the new turn.
@@ -295,7 +306,7 @@ def test_tool_status_is_not_rendered_as_dodo_speech() -> None:
     like 豆豆 speaking error text mid-conversation."""
 
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
     styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
 
     assert 'tool: "TOOL"' in script
@@ -341,7 +352,7 @@ def test_message_bubbles_are_half_width_and_wrap_long_text() -> None:
 def test_chat_and_prompt_panels_have_an_accessible_drag_resizer() -> None:
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
     styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
 
     assert 'id="panelResizer"' in page
     assert 'role="separator"' in page
@@ -370,7 +381,7 @@ def test_chat_and_prompt_panels_have_an_accessible_drag_resizer() -> None:
 
 def test_chat_input_uses_enter_to_send_and_shift_enter_for_newline() -> None:
     styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
 
     assert ".composer textarea { flex: 1 1 auto; width: 100%;" in styles
     assert '$("#chatInput").addEventListener("keydown"' in script
@@ -409,7 +420,7 @@ def test_clearing_a_prompt_block_removes_that_section() -> None:
     restored the default and the preview never changed.
     """
 
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
 
     fields = script.split("function promptBlocksFromFields() {")[1].split("\n}")[0]
@@ -429,7 +440,7 @@ def test_clearing_a_prompt_block_removes_that_section() -> None:
 
 def test_settings_dry_run_is_gone_and_apply_marks_workshop_one_done() -> None:
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
     server = (Path(__file__).resolve().parents[1] / "dodo_workshop" / "web.py").read_text(
         encoding="utf-8"
     )
@@ -454,7 +465,7 @@ def test_voice_is_part_of_the_project_and_needs_a_reconnect_to_change() -> None:
     audio, so 套用 must reconnect rather than rely on session.update."""
 
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
 
     assert 'id="agentVoice"' in page
     assert "function renderVoiceOptions()" in script
@@ -476,7 +487,7 @@ def test_voice_is_part_of_the_project_and_needs_a_reconnect_to_change() -> None:
 
 def test_three_persona_presets_each_have_all_blocks_and_a_distinct_voice() -> None:
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
 
     assert 'id="promptPresets"' in page
     assert "function applyPreset(id)" in script
@@ -494,7 +505,7 @@ def test_memory_tools_are_visible_in_the_transcript_like_the_weather_tool() -> N
     """read_memory/update_memory returned before the TOOL-row code, so students
     could not see 豆豆 reading or writing memory at all."""
 
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
     tool_fn = script.split("async function executeRealtimeTool(call) {")[1].split(
         "\nasync function handleRealtimeEvent"
     )[0]
@@ -509,7 +520,7 @@ def test_remote_audio_is_attached_and_playback_failure_is_reported() -> None:
     """A detached <audio autoplay> is silently blocked by the browser autoplay
     policy on a fresh load, which is why a refresh sometimes had no sound."""
 
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
 
     assert "document.body.append(remoteAudio)" in script
     assert "remoteAudio.playsInline = true" in script
@@ -523,7 +534,7 @@ def test_remote_audio_is_attached_and_playback_failure_is_reported() -> None:
 
 def test_interest_label_matches_the_separator_actually_used() -> None:
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
 
     # The splitter always accepted 、, ， and , — only the label said 逗號.
     assert "興趣（用「、」分隔，逗號也可以）" in page
@@ -539,7 +550,7 @@ def test_every_element_the_client_touches_exists_in_the_page() -> None:
     import re
 
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
 
     declared = set(re.findall(r'id="([A-Za-z0-9_-]+)"', page))
     used = set(re.findall(r'\$\("#([A-Za-z0-9_-]+)"\)', script))
@@ -555,7 +566,7 @@ def test_refresh_keeps_the_student_on_the_stage_they_were_on() -> None:
     read that flag to pick the stage — so a plain F5 in Workshop 1 jumped to
     Workshop 2. The stage is now remembered where every entry point funnels."""
 
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
 
     assert 'const STAGE_KEY = "dodo-workshop.stage"' in script
     switch_stage = script.split("function switchStage(stage) {")[1].split("\n}")[0]
@@ -574,7 +585,7 @@ def test_refresh_keeps_the_student_on_the_stage_they_were_on() -> None:
 
 def test_panels_open_at_a_one_to_one_split_and_remember_manual_drags() -> None:
     styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
 
     # 10px resizer, so half of what is left is `50% - 5px` on both columns.
     assert ".app-shell { --lab-width: calc(50% - 5px);" in styles
@@ -595,7 +606,7 @@ def test_preamble_is_separated_from_the_answer_in_the_transcript() -> None:
     """Realtime has no preamble item type: a preamble is a message item sharing a
     response with a function_call, and the answer arrives in the next response."""
 
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
     styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
 
     assert "function markPreamble(bubble)" in script
@@ -620,7 +631,7 @@ def test_workshop2_has_its_own_viewable_editable_prompt_layer() -> None:
     it happened to call read_memory — Workshop 2 had no instructions of its own."""
 
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
 
     # Editable blocks, plus the same read-only full-prompt VIEW as Workshop 1.
     assert '<textarea id="promptMemoryUse"' in page
@@ -643,7 +654,7 @@ def test_workshop2_has_its_own_viewable_editable_prompt_layer() -> None:
 
 
 def test_memory_classification_drives_storage_and_shows_its_reasoning() -> None:
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
 
     # A/B/C picks the list the value lands in, X is refused outright.
@@ -672,7 +683,7 @@ def test_one_simulated_day_is_reachable_from_the_client() -> None:
     assert all(step["reason"] for step in result["steps"])
 
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
     styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
 
     assert 'id="runDaySimulation"' in page
@@ -692,7 +703,7 @@ def test_humans_can_delete_what_the_agent_remembered() -> None:
     contradicted the lesson's own question 「誰能寫入或修改？」"""
 
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
 
     assert 'id="memoryViewer"' in page
     assert "function renderMemoryViewer()" in script
@@ -757,7 +768,7 @@ def test_proactive_can_actually_speak_first() -> None:
     with pytest.raises(HTTPException):
         proactive_decide(ProactiveDecideRequest(policy=policy, scenario={"time": "晚上", "type": "chat"}))
 
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
     server = (Path(__file__).resolve().parents[1] / "dodo_workshop" / "web.py").read_text(
         encoding="utf-8"
@@ -792,7 +803,7 @@ def test_memory_writes_accumulate_instead_of_overwriting() -> None:
     latest state, C is recomputed — and only an explicit mode=replace discards.
     """
 
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
 
     assert "const MEMORY_MERGE_RULES = {" in script
     rules = script.split("const MEMORY_MERGE_RULES = {")[1].split("};")[0]
@@ -825,7 +836,7 @@ def test_the_model_can_retract_exactly_one_remembered_value() -> None:
     鳳梨 and 芭樂 too. Without a removal the memory keeps both「喜歡西瓜」and
     「不喜歡西瓜」side by side forever."""
 
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
 
     forget = script.split("function forgetMemory(layerId, key, value) {")[1].split("\n}\n")[0]
     # key AND value, or removing 西瓜 would take 鳳梨 and 芭樂 with it.
@@ -849,7 +860,7 @@ def test_a_saved_project_learns_the_new_memory_merge_rule() -> None:
     累加／replace rule existed would show a block that contradicts the behaviour
     its own memory now follows."""
 
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
     profile_source = (
         Path(__file__).resolve().parents[1] / "dodo_workshop" / "profile.py"
     ).read_text(encoding="utf-8")
@@ -884,7 +895,7 @@ def test_the_prompt_says_which_layer_a_preference_belongs_to() -> None:
     supersedes, so 芭樂／西瓜／鳳梨 were each eaten by the next fruit. Changing the
     quiz card fixed what the *student* reads; this is what the *model* reads."""
 
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
     blocks = bootstrap()["default_workspace"]["profile"]["workshop2_blocks"]
     memory_use = blocks["memory_use"]
 
@@ -906,7 +917,7 @@ def test_the_prompt_says_which_layer_a_preference_belongs_to() -> None:
 def test_a_supersede_names_the_value_it_threw_away() -> None:
     """「覆蓋原本 1 筆」gave a student no way to notice 芭樂 had just been eaten."""
 
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
 
     upsert = script.split("function upsertMemory(layerId, key, value, mode) {")[1].split("\n}\n")[0]
     assert "const superseded = workspace.memory[field]" in upsert
@@ -921,7 +932,7 @@ def test_proactive_policy_has_a_live_picture_and_self_explaining_fields() -> Non
     against — that lived one tab away."""
 
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
     styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
 
     assert 'id="quietBand"' in page and 'id="policySummary"' in page and 'id="policyBinding"' in page
@@ -950,7 +961,7 @@ def test_scheduled_reminders_fire_on_the_real_clock() -> None:
     so setting a 提醒 time did nothing when that time came round."""
 
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
     default_scheduled = bootstrap()["default_workspace"]
 
     assert 'id="scheduleTime"' in page and 'id="addSchedule"' in page
@@ -1000,7 +1011,7 @@ def test_lab_panels_are_tabbed_with_a_title_bar_apply_button() -> None:
     import re
 
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
     styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
 
     # Every tab button points at a panel that exists, and each bar opens on one.
@@ -1054,7 +1065,7 @@ def test_passing_status_no_longer_floods_the_transcript() -> None:
     errors, refusals and milestones."""
 
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
     styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
 
     assert 'id="activityNote"' in page and 'role="status"' in page
@@ -1085,7 +1096,7 @@ def test_offer_always_carries_an_audio_media_section() -> None:
     used to be added only when input or output was voice.
     """
 
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
     body = script.split("async function openRealtimeConnection() {")[1].split("\nasync function")[0]
 
     assert 'peerConnection.addTransceiver("audio", { direction: "recvonly" });' in body
@@ -1101,7 +1112,7 @@ def test_unapplied_changes_can_be_thrown_away() -> None:
     back to the applied state was to remember and retype it."""
 
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
 
     for button in ("revertWorkshop1", "revertWorkshop2"):
         assert f'id="{button}" class="secondary-button apply-button" hidden' in page, button
@@ -1121,7 +1132,7 @@ def test_unapplied_changes_can_be_thrown_away() -> None:
 
 def test_lab_results_collapse_and_keep_their_score() -> None:
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
     styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
 
     for panel in ("memoryOutcome", "proactiveOutcome", "dayOutcome"):
@@ -1140,7 +1151,7 @@ def test_proactive_event_types_are_rendered_from_the_project_priorities() -> Non
     are rendered from `proactive_policy.priorities` instead of being hardcoded."""
 
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
+    script = client_script()
 
     assert '<select id="proactiveEventType"></select>' in page
     assert '<option value="reminder">' not in page

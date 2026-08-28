@@ -35,7 +35,12 @@ const RealBlob = globalThis.Blob;
 globalThis.Blob = class extends RealBlob { constructor(parts, opts) { super(parts, opts); downloaded = parts.join(""); } };
 globalThis.URL = { createObjectURL: () => "blob:x", revokeObjectURL: () => {} };
 
-eval(readFileSync(`${ROOT}app.js`, "utf8"));
+// The three files index.html loads, in that order, plus the manual start that
+// eval() has to supply because DOMContentLoaded never fires in here.
+const client = ["core.js", "workshop1.js", "workshop2.js"]
+  .map((name) => readFileSync(`${ROOT}${name}`, "utf8"))
+  .join("\n");
+eval(`${client}\ninitialize();`);
 await new Promise((r) => setTimeout(r, 400));
 
 document.querySelector("#exportButton").click();

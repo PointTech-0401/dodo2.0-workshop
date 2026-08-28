@@ -16,6 +16,16 @@ from dodo_workshop.profile import (
 
 REFERENCE = load_json("scenarios/reference_profile.json")
 
+# The browser client is three files now, split by workshop. Concatenated in the
+# order index.html loads them, they are the one script the browser ends up with.
+CLIENT_FILES = ("core.js", "workshop1.js", "workshop2.js")
+
+
+def client_script() -> str:
+    return "\n".join(
+        (ROOT / "web" / name).read_text(encoding="utf-8") for name in CLIENT_FILES
+    )
+
 
 def reference_workspace() -> dict:
     return normalize_workspace(
@@ -396,7 +406,7 @@ def test_no_output_token_cap_survives_anywhere_in_a_project() -> None:
         assert "max_output_tokens" not in (ROOT / name).read_text(encoding="utf-8"), name
 
     # And the browser must not put it back on the way to the download.
-    script = (ROOT / "web" / "app.js").read_text(encoding="utf-8")
+    script = client_script()
     collect = script.split("function collectWorkshop1() {")[1].split("\n}")[0]
     assert "max_output_tokens" not in collect
     assert "delete agent.max_output_tokens;" in script
