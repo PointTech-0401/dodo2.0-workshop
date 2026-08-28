@@ -6,10 +6,21 @@ from pathlib import Path
 from typing import Any
 
 from dodo_workshop.config import ROOT
+from dodo_workshop.prompt_sections import (
+    compose_elder_section,
+    compose_memory_context,
+    compose_rules_section,
+    compose_taboo_section,
+)
 
 
 WORKSPACE_PATH = ROOT / "student" / "my-dodo.json"
 WORKSHOP2_STARTER_PATH = ROOT / "starter" / "workshop2-default-dodo.json"
+
+# 1 = 王奶奶 era (quiz cards, six priorities, quiet hours as a field).
+# 2 = 建檔 era (elder_profile is a real care file, two knobs, schedule from 作息).
+SCHEMA_VERSION = 2
+SUPPORTED_SCHEMA_VERSIONS = frozenset({1, 2})
 
 
 DEFAULT_PROMPT_BLOCKS: dict[str, str] = {
@@ -55,40 +66,34 @@ def resolve_voice(value: Any, fallback: str = DEFAULT_VOICE) -> str:
     return candidate if candidate in REALTIME_VOICES else fallback
 
 
-# Workshop 2's own editable prompt layer. Workshop 1 decides *how* 豆豆 talks;
-# these decide what it does with the elder's memory and when it may open its
-# mouth first. They are appended after the Workshop 1 blocks, so the live
-# session carries both — before this existed, 長者資料／三層記憶／主動規則 never
-# reached the model at all and only surfaced if it happened to call read_memory.
+# Workshop 2's own editable prompt layer. 建檔決定資料，Prompt 只寫態度: the four
+# blocks are attitudes, and every fact the model needs is generated from the
+# 建檔 and the memory below them. Workshop 1 decides how 豆豆 talks; these decide
+# what it does with her memory and how it opens its mouth first.
 WORKSHOP2_PROMPT_BLOCKS: dict[str, str] = {
-    "memory_use": """用 read_memory 讀取 {USER_ADDRESS} 的三層記憶，用 update_memory 保存新資訊，並在保存時指定層級：
-A 重要事實（layer=A）：過敏、慢性病、緊急聯絡人，以及長期偏好（喜歡或不喜歡的食物、音樂、活動）；由真人確認管理，不要自行推測或改寫。
-B 近期事件（layer=B）：這幾天的狀況與心情，例如昨晚沒睡好、今天中午想吃什麼；可能很快改變，不要當成永久事實。
-C 跨日摘要（layer=C）：跨多次對話才看得出來的趨勢，例如最近一週常提到睡不好。
-X 不保存：密碼、提款卡密碼、API Key、金融帳號、驗證碼一律不保存，也不要在對話中複誦。
-同一個 key 再存一次時：新資訊和舊的都成立就直接存（預設會並存，例如興趣同時有唱歌和跳舞，不要為了塞進一筆而改寫舊的）；只有新內容真的取代舊內容（搬家、換藥、換聯絡人）才傳 mode="replace"；使用者否定某一筆已經記得的事時傳 mode="remove"，用一模一樣的 key 與 value 移除那一筆，不要新增一筆相反的記錄。
-喜歡或不喜歡的食物、音樂、活動都是長期偏好，一律存 layer=A 讓它們並存；只有「今天中午想吃什麼」這種當下的一次性念頭才放 layer=B。放錯層會讓新的偏好直接吃掉舊的。
-提起記憶時要像家人記得，而不是唸資料庫；不確定的事先問一句，不要假裝記得。""",
-    "proactive": """你可以主動開口，但「主動」不等於想到就說。
-安靜時段、冷卻時間與每日上限由程式規則決定，你只負責措辭；沒有收到主動事件時不要自行開啟新話題。
-提醒類事件要講清楚時間與該帶的東西；一般關心不要製造壓力，也不要連續追問。
-緊急事件先確認 {USER_ADDRESS} 當下是否安全，並明確說你會請真人照護者介入。""",
+    "memory_use": """記憶分三層，用 read_memory 讀、用 update_memory 寫，寫入時指定 layer：
+A 重要事實（layer=A）：過敏、慢性病、醫囑、緊急聯絡人，以及長期偏好（喜歡或不喜歡的食物、音樂、活動）。同一個 key 可以並存多筆，新的不會吃掉舊的。標［護理員］的是護理員建的，你不能改也不能刪；她要改，請她告訴護理員。
+B 近期事件（layer=B）：這幾天的身體狀況與心情、當下的念頭。同一件事新的取代舊的 —— 她說膝蓋好多了，就用 mode="replace" 把舊的那筆換掉，追問才會停。
+C 跨日摘要：由系統整理，不要自己寫。
+不保存：密碼、卡號、帳號、驗證碼；第三人的健康；對家人或員工的評價。也不要在對話中複誦。
+她否定某一筆已經記得的事時用 mode="remove"，不要新增一筆相反的。提起記憶時像家人記得，不像唸資料庫；不確定就先問一句。""",
+    "attitude_reminder": """先叫她的稱呼，一句講清楚時間與該做的事（藥、要帶的東西），不解釋為什麼，不催。說一次就好。""",
+    "attitude_health": """先問感覺，不給建議、不說「要多注意」、不推測原因。她說好了，就用 update_memory 把那一筆換掉；她說沒好，就聽她講，不要連續追問。""",
+    "attitude_chat": """從她的興趣起頭，一次一件，兩句以內。可以用「我問您喔」請教她會的事，讓她當老師。碰到「不主動提起」清單裡的事，等她自己開口。""",
 }
 
 WORKSHOP2_BLOCK_TITLES: tuple[tuple[str, str], ...] = (
     ("memory_use", "記憶使用規則"),
-    ("proactive", "主動關心規則"),
+    ("attitude_reminder", "重要提醒怎麼講"),
+    ("attitude_health", "健康關心怎麼問"),
+    ("attitude_chat", "閒聊從哪裡開始"),
 )
+# A schema-1 project stored the old default text verbatim. If the block still
+# starts with it, the student never edited it and gets the new default.
+LEGACY_MEMORY_USE_PREFIX = "用 read_memory 讀取"
 
-# Which workspace list feeds which memory layer, in the same A/B/C order the
-# Workshop 2 quiz teaches.
-MEMORY_LAYERS: tuple[tuple[str, str, str], ...] = (
-    ("A", "facts", "A 重要事實"),
-    ("B", "events", "B 近期事件"),
-    ("C", "summaries", "C 跨日摘要"),
-)
-# Instructions are re-sent on every 套用, so the memory dump has to stay bounded.
-MEMORY_PREVIEW_LIMIT = 8
+# The `source` values a memory entry may carry; anything else is the model's own write.
+MEMORY_SOURCES: tuple[str, ...] = ("caregiver", "dodo", "system")
 
 PROMPT_BLOCK_TITLES: tuple[tuple[str, str], ...] = (
     ("identity", "角色與身分"),
@@ -96,6 +101,35 @@ PROMPT_BLOCK_TITLES: tuple[tuple[str, str], ...] = (
     ("conversation_style", "對話方式"),
     ("language", "語言"),
     ("safety", "邊界與安全"),
+)
+
+# The 建檔 (design spec §2.1). Caregiver-written, AI read-only. Interests and
+# symptoms are NOT here: the form writes them into `workspace.memory` with
+# `source: caregiver`, so the memory viewer stays the single source of truth.
+EMPTY_ELDER_PROFILE: dict[str, Any] = {
+    "name": "",
+    "address": "",
+    "room": "",
+    "city": "",
+    "background": "",
+    "language": "",
+    "expertise": [],
+    "wake_time": "",
+    "bed_time": "",
+    "routines": [],
+    "medications": [],
+    "appointments": [],
+    "emergency_contact": {"name": "", "relation": "", "phone": ""},
+    "taboos": [],
+    "declined_notes": [],
+}
+DEFAULT_PROACTIVE_POLICY: dict[str, int] = {"interval_minutes": 30, "daily_limit": 4}
+LEGACY_POLICY_KEYS: tuple[str, ...] = (
+    "quiet_hours",
+    "priorities",
+    "cooldown_minutes",
+    "daily_message_limit",
+    "max_message_sentences",
 )
 
 
@@ -136,88 +170,50 @@ def compose_agent_prompt(agent: dict[str, Any]) -> str:
 
 
 def workshop2_blocks_for(profile: dict[str, Any]) -> dict[str, str]:
-    """Same missing-vs-empty rule as `prompt_blocks_for`, for Workshop 2."""
+    """Same missing-vs-empty rule as `prompt_blocks_for`, for Workshop 2.
+
+    Keys the current schema does not know (the schema-1 `proactive` block) are
+    dropped: the three attitude boxes replaced it and its prose cannot be split.
+    """
 
     supplied = profile.get("workshop2_blocks")
     if not isinstance(supplied, dict):
         supplied = {}
-    return {
+    blocks = {
         key: (str(supplied[key]).strip() if key in supplied else default)
         for key, default in WORKSHOP2_PROMPT_BLOCKS.items()
     }
+    if blocks["memory_use"].startswith(LEGACY_MEMORY_USE_PREFIX):
+        blocks["memory_use"] = WORKSHOP2_PROMPT_BLOCKS["memory_use"]
+    return blocks
 
 
-def _memory_entry_text(entry: Any) -> str:
-    """Accept both the `{key, value}` shape and legacy plain strings."""
-
-    if isinstance(entry, dict):
-        key = str(entry.get("key") or "").strip()
-        value = str(entry.get("value") or "").strip()
-        return f"{key}：{value}" if key and value else key or value
-    return str(entry or "").strip()
-
-
-def memory_layer_headings(memory_policy: dict[str, Any] | None) -> dict[str, str]:
-    """Layer titles carrying their retention window.
-
-    `memory_policy` was dead schema — present in every workspace file and read by
-    nothing. Nothing ages inside a 165-minute class, so retention is surfaced as
-    a label rather than simulated: 「保存 365 天」 next to 「保存 30 天」 is what
-    makes A and B different in the first place.
-    """
-
-    policy = memory_policy if isinstance(memory_policy, dict) else {}
-    return {
-        "facts": f"A 重要事實（保存 {policy.get('fact_retention_days', 365)} 天）",
-        "events": f"B 近期事件（保存 {policy.get('event_retention_days', 30)} 天）",
-        "summaries": "C 跨日摘要（由多次對話整理）",
-    }
-
-
-def compose_memory_context(
-    memory: dict[str, Any], memory_policy: dict[str, Any] | None = None
-) -> str:
-    """Render the three memory layers exactly as the model will receive them."""
-
-    headings = memory_layer_headings(memory_policy)
-    lines: list[str] = []
-    for _, field, _short_title in MEMORY_LAYERS:
-        title = headings[field]
-        entries = memory.get(field) if isinstance(memory, dict) else None
-        texts = [text for text in map(_memory_entry_text, entries or []) if text]
-        if not texts:
-            lines.append(f"{title}：（目前沒有任何記錄）")
-            continue
-        shown = texts[-MEMORY_PREVIEW_LIMIT:]
-        omitted = len(texts) - len(shown)
-        suffix = f"（另有 {omitted} 筆較舊記錄未列出）" if omitted else ""
-        lines.append(f"{title}：{suffix}")
-        lines.extend(f"- {text}" for text in shown)
-    return "\n".join(lines)
+# ---------------------------------------------------------------------------
+# Prompt assembly (generated sections live in prompt_sections.py)
+# ---------------------------------------------------------------------------
 
 
 def compose_workshop2_prompt(workspace: dict[str, Any]) -> str:
     """Assemble Workshop 2's half of the instructions.
 
-    Two editable blocks plus three generated sections. The generated sections are
-    what make 長者資料、三層記憶 and the proactive rules visible to the model —
-    they are derived, so students edit the fields, not the text.
+    Four editable attitude blocks, then four generated sections: 長者資料 (from the
+    建檔), 目前記得的事 (from memory), 不主動提起 (taboos), 主動訊息的程式規則.
+    Students edit the 建檔 and the boxes, never the generated text.
 
-    Mirrored by `buildWorkshop2Prompt` in web/app.js (the browser composes from
-    unsaved field values). The two must produce identical text; change both.
+    Mirrored by `buildWorkshop2Prompt` in the browser, which composes from unsaved
+    field values. `tests/fixtures/workshop2_prompt.txt` pins both to the same
+    output — change the fixture, not just one side.
     """
 
     profile = workspace.get("profile") or {}
     agent = profile.get("agent") or {}
     elder = profile.get("elder_profile") or {}
-    policy = profile.get("proactive_policy") or {}
-    quiet = policy.get("quiet_hours") or {}
-    replacements = {
-        "{AGENT_NAME}": str(agent.get("name") or "豆豆"),
-        # Workshop 2 is about the elder, so the placeholder resolves to the
-        # elder's 稱呼 and falls back to the Workshop 1 one.
-        "{USER_ADDRESS}": str(elder.get("address") or agent.get("address") or "王奶奶"),
-    }
+    # Both knobs defaulted once, here: `compose_rules_section` is a pure renderer
+    # and the schema defaults are this module's business, not the text's.
+    policy = {**DEFAULT_PROACTIVE_POLICY, **(profile.get("proactive_policy") or {})}
+    address = str(elder.get("address") or agent.get("address") or "長者")
+    replacements = {"{AGENT_NAME}": str(agent.get("name") or "豆豆"), "{USER_ADDRESS}": address}
+
     blocks = workshop2_blocks_for(profile)
     sections: list[str] = []
     for key, title in WORKSHOP2_BLOCK_TITLES:
@@ -228,33 +224,10 @@ def compose_workshop2_prompt(workspace: dict[str, Any]) -> str:
             content = content.replace(placeholder, value)
         sections.append(f"# {title}\n{content}")
 
-    interests = [str(item).strip() for item in elder.get("interests") or [] if str(item).strip()]
-    elder_lines = [
-        f"稱呼：{replacements['{USER_ADDRESS}']}",
-        f"居住城市：{elder.get('city') or '未提供'}（問天氣沒有指定城市時用這個）",
-        f"興趣：{'、'.join(interests) if interests else '未提供'}",
-    ]
-    sections.append("# 長者資料\n" + "\n".join(elder_lines))
-
-    memory_context = compose_memory_context(
-        workspace.get("memory") or {}, profile.get("memory_policy")
-    )
-    sections.append("# 目前記得的事（三層記憶）\n" + memory_context)
-
-    priorities = policy.get("priorities") or {}
-    order = "、".join(
-        f"{name}({score})"
-        for name, score in sorted(priorities.items(), key=lambda item: item[1], reverse=True)
-    )
-    policy_lines = [
-        f"安靜時段：{quiet.get('start', 22):02d}:00–{quiet.get('end', 8):02d}:00（緊急事件除外）",
-        f"主動訊息冷卻：{policy.get('cooldown_minutes', 30)} 分鐘",
-        f"每日主動訊息上限：{policy.get('daily_message_limit', 4)} 則",
-        f"每則主動訊息最多 {policy.get('max_message_sentences', 2)} 句",
-        f"事件優先權：{order or '未設定'}",
-        "這些條件由程式先判斷；你收到主動事件時才開口，措辭仍要符合上面的規則。",
-    ]
-    sections.append("# 主動訊息的程式規則\n" + "\n".join(policy_lines))
+    sections.append(compose_elder_section(elder, address))
+    sections.append("# 目前記得的事（三層記憶）\n" + compose_memory_context(workspace.get("memory") or {}))
+    sections.append(compose_taboo_section(elder.get("taboos") or []))
+    sections.append(compose_rules_section(policy, elder))
     return "\n\n".join(sections)
 
 
@@ -269,8 +242,12 @@ def compose_full_instructions(workspace: dict[str, Any]) -> str:
     return "\n\n".join(part for part in parts if part.strip())
 
 
+# ---------------------------------------------------------------------------
+# Workspace schema and migration
+# ---------------------------------------------------------------------------
+
 DEFAULT_WORKSPACE: dict[str, Any] = {
-    "schema_version": 1,
+    "schema_version": SCHEMA_VERSION,
     "profile": {
         "agent": {
             "name": "豆豆",
@@ -291,35 +268,8 @@ DEFAULT_WORKSPACE: dict[str, Any] = {
             },
         },
         "workshop2_blocks": copy.deepcopy(WORKSHOP2_PROMPT_BLOCKS),
-        "elder_profile": {
-            "name": "王美麗",
-            "address": "王奶奶",
-            "city": "台中",
-            "interests": ["種蘭花", "烹飪", "老歌"],
-        },
-        "memory_policy": {
-            "fact_retention_days": 365,
-            "event_retention_days": 30,
-            "allow_sensitive_credentials": False,
-        },
-        "proactive_policy": {
-            "quiet_hours": {"start": 22, "end": 8},
-            "cooldown_minutes": 30,
-            "daily_message_limit": 4,
-            "max_message_sentences": 2,
-            "priorities": {
-                "emergency": 100,
-                "reminder": 80,
-                "health": 60,
-                "weather": 40,
-                "reverse_mentor": 30,
-                "news": 20,
-            },
-        },
-        "safety_policy": {
-            "medical_advice": "不診斷，先確認安全並建議尋求專業協助",
-            "emergency": "優先確認安全並請真人照護者介入",
-        },
+        "elder_profile": copy.deepcopy(EMPTY_ELDER_PROFILE),
+        "proactive_policy": dict(DEFAULT_PROACTIVE_POLICY),
     },
     "memory": {"facts": [], "events": [], "summaries": []},
     # 待提醒項目 for the Workshop 2 trigger tab. The browser ticks the real clock
@@ -327,9 +277,9 @@ DEFAULT_WORKSPACE: dict[str, Any] = {
     # only ever being a number typed into a what-if field.
     "scheduled": [],
     # Real accumulated cost of the proactive messages 豆豆 has actually sent, as
-    # opposed to the what-if numbers in the manual trigger. 冷卻 and 每日上限 are
-    # meaningless if an F5 silently refunds the budget.
-    "proactive_state": {"last_spoken_at": None, "sent_today": 0, "day": ""},
+    # opposed to the what-if numbers in the manual trigger. `declined_until` is
+    # the 「她剛說不想聊」 button: it expires, or one press would silence her for good.
+    "proactive_state": {"last_spoken_at": None, "sent_today": 0, "day": "", "declined_until": None},
     "progress": {
         "workshop_1_completed": False,
         "workshop_2_completed": False,
@@ -346,8 +296,93 @@ def _merge_defaults(defaults: Any, value: Any) -> Any:
     return merged
 
 
+def _non_negative_int(value: Any, fallback: int) -> int:
+    try:
+        return max(0, int(value))
+    except (TypeError, ValueError):
+        return fallback
+
+
+def _migrate_policy(raw_policy: Any, policy: dict[str, Any]) -> None:
+    """cooldown → interval, daily_message_limit → daily_limit, then drop the rest.
+
+    Reads the *raw* file, not the merged result: after `_merge_defaults` the new
+    key already holds the default and a student's 60-minute cooldown would look
+    identical to nobody having set anything.
+    """
+
+    raw = raw_policy if isinstance(raw_policy, dict) else {}
+    if "interval_minutes" not in raw and "cooldown_minutes" in raw:
+        policy["interval_minutes"] = raw["cooldown_minutes"]
+    if "daily_limit" not in raw and "daily_message_limit" in raw:
+        policy["daily_limit"] = raw["daily_message_limit"]
+    for key in LEGACY_POLICY_KEYS:
+        policy.pop(key, None)
+    for key, default in DEFAULT_PROACTIVE_POLICY.items():
+        policy[key] = _non_negative_int(policy.get(key), default)
+
+
+def _same_entry(left: dict[str, Any], right: dict[str, Any]) -> bool:
+    return left["key"] == right["key"] and left["value"] == right["value"]
+
+
+def _normalize_memory(memory: Any) -> dict[str, list[dict[str, Any]]]:
+    """Every entry becomes `{key, value, source, tag, …}`; duplicates by key+value collapse.
+
+    Legacy plain-string entries and entries without a `source` are the model's own
+    writes, so they are marked `dodo`. Extra keys (`updated_at`) survive.
+
+    `dict(raw)` copies one level, which is all this needs: the only caller is
+    `normalize_workspace`, which passes the deep copy `_merge_defaults` already
+    made, so no nested value here is still shared with the caller's file.
+    """
+
+    source = memory if isinstance(memory, dict) else {}
+    result: dict[str, list[dict[str, Any]]] = {"facts": [], "events": [], "summaries": []}
+    for layer, entries in result.items():
+        for raw in source.get(layer) or []:
+            entry = dict(raw) if isinstance(raw, dict) else {"value": raw}
+            entry["key"] = str(entry.get("key") or "").strip()
+            entry["value"] = str(entry.get("value") or "").strip()
+            entry["source"] = entry.get("source") if entry.get("source") in MEMORY_SOURCES else "dodo"
+            entry["tag"] = str(entry["tag"]).strip() if entry.get("tag") else None
+            if not (entry["key"] or entry["value"]):
+                continue
+            if any(_same_entry(entry, existing) for existing in entries):
+                continue
+            entries.append(entry)
+    return result
+
+
+def _migrate_elder_profile(elder: dict[str, Any], memory: dict[str, list[dict[str, Any]]]) -> None:
+    """Schema-1 `interests` become caregiver-written A facts; list fields become lists.
+
+    Idempotent: `save_workspace` normalizes on every save, so a project must not
+    grow a new 興趣 fact each time it is written.
+    """
+
+    interests = elder.pop("interests", None)
+    for item in interests if isinstance(interests, list) else []:
+        text = str(item).strip()
+        entry = {"key": "興趣", "value": text, "tag": "interest", "source": "caregiver"}
+        if text and not any(_same_entry(entry, existing) for existing in memory["facts"]):
+            memory["facts"].append(entry)
+    # Which fields are text and which are lists is already stated once, in
+    # EMPTY_ELDER_PROFILE; a second list of names here would only drift from it.
+    for field, default in EMPTY_ELDER_PROFILE.items():
+        if isinstance(default, str):
+            elder[field] = str(elder.get(field) or "").strip()
+        elif isinstance(default, list) and not isinstance(elder.get(field), list):
+            elder[field] = []
+    contact = elder.get("emergency_contact")
+    elder["emergency_contact"] = {
+        **EMPTY_ELDER_PROFILE["emergency_contact"],
+        **(contact if isinstance(contact, dict) else {}),
+    }
+
+
 def normalize_workspace(value: dict[str, Any] | None) -> dict[str, Any]:
-    """Return a complete v1 workspace while preserving student customizations."""
+    """Return a complete schema-2 workspace while preserving student customizations."""
 
     if value is None:
         workspace = copy.deepcopy(DEFAULT_WORKSPACE)
@@ -357,10 +392,14 @@ def normalize_workspace(value: dict[str, Any] | None) -> dict[str, Any]:
         return workspace
     if not isinstance(value, dict):
         raise ValueError("Dodo 專案必須是 JSON object。")
-    if value.get("schema_version", 1) != 1:
-        raise ValueError("目前只支援 schema_version 1。")
+    if value.get("schema_version", 1) not in SUPPORTED_SCHEMA_VERSIONS:
+        raise ValueError("目前只支援 schema_version 1 或 2。")
     workspace = _merge_defaults(DEFAULT_WORKSPACE, value)
-    agent = workspace["profile"]["agent"]
+    workspace["schema_version"] = SCHEMA_VERSION
+    raw_profile = value.get("profile") if isinstance(value.get("profile"), dict) else {}
+    profile = workspace["profile"]
+
+    agent = profile["agent"]
     # Dropped on the way in, not just missing from the defaults: `_merge_defaults`
     # keeps every key the student's file carries, so an older 我的 Dodo would
     # re-export the output cap this project deliberately never sets.
@@ -370,7 +409,17 @@ def normalize_workspace(value: dict[str, Any] | None) -> dict[str, Any]:
     # memory and is composed at send time by `compose_full_instructions`.
     agent["system_prompt"] = compose_agent_prompt(agent)
     agent["voice"] = resolve_voice(agent.get("voice"))
-    workspace["profile"]["workshop2_blocks"] = workshop2_blocks_for(workspace["profile"])
+
+    # Dead schema-1 sections, same reasoning as `max_output_tokens`.
+    profile.pop("memory_policy", None)
+    profile.pop("safety_policy", None)
+    _migrate_policy(raw_profile.get("proactive_policy"), profile["proactive_policy"])
+    # Order matters: memory is normalized first because the elder migration appends
+    # 興趣 facts into it and dedupes against entries that must already be
+    # `{key, value, …}` dicts. Policy is independent of both.
+    workspace["memory"] = _normalize_memory(workspace.get("memory"))
+    _migrate_elder_profile(profile["elder_profile"], workspace["memory"])
+    profile["workshop2_blocks"] = workshop2_blocks_for(profile)
     return workspace
 
 
@@ -390,6 +439,8 @@ def save_workspace(workspace: dict[str, Any], path: Path = WORKSPACE_PATH) -> No
 
 
 def workshop2_starter() -> dict[str, Any]:
+    """Workshop 1 done, 建檔 empty — what a student who skipped the first class loads."""
+
     if WORKSHOP2_STARTER_PATH.exists():
         with WORKSHOP2_STARTER_PATH.open("r", encoding="utf-8") as file:
             return normalize_workspace(json.load(file))

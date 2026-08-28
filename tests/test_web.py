@@ -1,16 +1,15 @@
 import asyncio
+import json
 from pathlib import Path
 
 from dodo_workshop.web import (
     ApiKeyRequest,
-    ProactiveCheckRequest,
     WeatherRequest,
     WEB_DIR,
     active_weather_api_key,
     bootstrap,
     configure_api_key,
     configure_weather_api_key,
-    proactive_check,
     selected_realtime_voice,
     test_api_key as validate_api_key_without_saving,
     test_weather_api_key as validate_weather_api_key_without_saving,
@@ -386,17 +385,6 @@ def test_right_settings_panel_uses_jhenghei_and_minimum_fourteen_pixel_text() ->
     assert ".lab-panel :where(" in styles
     assert "font-size: 14px !important" in styles
 
-
-def test_default_proactive_policy_passes_six_scenarios() -> None:
-    workspace = bootstrap()["workshop2_starter"]
-    result = proactive_check(
-        ProactiveCheckRequest(policy=workspace["profile"]["proactive_policy"])
-    )
-
-    assert result["passed"]
-    assert len(result["results"]) == 6
-
-
 def test_weather_tool_uses_configured_legacy_service(monkeypatch) -> None:
     import dodo_workshop.web as web_module
 
@@ -673,10 +661,13 @@ def test_one_simulated_day_is_reachable_from_the_client() -> None:
     from dodo_workshop.web import DaySimulationRequest, proactive_simulate
 
     policy = bootstrap()["workshop2_starter"]["profile"]["proactive_policy"]
-    result = proactive_simulate(DaySimulationRequest(policy=policy))
+    result = proactive_simulate(DaySimulationRequest(policy=policy, gates="reference"))
 
     assert result["spoken"] + result["blocked"] == len(result["steps"])
-    assert result["missed_critical"] == 0 and result["noise"] >= 1
+    assert (result["missed_health"], result["noise"]) == (1, 2)
+    assert result["weekday"] == 2 and result["events_from"] == "reference"
+    # No student 建檔 was sent, so both of her medications come back as consequences.
+    assert [item["time"] for item in result["missing_reminders"]] == ["07:00", "21:00"]
     # Every step says which rule decided it — the timeline is the lesson.
     assert all(step["reason"] for step in result["steps"])
 
@@ -735,48 +726,36 @@ def test_proactive_can_actually_speak_first() -> None:
     from dodo_workshop.web import ProactiveDecideRequest, proactive_decide
 
     policy = bootstrap()["workshop2_starter"]["profile"]["proactive_policy"]
-    reminder = {"type": "reminder", "topic": "16:00 回診"}
+    elder = {"wake_time": "05:00", "bed_time": "21:30", "routines": []}
 
     allowed = proactive_decide(
         ProactiveDecideRequest(
             policy=policy,
-            scenario={
-                "time": "15:30",
-                "minutes_since_last_message": 90,
-                "messages_today": 1,
-                "events": [reminder],
-            },
+            elder_profile=elder,
+            scenario={"time": "15:30", "type": "chat", "minutes_since_last": 90, "sent_today": 1},
         )
     )
-    assert allowed["should_speak"]
-    assert allowed["event"]["type"] == "reminder"
+    assert allowed["should_speak"] and allowed["rule"] == "speak"
 
-    # Quiet hours still win for anything that is not an emergency.
+    # Bedtime still wins for anything that is not a reminder.
     quiet = proactive_decide(
-        ProactiveDecideRequest(policy=policy, scenario={"time": "23:30", "events": [reminder]})
+        ProactiveDecideRequest(policy=policy, elder_profile=elder, scenario={"time": "23:30", "type": "chat"})
     )
-    assert not quiet["should_speak"]
+    assert not quiet["should_speak"] and quiet["rule"] == "quiet"
 
-    emergency = proactive_decide(
+    reminder = proactive_decide(
         ProactiveDecideRequest(
             policy=policy,
-            scenario={
-                "time": "02:20",
-                "minutes_since_last_message": 1,
-                "messages_today": 9,
-                "user_declined": True,
-                "events": [{"type": "emergency", "topic": "跌倒"}],
-            },
+            elder_profile=elder,
+            scenario={"time": "23:30", "type": "reminder", "minutes_since_last": 1, "sent_today": 9, "user_declined": True},
         )
     )
-    assert emergency["should_speak"]
+    assert reminder["should_speak"] and reminder["rule"] == "reminder"
 
     with pytest.raises(HTTPException):
-        proactive_decide(ProactiveDecideRequest(policy=policy, scenario={"events": []}))
+        proactive_decide(ProactiveDecideRequest(policy=policy, scenario={"time": "15:30", "type": "emergency"}))
     with pytest.raises(HTTPException):
-        proactive_decide(
-            ProactiveDecideRequest(policy=policy, scenario={"time": "晚上", "events": [reminder]})
-        )
+        proactive_decide(ProactiveDecideRequest(policy=policy, scenario={"time": "晚上", "type": "chat"}))
 
     script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
@@ -865,25 +844,6 @@ def test_the_model_can_retract_exactly_one_remembered_value() -> None:
     # A miss must say what IS stored rather than silently reporting success.
     assert "找不到要移除的記錄" in tool
 
-
-def test_a_long_term_preference_is_an_accumulating_A_fact() -> None:
-    """Card 5 answered B, whose merge rule is 取代 — while its own explanation
-    promised 累積. A student following the card would have watched 鳳梨 and 西瓜
-    get eaten by 芭樂: the very bug the merge rules were added to fix."""
-
-    cards = bootstrap()["memory_cards"]
-    preference = next(card for card in cards if "鄧麗君" in card["text"])
-
-    assert preference["answer"] == "A"
-    assert "累積" in preference["explanation"] or "累加" in preference["explanation"]
-    # No card may promise 累積 on a layer that supersedes.
-    for card in cards:
-        if card["answer"] == "B":
-            assert "累積" not in card["explanation"], card["text"]
-    # The quiz still teaches all four buckets.
-    assert {card["answer"] for card in cards} == {"A", "B", "C", "X"}
-
-
 def test_a_saved_project_learns_the_new_memory_merge_rule() -> None:
     """A stored 記憶使用規則 wins over the default, so a project saved before the
     累加／replace rule existed would show a block that contradicts the behaviour
@@ -899,8 +859,9 @@ def test_a_saved_project_learns_the_new_memory_merge_rule() -> None:
     block = script.split("const MEMORY_USE_GUIDANCE = [")[1].split("\n];")[0]
     lines = [part.split("',")[0] for part in block.split("  '")[1:]]
     assert len(lines) == 2, lines
-    for line in lines:
-        assert line in profile_source, f"app.js and profile.py disagree on: {line[:30]}"
+    # The backend now retires the whole schema-1 block by prefix instead of
+    # patching lines into it; the browser-side patcher leaves with the old tab.
+    assert "LEGACY_MEMORY_USE_PREFIX" in profile_source
 
     migrate = script.split("function migrateWorkshop2Blocks(blocks) {")[1].split("\n}\n")[0]
     # Empty stays empty (deleted on purpose), and a block the student rewrote
@@ -936,10 +897,10 @@ def test_the_prompt_says_which_layer_a_preference_belongs_to() -> None:
 
     # …and the default block spells the same distinction out.
     assert "喜歡或不喜歡的食物" in memory_use
-    assert "layer=A" in memory_use and "一律存 layer=A" in memory_use
+    assert "layer=A" in memory_use and "新的不會吃掉舊的" in memory_use
     # B's example must not read as a preference any more.
     assert "今天想吃什麼" not in memory_use
-    assert "今天中午想吃什麼" in memory_use
+    assert "新的取代舊的" in memory_use
 
 
 def test_a_supersede_names_the_value_it_threw_away() -> None:
@@ -953,55 +914,6 @@ def test_a_supersede_names_the_value_it_threw_away() -> None:
     describe = script.split("function describeMemoryWrite(result, key, value) {")[1].split("\n}\n")[0]
     assert "丟掉了：${result.superseded.join" in describe
     assert "覆蓋原本" not in describe
-
-
-def test_memory_classification_writes_into_the_real_memory() -> None:
-    """The exercise scored itself and stopped. A right answer now lands in
-    `workspace.memory` on the layer the student picked — X writes nothing,
-    because refusing to store IS the right behaviour there."""
-
-    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
-    cards = bootstrap()["memory_cards"]
-
-    check = script.split("function checkMemory() {")[1].split("\n}\n")[0]
-    assert "upsertMemory(card.answer, card.key, card.value)" in check
-    assert 'card.answer !== "X"' in check
-    # Written outside the conversation, so the live session has to be told.
-    assert "pushMemoryToSession()" in check
-    assert "renderMemoryViewer();" in check
-    assert "檢查並寫入記憶" in page
-
-    # Every A/B/C card carries what to store; X cards deliberately do not.
-    for card in cards:
-        if card["answer"] == "X":
-            assert "key" not in card and "value" not in card, card["text"]
-        else:
-            assert card["key"] and card["value"], card["text"]
-
-
-def test_memory_cards_follow_the_students_own_elder_name() -> None:
-    """王奶奶 was hardcoded into the card text, so renaming 長者稱呼 left the
-    exercise talking about someone who no longer existed."""
-
-    script = (WEB_DIR / "app.js").read_text(encoding="utf-8")
-    lesson2 = (Path(__file__).resolve().parents[1] / "dodo_workshop" / "lesson2.py").read_text(
-        encoding="utf-8"
-    )
-    cards = bootstrap()["memory_cards"]
-
-    assert not any("王奶奶" in card["text"] for card in cards)
-    assert any("{USER_ADDRESS}" in card["text"] for card in cards)
-    assert 'replaceAll("{USER_ADDRESS}", elderAddress())' in script
-    assert '|| "長者"' in script
-    # Re-rendering on rename must not wipe answers already chosen.
-    render = script.split("function renderMemoryCards() {")[1].split("\n}\n")[0]
-    assert "const chosen = bootstrapData.memory_cards.map(" in render
-    assert 'if (value) $(`[data-memory-index="${index}"]`).value = value;' in render
-    assert '$("#elderAddress").addEventListener(event, renderMemoryCards)' in script
-    # The CLI reads the same file and has to substitute too.
-    assert "card['text'].replace('{USER_ADDRESS}', address)" in lesson2
-
 
 def test_proactive_policy_has_a_live_picture_and_self_explaining_fields() -> None:
     """Five bare number fields never showed what they add up to, and the manual
@@ -1242,3 +1154,107 @@ def test_proactive_event_types_are_rendered_from_the_project_priorities() -> Non
     # And the panel says so, rather than leaving students to assume integrations.
     assert "沒有串接任何資料來源" in page
     assert "沒有排程器" in page
+
+
+# --- Workshop 2 endpoints: 建檔 → 她的一天 → 今日摘要 --------------------------
+
+
+def test_intake_check_counts_sections_and_names_missing_reminders() -> None:
+    from dodo_workshop.web import IntakeCheckRequest, intake_check
+
+    empty = intake_check(IntakeCheckRequest())
+    assert {row["section"] for row in empty["completeness"]} == {
+        "medications", "routines", "symptoms", "interests", "taboos", "declined_notes", "emergency_contact",
+    }
+    assert not any(row["done"] for row in empty["completeness"])
+    assert [item["time"] for item in empty["missing_reminders"]] == ["07:00", "21:00"]
+
+    partial = intake_check(IntakeCheckRequest(elder_profile={"medications": [{"name": "藥", "time": "07:00"}]}))
+    assert [item["time"] for item in partial["missing_reminders"]] == ["21:00"]
+    assert next(row for row in partial["completeness"] if row["section"] == "medications")["have"] == 1
+
+
+def test_simulated_day_can_run_against_dodos_fixed_gates() -> None:
+    """The comparison toggle: same rules, her 作息 swapped for what production hard-codes."""
+
+    from dodo_workshop.web import DaySimulationRequest, proactive_simulate
+
+    policy = {"interval_minutes": 30, "daily_limit": 4}
+    hers = proactive_simulate(DaySimulationRequest(policy=policy, gates="reference"))
+    fixed = proactive_simulate(DaySimulationRequest(policy=policy, gates="dodo_fixed"))
+    by_time = {step["time"]: step for step in fixed["steps"]}
+
+    # 07:30 追問膝蓋 falls inside 22–08: 「她在睡」 by a clock that never met her.
+    assert by_time["07:30"]["rule"] == "quiet" and by_time["07:00"]["spoke"]
+    # And the 12:45 chat wakes her from a nap the fixed gates know nothing about.
+    assert by_time["12:45"]["spoke"]
+    assert fixed["schedule"]["quiet"]["label"].startswith("正式 dodo")
+    assert hers["schedule"]["dnd"][0]["label"] == "早餐"
+    assert fixed["gates"] == "dodo_fixed" and hers["gates"] == "reference"
+
+
+def test_a_students_own_day_is_grown_from_their_file() -> None:
+    from dodo_workshop.web import DaySimulationRequest, proactive_simulate
+
+    mine = proactive_simulate(
+        DaySimulationRequest(
+            policy={"interval_minutes": 30, "daily_limit": 4},
+            elder_profile={"wake_time": "06:00", "bed_time": "22:00", "medications": [{"name": "藥", "time": "08:00"}]},
+            memory={"facts": [], "events": []},
+            events_from="mine",
+        )
+    )
+
+    assert [step["time"] for step in mine["steps"] if step["type"] == "reminder"] == ["08:00"]
+    assert mine["missing_reminders"] == []  # the reference diff only makes sense against the shared day
+
+
+def test_day_summary_needs_a_key_and_sends_the_transcript_as_speakers(monkeypatch) -> None:
+    import pytest
+    from fastapi import HTTPException
+
+    import dodo_workshop.web as web_module
+    from dodo_workshop.web import DaySummaryRequest, TranscriptLine, day_summary
+
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setattr(web_module, "_runtime_api_key", None)
+    with pytest.raises(HTTPException) as refused:
+        day_summary(DaySummaryRequest(transcript=[TranscriptLine(role="user", text="膝蓋好多了")]))
+    assert refused.value.status_code == 503
+
+    seen: dict = {}
+
+    class FakeModel:
+        def __init__(self, api_key=None, offline=False):
+            seen["key"] = api_key
+
+        def generate(self, instructions, user_input, fallback=None):
+            seen["instructions"], seen["input"] = instructions, user_input
+            return "膝蓋這幾天好轉，下次可以問還會不會痛。"
+
+    monkeypatch.setattr(web_module, "_runtime_api_key", "sk-test")
+    monkeypatch.setattr(web_module, "TextModel", FakeModel)
+    result = day_summary(
+        DaySummaryRequest(
+            address="秀蘭阿嬤",
+            transcript=[TranscriptLine(role="user", text="膝蓋好多了"), TranscriptLine(role="dodo", text="太好了")],
+        )
+    )
+
+    assert result["summary"].startswith("膝蓋")
+    assert seen["key"] == "sk-test"
+    assert seen["input"] == "長者：膝蓋好多了\n豆豆：太好了"
+    assert "秀蘭阿嬤" in seen["instructions"] and "不寫密碼" in seen["instructions"]
+
+
+def test_bootstrap_ships_the_interview_but_never_the_answer_key() -> None:
+    data = bootstrap()
+
+    assert data["interview_markdown"].startswith("# 訪談稿：秀蘭阿嬤")
+    assert data["simulated_weekday"] == 2 and data["completeness_expected"]["symptoms"] == 3
+    assert set(data["event_types"]) == {"reminder", "health", "chat"}
+    assert "memory_cards" not in data and "proactive_scenarios" not in data
+    dumped = json.dumps(data, ensure_ascii=False)
+    # The taboo *rules* exist only in the reference file; the interview never says them.
+    assert "她自己提起才回應" not in dumped
+    assert "expected_counts" not in data and "reference" not in data

@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 
 from dodo_workshop.lesson1 import run_lesson1
-from dodo_workshop.lesson2 import run_memory_quiz, run_proactive_lab
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -21,12 +20,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     lesson1 = subparsers.add_parser("lesson1", help="文字模擬語音 Agent 回合控制")
     lesson1.add_argument("--offline", action="store_true", help="不呼叫 OpenAI API")
-
-    subparsers.add_parser("lesson2-memory", help="三層記憶分類挑戰")
-
-    lesson2 = subparsers.add_parser("lesson2-agent", help="主動 Agent 情境測試")
-    lesson2.add_argument("--offline", action="store_true", help="不呼叫 OpenAI API")
-    lesson2.add_argument("--all", action="store_true", help="不等待 Enter，連續跑完情境")
+    # Workshop 2 has no CLI path any more: 建檔、她的一天 and the live trigger all
+    # need the browser client. The old quiz／lab commands left with the 王奶奶 era.
     return parser
 
 
@@ -43,10 +38,6 @@ def main() -> None:
         )
     elif args.command == "lesson1":
         run_lesson1(offline=args.offline)
-    elif args.command == "lesson2-memory":
-        run_memory_quiz()
-    elif args.command == "lesson2-agent":
-        run_proactive_lab(offline=args.offline, run_all=args.all)
 
 
 if __name__ == "__main__":

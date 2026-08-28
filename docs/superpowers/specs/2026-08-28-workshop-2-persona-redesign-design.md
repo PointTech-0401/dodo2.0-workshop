@@ -365,4 +365,4 @@ Barry 對現在第二堂的判斷：「方向不好、過於枯燥」。三個�
 
 複雜度：**高**。估 4–5 個工作 session：階段 1–3 一個、階段 4 半個、階段 5–7 兩個、階段 8 半個。
 
-2026-08-28 進度：階段 1、2 完成（見 git log）。
+2026-08-28 進度：階段 1–3 完成（分支 `w2-persona`，見 git log）。階段 3 稽核抽出 `dodo_workshop/prompt_sections.py`（四段生成段落）；`MEMORY_PREVIEW_LIMIT` 改為 16（參考建檔有 13 筆 A 層事實，必須整份進得了模型），**前端 `app.js` 仍是 8，階段 7 必須同步並由 golden fixture 釘住**。

@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
+import re
+from datetime import date
 from typing import Any, Literal
 
 import httpx
@@ -14,7 +15,18 @@ from openai import OpenAI
 from pydantic import BaseModel, Field
 
 from dodo_workshop.config import ROOT, load_json
-from dodo_workshop.lesson2 import choose_event, simulate_day
+from dodo_workshop.intake import completeness, missing_reminders
+from dodo_workshop.llm import TextModel
+from dodo_workshop.proactive import (
+    EVENT_TYPES,
+    RULE_LABELS,
+    Schedule,
+    Window,
+    build_day,
+    build_schedule,
+    choose_event,
+    simulate_day,
+)
 from dodo_workshop.profile import (
     REALTIME_VOICES,
     normalize_workspace,
@@ -25,6 +37,10 @@ from dodo_workshop.weather import get_weather
 
 
 WEB_DIR = ROOT / "web"
+INTERVIEW_PATH = ROOT / "scenarios" / "interview.md"
+# The answer key stays server-side: the browser gets the interview, the expected
+# counts and the results, never the reference 建檔 itself.
+REFERENCE = load_json("scenarios/reference_profile.json")
 load_dotenv(ROOT / ".env")
 
 # Pinning the STT language stops the transcriber from free-guessing and
@@ -32,6 +48,20 @@ load_dotenv(ROOT / ".env")
 # dodo project pins `language` + a zh-Hant prompt at mint time.
 STT_TRANSCRIPTION_PROMPT = (
     "請使用臺灣繁體中文記錄逐字稿，採用臺灣慣用詞，不要使用簡體字。"
+)
+HHMM = re.compile(r"^([01]?\d|2[0-3]):[0-5]\d$")
+# What the production orchestrator hard-codes today (dodo spec §7.2): a fixed
+# do-not-disturb window that only medication crosses, and meal windows. The
+# comparison toggle runs the student's rules against this instead of her 作息.
+DODO_FIXED_SCHEDULE = Schedule(
+    quiet=Window("正式 dodo 勿擾 22:00–08:00", 22 * 60, 8 * 60),
+    dnd=(Window("用餐 11:00–12:00", 11 * 60, 12 * 60), Window("用餐 17:00–18:00", 17 * 60, 18 * 60)),
+    wake=8 * 60,
+)
+SUMMARY_INSTRUCTIONS = (
+    "你是照護系統的摘要器。把下面{address}與豆豆今天的對話整理成一到兩句「跨日摘要」（記憶 C 層）："
+    "只寫值得下次接著聊的趨勢、心情或身體狀況的變化；不寫密碼、帳號、第三人的健康、對家人或員工的評價；"
+    "不加標題與條列，直接輸出句子，用臺灣繁體中文。"
 )
 
 app = FastAPI(title="dodo 2.0 Workshop")
@@ -87,30 +117,67 @@ class ApiKeyRequest(BaseModel):
     api_key: str
 
 
-class ProactiveCheckRequest(BaseModel):
-    policy: dict[str, Any]
+class ProactiveScenario(BaseModel):
+    """One moment, described by hand in the trigger tab.
+
+    The defaults are 「很久沒講話、今天還沒講過、她沒拒絕」, so a half-filled form
+    still decides something. `type` stays a plain `str` rather than a `Literal` on
+    purpose: `EVENT_TYPES` in `proactive.py` is its only authority, and an unknown
+    value should reach the student as the Chinese 400 below, not a pydantic 422.
+    """
+
+    time: str = "12:00"
+    type: str = "chat"
+    minutes_since_last: int = Field(default=24 * 60, ge=0)
+    sent_today: int = Field(default=0, ge=0)
+    user_declined: bool = False
 
 
 class ProactiveDecideRequest(BaseModel):
-    """One ad-hoc scenario, so the classroom can trigger 主動關心 for real.
+    """One situation, decided by the same rules the simulated day uses.
 
-    The 6 fixed scenarios only ever proved the rules on paper; this runs the very
-    same `choose_event` on a situation the student describes, and the browser then
-    lets 豆豆 speak first when the rules allow it.
+    The browser sends the student's 建檔 so the quiet and do-not-disturb windows
+    come from her 作息; `weekday` defaults to today because this is the real clock.
     """
 
     policy: dict[str, Any]
-    scenario: dict[str, Any]
+    scenario: ProactiveScenario = Field(default_factory=ProactiveScenario)
+    elder_profile: dict[str, Any] = Field(default_factory=dict)
+    weekday: int | None = Field(default=None, ge=1, le=7)
 
 
 class DaySimulationRequest(BaseModel):
-    """Replay one scripted 24 hours through the student's own rules.
+    """Replay one day through the student's two knobs.
 
-    The feed stays server-side: the point is to change the *policy* and see the
-    same day come out differently, not to edit the day until it scores well.
+    `events_from="reference"` is the shared story: the whole class runs the same
+    星期二 grown from the reference 建檔, so the instructor can narrate one result.
+    The student's own 建檔 still matters twice — it supplies the schedule
+    (`gates="routines"`), and the reminders it lacks are listed back as consequences.
     """
 
     policy: dict[str, Any]
+    elder_profile: dict[str, Any] = Field(default_factory=dict)
+    memory: dict[str, Any] = Field(default_factory=dict)
+    events_from: Literal["reference", "mine"] = "reference"
+    gates: Literal["routines", "reference", "dodo_fixed"] = "routines"
+    weekday: int | None = Field(default=None, ge=1, le=7)
+
+
+class IntakeCheckRequest(BaseModel):
+    elder_profile: dict[str, Any] = Field(default_factory=dict)
+    memory: dict[str, Any] = Field(default_factory=dict)
+
+
+class TranscriptLine(BaseModel):
+    role: Literal["user", "dodo"]
+    text: str = Field(min_length=1, max_length=2000)
+
+
+class DaySummaryRequest(BaseModel):
+    """Today's conversation → one or two sentences for Layer C. Needs a key."""
+
+    address: str = "長者"
+    transcript: list[TranscriptLine] = Field(min_length=1, max_length=200)
 
 
 class WeatherRequest(BaseModel):
@@ -128,8 +195,11 @@ def bootstrap() -> dict[str, Any]:
     return {
         "default_workspace": normalize_workspace(None),
         "workshop2_starter": workshop2_starter(),
-        "memory_cards": load_json("scenarios/memory_cards.json"),
-        "proactive_scenarios": load_json("scenarios/proactive_scenarios.json"),
+        "interview_markdown": INTERVIEW_PATH.read_text(encoding="utf-8"),
+        "simulated_weekday": REFERENCE["simulated_weekday"],
+        "completeness_expected": REFERENCE["expected_counts"],
+        "event_types": EVENT_TYPES,
+        "rule_labels": RULE_LABELS,
         "api_configured": bool(api_key),
         "api_key_source": "session" if _runtime_api_key else ("environment" if api_key else None),
         "realtime_model": os.getenv("OPENAI_REALTIME_MODEL", "gpt-realtime-2"),
@@ -217,29 +287,25 @@ async def configure_weather_api_key(payload: ApiKeyRequest) -> dict[str, Any]:
     return {"configured": True, "source": "session"}
 
 
-@app.post("/api/proactive-check")
-def proactive_check(payload: ProactiveCheckRequest) -> dict[str, Any]:
-    policy = payload.policy
-    scenarios = load_json("scenarios/proactive_scenarios.json")
-    results = []
-    for scenario in scenarios:
-        decision = choose_event(scenario, policy)
-        expected = scenario.get("expected", {})
-        selected_type = decision.event.get("type") if decision.event else None
-        passed = (
-            decision.should_speak == expected.get("should_speak")
-            and (not decision.should_speak or selected_type == expected.get("event_type"))
-        )
-        results.append(
-            {
-                "name": scenario["name"],
-                "should_speak": decision.should_speak,
-                "reason": decision.reason,
-                "event_type": selected_type,
-                "passed": passed,
-            }
-        )
-    return {"results": results, "passed": all(item["passed"] for item in results)}
+# ---------------------------------------------------------------------------
+# Workshop 2: 建檔 → 她的一天 → 真的開口
+# ---------------------------------------------------------------------------
+
+
+def _weekday_or_today(weekday: int | None) -> int:
+    return weekday or date.today().isoweekday()
+
+
+def _schedule_for(payload: DaySimulationRequest, weekday: int) -> Schedule:
+    if payload.gates == "dodo_fixed":
+        return DODO_FIXED_SCHEDULE
+    if payload.gates == "reference":
+        return build_schedule(REFERENCE["elder_profile"], weekday)
+    return build_schedule(payload.elder_profile, weekday)
+
+
+def _window_json(window: Window | None) -> dict[str, Any] | None:
+    return None if window is None else {"label": window.label, "start": window.start, "end": window.end}
 
 
 @app.post("/api/proactive-decide")
@@ -250,40 +316,89 @@ def proactive_decide(payload: ProactiveDecideRequest) -> dict[str, Any]:
     session — keeping the two apart is the whole point of Workshop 2's 實作二.
     """
 
-    scenario = {
-        "time": "12:00",
-        "minutes_since_last_message": 999,
-        "messages_today": 0,
-        "user_declined": False,
-        "events": [],
-        **payload.scenario,
-    }
-    if not scenario["events"]:
-        raise HTTPException(status_code=400, detail="請至少提供一個主動事件。")
+    scenario = payload.scenario
+    if scenario.type not in EVENT_TYPES:
+        raise HTTPException(status_code=400, detail="事件類型只有重要提醒、健康關心、閒聊三種。")
+    if not HHMM.match(scenario.time):
+        raise HTTPException(status_code=400, detail="時間格式必須是 HH:MM。")
+    schedule = build_schedule(payload.elder_profile, _weekday_or_today(payload.weekday))
     try:
-        decision = choose_event(scenario, payload.policy)
-    except ValueError as exc:  # bad HH:MM — strptime raises here
-        raise HTTPException(status_code=400, detail="時間格式必須是 HH:MM。") from exc
-    except (KeyError, TypeError) as exc:
-        raise HTTPException(status_code=400, detail="主動規則不完整，請重新保存設定。") from exc
+        decision = choose_event(scenario.model_dump(), payload.policy, schedule)
+    except (KeyError, TypeError, ValueError) as exc:  # `policy` is still a free dict
+        raise HTTPException(status_code=400, detail="主動規則不完整，請重新套用設定。") from exc
     return {
         "should_speak": decision.should_speak,
+        "rule": decision.rule,
         "reason": decision.reason,
-        "event": decision.event,
+        "type_label": EVENT_TYPES[scenario.type],
     }
 
 
 @app.post("/api/proactive-simulate")
 def proactive_simulate(payload: DaySimulationRequest) -> dict[str, Any]:
-    """One day, the student's rules, two numbers that pull against each other."""
+    """One day, the student's two knobs, two numbers that pull against each other."""
 
-    feed = load_json("scenarios/day_timeline.json")
+    weekday = payload.weekday or int(REFERENCE["simulated_weekday"])
+    if payload.events_from == "mine":
+        feed = build_day(payload.elder_profile, payload.memory, weekday)
+    else:
+        feed = build_day(REFERENCE["elder_profile"], REFERENCE["memory"], weekday)
+    schedule = _schedule_for(payload, weekday)
     try:
-        return simulate_day(feed, payload.policy)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail="時間格式必須是 HH:MM。") from exc
-    except (KeyError, TypeError) as exc:
+        result = simulate_day(feed, payload.policy, schedule)
+    except (KeyError, TypeError, ValueError) as exc:
         raise HTTPException(status_code=400, detail="主動規則不完整，請重新套用設定。") from exc
+    return {
+        **result,
+        "weekday": weekday,
+        "events_from": payload.events_from,
+        "gates": payload.gates,
+        "schedule": {"quiet": _window_json(schedule.quiet), "dnd": [_window_json(w) for w in schedule.dnd]},
+        # Only meaningful against the shared day: what her real care file has that
+        # the student's does not — 「參考有 21:00 安眠藥，你的沒有 → 她今晚沒吃藥」.
+        "missing_reminders": (
+            missing_reminders(payload.elder_profile, REFERENCE["elder_profile"], weekday)
+            if payload.events_from == "reference"
+            else []
+        ),
+    }
+
+
+@app.post("/api/intake-check")
+def intake_check(payload: IntakeCheckRequest) -> dict[str, Any]:
+    """Counts per section plus the reminders the reference has and this file lacks.
+
+    Deliberately not a grade: whether the content is right is answered by 她的一天
+    and by 豆豆's own answers, not by an answer key the student never sees.
+    """
+
+    weekday = int(REFERENCE["simulated_weekday"])
+    return {
+        "completeness": completeness(payload.elder_profile, payload.memory, REFERENCE["expected_counts"]),
+        "missing_reminders": missing_reminders(payload.elder_profile, REFERENCE["elder_profile"], weekday),
+        "weekday": weekday,
+    }
+
+
+@app.post("/api/day-summary")
+def day_summary(payload: DaySummaryRequest) -> dict[str, Any]:
+    """Layer C is grown from the conversation, not typed: the one write nobody makes by hand."""
+
+    api_key = active_api_key()
+    if not api_key:
+        raise HTTPException(status_code=503, detail="尚未設定 OPENAI_API_KEY，無法產生今日摘要。")
+    transcript = "\n".join(
+        f"{'長者' if line.role == 'user' else '豆豆'}：{line.text.strip()}" for line in payload.transcript
+    )
+    try:
+        summary = TextModel(api_key=api_key).generate(
+            SUMMARY_INSTRUCTIONS.format(address=payload.address.strip() or "長者"), transcript
+        )
+    except RuntimeError as exc:  # offline mode has no fallback for a real summary
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="摘要服務暫時無法連線，請稍後再試。") from exc
+    return {"summary": summary}
 
 
 @app.post("/api/tools/weather")

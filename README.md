@@ -147,21 +147,14 @@ uv run python app.py
 uv run python app.py init
 ```
 
-保留的 CLI 指令供講師備援或單元測試使用：
+保留的 CLI 指令供講師備援或單元測試使用（第二堂沒有 CLI：建檔、她的一天與真的開口都在瀏覽器客端）：
 
 ```powershell
 # 第一堂 CLI 備援：明確標示為文字事件預演，不代表真實 VAD
 uv run python app.py lesson1
 
-# 第二堂：三層記憶分類
-uv run python app.py lesson2-memory
-
-# 第二堂：主動 Agent 情境測試
-uv run python app.py lesson2-agent
-
 # 明確的離線 CLI 示範（瀏覽器不使用假回覆）
 uv run python app.py lesson1 --offline
-uv run python app.py lesson2-agent --offline --all
 
 # 測試
 uv run pytest

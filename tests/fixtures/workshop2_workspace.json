@@ -1,0 +1,291 @@
+{
+  "schema_version": 2,
+  "profile": {
+    "agent": {
+      "name": "豆豆",
+      "address": "王奶奶",
+      "prompt_blocks": {
+        "identity": "你是「{AGENT_NAME}」，陪伴 {USER_ADDRESS} 的虛擬孫女。\n你的目標不是完成一次問答，而是透過每一次自然、可信賴的對話，慢慢建立長期的陪伴關係。",
+        "personality_tone": "語調輕柔緩慢，像最親密的家人在關懷。\n語速比平常慢約二成，給對方充足時間理解與回應。\n保持溫暖、耐心、咬字清楚與音調平穩；不要刻意裝可愛，也不要把對方當成小孩。",
+        "conversation_style": "自然地聊天、傾聽與回應，不要像客服或問卷。\n先回應對方真正關心的事；資訊不足時先簡短確認，不自行猜測。\n一次只問一件事，避免連續追問；回答要適合直接朗讀，不使用表格。\n需要查天氣或讀寫記憶之前，先用一句話說明你正要做什麼，再去查（這句開場叫 preamble）。",
+        "language": "中文（繁體／國語）為主要語言。\n不要主動把整段回答切換成英文、日文或其他語言；即使工具內容或專有名詞夾雜其他語言，回答仍以臺灣國語與繁體中文為主。\n如果 {USER_ADDRESS} 明確詢問某個詞的外語說法，可以用國語解釋並附上該詞。避免中國大陸用語與年輕世代網路用語。",
+        "safety": "不要自行做醫療診斷，也不要假裝知道未提供的資訊。\n遇到可能危及安全的狀況，先用簡短、清楚的方式確認當下安全，並建議尋求真人或專業協助。"
+      },
+      "system_prompt": "# 角色與身分\n你是「豆豆」，陪伴 王奶奶 的虛擬孫女。\n你的目標不是完成一次問答，而是透過每一次自然、可信賴的對話，慢慢建立長期的陪伴關係。\n\n# 個性與聲音\n語調輕柔緩慢，像最親密的家人在關懷。\n語速比平常慢約二成，給對方充足時間理解與回應。\n保持溫暖、耐心、咬字清楚與音調平穩；不要刻意裝可愛，也不要把對方當成小孩。\n\n# 對話方式\n自然地聊天、傾聽與回應，不要像客服或問卷。\n先回應對方真正關心的事；資訊不足時先簡短確認，不自行猜測。\n一次只問一件事，避免連續追問；回答要適合直接朗讀，不使用表格。\n需要查天氣或讀寫記憶之前，先用一句話說明你正要做什麼，再去查（這句開場叫 preamble）。\n\n# 語言\n中文（繁體／國語）為主要語言。\n不要主動把整段回答切換成英文、日文或其他語言；即使工具內容或專有名詞夾雜其他語言，回答仍以臺灣國語與繁體中文為主。\n如果 王奶奶 明確詢問某個詞的外語說法，可以用國語解釋並附上該詞。避免中國大陸用語與年輕世代網路用語。\n\n# 邊界與安全\n不要自行做醫療診斷，也不要假裝知道未提供的資訊。\n遇到可能危及安全的狀況，先用簡短、清楚的方式確認當下安全，並建議尋求真人或專業協助。",
+      "voice": "sage"
+    },
+    "realtime": {
+      "turn_detection": {
+        "type": "semantic_vad",
+        "eagerness": "low",
+        "threshold": 0.5,
+        "prefix_padding_ms": 300,
+        "silence_duration_ms": 800,
+        "create_response": true,
+        "interrupt_response": true
+      }
+    },
+    "workshop2_blocks": {
+      "memory_use": "記憶分三層，用 read_memory 讀、用 update_memory 寫，寫入時指定 layer：\nA 重要事實（layer=A）：過敏、慢性病、醫囑、緊急聯絡人，以及長期偏好（喜歡或不喜歡的食物、音樂、活動）。同一個 key 可以並存多筆，新的不會吃掉舊的。標［護理員］的是護理員建的，你不能改也不能刪；她要改，請她告訴護理員。\nB 近期事件（layer=B）：這幾天的身體狀況與心情、當下的念頭。同一件事新的取代舊的 —— 她說膝蓋好多了，就用 mode=\"replace\" 把舊的那筆換掉，追問才會停。\nC 跨日摘要：由系統整理，不要自己寫。\n不保存：密碼、卡號、帳號、驗證碼；第三人的健康；對家人或員工的評價。也不要在對話中複誦。\n她否定某一筆已經記得的事時用 mode=\"remove\"，不要新增一筆相反的。提起記憶時像家人記得，不像唸資料庫；不確定就先問一句。",
+      "attitude_reminder": "先叫她的稱呼，一句講清楚時間與該做的事（藥、要帶的東西），不解釋為什麼，不催。說一次就好。",
+      "attitude_health": "先問感覺，不給建議、不說「要多注意」、不推測原因。她說好了，就用 update_memory 把那一筆換掉；她說沒好，就聽她講，不要連續追問。",
+      "attitude_chat": "從她的興趣起頭，一次一件，兩句以內。可以用「我問您喔」請教她會的事，讓她當老師。碰到「不主動提起」清單裡的事，等她自己開口。"
+    },
+    "elder_profile": {
+      "name": "邱秀蘭",
+      "address": "秀蘭阿嬤",
+      "room": "305",
+      "city": "苗栗",
+      "background": "客家人，苗栗公館市場賣麵三十年（熬湯頭、切滷味、記客人）；先生三年前過世；一子一女、兩孫",
+      "language": "國語為主，夾雜客語",
+      "expertise": [
+        "煮麵（滾水下、不要攪、撈起來甩兩下）",
+        "熬大骨湯頭",
+        "做生意記客人、應付難搞的客人"
+      ],
+      "wake_time": "05:00",
+      "bed_time": "21:30",
+      "routines": [
+        {
+          "label": "走廊運動",
+          "start": "05:30",
+          "end": "06:00",
+          "do_not_disturb": false,
+          "weekdays": []
+        },
+        {
+          "label": "早餐",
+          "start": "06:30",
+          "end": "07:00",
+          "do_not_disturb": true,
+          "weekdays": []
+        },
+        {
+          "label": "午餐",
+          "start": "11:00",
+          "end": "11:30",
+          "do_not_disturb": true,
+          "weekdays": []
+        },
+        {
+          "label": "午睡",
+          "start": "12:30",
+          "end": "14:00",
+          "do_not_disturb": true,
+          "weekdays": []
+        },
+        {
+          "label": "歌唱班",
+          "start": "15:00",
+          "end": "16:00",
+          "do_not_disturb": true,
+          "weekdays": [
+            2,
+            4
+          ]
+        },
+        {
+          "label": "晚餐",
+          "start": "17:00",
+          "end": "17:30",
+          "do_not_disturb": true,
+          "weekdays": []
+        },
+        {
+          "label": "八點檔",
+          "start": "20:00",
+          "end": "21:00",
+          "do_not_disturb": true,
+          "weekdays": []
+        }
+      ],
+      "medications": [
+        {
+          "name": "血壓藥、血糖藥",
+          "time": "07:00",
+          "note": "早餐後，配溫水"
+        },
+        {
+          "name": "安眠藥半顆",
+          "time": "21:00",
+          "note": ""
+        }
+      ],
+      "appointments": [
+        {
+          "label": "復健（膝蓋電療、熱敷）",
+          "weekday": 3,
+          "time": "09:30",
+          "note": "復健師來帶，做一個小時"
+        },
+        {
+          "label": "回診 新陳代謝科",
+          "date": "2026-09-04",
+          "time": "09:00",
+          "note": "帶健保卡、藥袋，護理師陪"
+        }
+      ],
+      "emergency_contact": {
+        "name": "邱志明",
+        "relation": "兒子",
+        "phone": ""
+      },
+      "taboos": [
+        {
+          "topic": "先生臥床六年與過世",
+          "rule": "她自己提起才回應，不主動問"
+        },
+        {
+          "topic": "兒子多久來一次",
+          "rule": "不主動問，她會替兒子辯護"
+        },
+        {
+          "topic": "膝蓋不會好了",
+          "rule": "不說教、不糾正，先接住情緒"
+        }
+      ],
+      "declined_notes": [
+        {
+          "text": "隔壁床阿桂糖尿病比她嚴重、偷吃糖",
+          "reason": "第三人的健康資料，沒有人同意過"
+        },
+        {
+          "text": "存摺印章放衣櫃最下層、毛巾包著",
+          "reason": "財物位置不該進陪伴 AI 的記憶"
+        },
+        {
+          "text": "媳婦很現實、不太理她",
+          "reason": "對家人的情緒性評價，存成事實就會被反覆提起"
+        },
+        {
+          "text": "新來的照服員做事粗",
+          "reason": "對員工的評價，不是長者本人的資料"
+        }
+      ]
+    },
+    "proactive_policy": {
+      "interval_minutes": 30,
+      "daily_limit": 4
+    }
+  },
+  "memory": {
+    "facts": [
+      {
+        "key": "喜歡的歌",
+        "value": "《望春風》",
+        "tag": "interest",
+        "source": "caregiver"
+      },
+      {
+        "key": "喜歡的歌",
+        "value": "《雨夜花》",
+        "tag": "interest",
+        "source": "caregiver"
+      },
+      {
+        "key": "喜歡的歌",
+        "value": "鳳飛飛《掌聲響起》（最愛）",
+        "tag": "interest",
+        "source": "caregiver"
+      },
+      {
+        "key": "喜歡的歌",
+        "value": "鄧麗君的歌",
+        "tag": "interest",
+        "source": "caregiver"
+      },
+      {
+        "key": "興趣",
+        "value": "唱歌（歌唱班星期二、四下午三點）",
+        "tag": "interest",
+        "source": "caregiver"
+      },
+      {
+        "key": "興趣",
+        "value": "看歌唱節目與八點檔",
+        "tag": "interest",
+        "source": "caregiver"
+      },
+      {
+        "key": "興趣",
+        "value": "窗台種九層塔、辣椒",
+        "tag": "interest",
+        "source": "caregiver"
+      },
+      {
+        "key": "興趣",
+        "value": "四色牌（以前打，現在沒人打）",
+        "tag": "interest",
+        "source": "caregiver"
+      },
+      {
+        "key": "口味",
+        "value": "清淡，但愛鹹（鹹粥、鹹菜）",
+        "tag": "preference",
+        "source": "caregiver"
+      },
+      {
+        "key": "懷念的食物",
+        "value": "客家小炒",
+        "tag": "preference",
+        "source": "caregiver"
+      },
+      {
+        "key": "懷念的食物",
+        "value": "粄條",
+        "tag": "preference",
+        "source": "caregiver"
+      },
+      {
+        "key": "醫囑",
+        "value": "少甜、少油、多喝水",
+        "tag": "medical_note",
+        "source": "caregiver"
+      },
+      {
+        "key": "醫囑",
+        "value": "膝蓋不要蹲",
+        "tag": "medical_note",
+        "source": "caregiver"
+      }
+    ],
+    "events": [
+      {
+        "key": "膝蓋",
+        "value": "右膝這幾天更痛，下雨天更痛（上週開始）",
+        "tag": "symptom",
+        "source": "caregiver"
+      },
+      {
+        "key": "頭暈",
+        "value": "站起來會暈一下，扶著站一下就好（這兩天）",
+        "tag": "symptom",
+        "source": "caregiver"
+      },
+      {
+        "key": "睡眠",
+        "value": "這禮拜兩三點就醒，醒了睡不回去",
+        "tag": "symptom",
+        "source": "caregiver"
+      },
+      {
+        "key": "想吃的東西",
+        "value": "鹹粥（這兩天）",
+        "tag": "note",
+        "source": "caregiver"
+      }
+    ],
+    "summaries": []
+  },
+  "scheduled": [],
+  "proactive_state": {
+    "last_spoken_at": null,
+    "sent_today": 0,
+    "day": "",
+    "declined_until": null
+  },
+  "progress": {
+    "workshop_1_completed": false,
+    "workshop_2_completed": false
+  }
+}
