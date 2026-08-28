@@ -1212,6 +1212,12 @@ async function fireScheduledItem(item) {
 async function tickScheduler() {
   renderScheduleList();
   renderProactiveLiveState();
+  // A decline expires by itself, and so does the band's 現在 marker. Decisions
+  // read isDeclinedNow() fresh so they were always right, but nothing redrew the
+  // display — leaving the button claiming she still refuses long after she
+  // stopped. This tick is the page's only clock; expiry has to be shown here.
+  renderDeclineState();
+  renderPolicyPreview();
   if (!$("#scheduleAuto").checked || schedulerBusy) return;
   const nowText = `${pad2(new Date().getHours())}:${pad2(new Date().getMinutes())}`;
   const order = Object.keys(bootstrapData?.event_types || {});
@@ -1631,10 +1637,6 @@ function init() {
   // the band is on a different tab, which is exactly why it is easy to forget.
   Object.values(ROW_KINDS).forEach(({ container }) => {
     ["input", "change"].forEach((event) => $(container).addEventListener(event, renderPolicyPreview));
-  });
-  bindFieldEvents(["#elderWake", "#elderBed"], () => {
-    renderPolicyPreview();
-    renderTriggerHints();
   });
   // Read-only on purpose: 上床／起床 and 不打擾 are facts about her life, so the
   // band sends you to 建檔 rather than letting you edit them here.

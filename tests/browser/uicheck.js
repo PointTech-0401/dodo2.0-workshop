@@ -473,6 +473,23 @@ $("#declineChat").click();
 ok("pressing again lets her back in", $("#declineChat").textContent.includes("她剛說不想聊")
    && !$("#policyBinding").textContent.includes("不想聊"));
 
+// A decline EXPIRES. Decisions read isDeclinedNow() fresh, so they stay right —
+// but nothing was redrawing the display, so an hour later the button still said
+// 「取消（她願意聊了）」 and 現在哪條規則在卡人 still named 不想聊 until the student
+// happened to touch a field. Same class of lie this tab exists to kill.
+$t.workspace.proactive_state.declined_until = new Date(Date.now() - 60000).toISOString();
+$("#declineChat").click();          // decline again, so the display is "active"
+$t.workspace.proactive_state.declined_until = new Date(Date.now() - 60000).toISOString();
+$("#scheduleAuto").checked = true; fire("#scheduleAuto", "change");
+await new Promise((r) => setTimeout(r, 250));
+ok("an expired decline stops claiming she is still refusing",
+   $("#declineChat").textContent.includes("她剛說不想聊"), $("#declineChat").textContent);
+ok("...and the blocking line lets 閒聊 through again",
+   !$("#policyBinding").textContent.includes("不想聊"), $("#policyBinding").textContent.slice(0, 90));
+ok("...and says the last decline已失效 rather than nothing",
+   $("#declineState").textContent.includes("失效"), $("#declineState").textContent);
+$("#scheduleAuto").checked = false; fire("#scheduleAuto", "change");
+
 // --- 跑一整天 names the rule that did the blocking ------------------------
 // The most direct answer this page has to 「為什麼要設計這條規則」. The tally is the
 // decider's own `blocked_by`, named through bootstrap's `rule_labels`, so a

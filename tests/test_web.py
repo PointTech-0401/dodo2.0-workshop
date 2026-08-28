@@ -1056,6 +1056,11 @@ def test_scheduled_reminders_fire_on_the_real_clock() -> None:
     assert "bootstrapData?.event_types" in tick
     assert "priorities" not in tick
     assert "rank(left) - rank(right)" in tick
+    # The 5s tick is the page's only clock, so anything that expires by itself
+    # has to be redrawn from here. Decisions read isDeclinedNow() fresh and were
+    # always right; the display was not, leaving the button claiming she still
+    # refused long after she had stopped.
+    assert "renderDeclineState();" in tick and "renderPolicyPreview();" in tick
 
     fire = script.split("async function fireScheduledItem(item) {")[1].split("\n}\n")[0]
     # Real clock and real accumulated spend — that is what separates a scheduled
