@@ -377,7 +377,14 @@ Barry 對現在第二堂的判斷：「方向不好、過於枯燥」。三個�
 
 複雜度：**高**。估 4–5 個工作 session：階段 1–3 一個、階段 4 半個、階段 5–7 兩個、階段 8 半個。
 
-2026-08-28 進度：階段 1–7 完成（分支 `w2-persona`，見 git log）。**剩下階段 8：文件與收尾**（`docs/workshop-2.md`、`docs/instructor-guide.md`、`README.md`）——合併分頁後那三份文件講的介面已經不存在。階段 3 稽核抽出 `dodo_workshop/prompt_sections.py`（四段生成段落）；`MEMORY_PREVIEW_LIMIT` 兩邊都是 16（參考建檔有 13 筆 A 層事實，必須整份進得了模型），由 golden fixture 逐字釘住。
+2026-08-28 進度：**階段 1–8 全部完成**（分支 `w2-persona`，見 git log）。
+
+階段 8 兩點與計畫不同：
+
+- 那一列列的 `tests/browser/uicheck.js` **不需要動**——§9 的五個瀏覽器項目（三個分頁、套用出現條件、列表欄位取消變更後不髒、帶狀圖隨作息重畫、`buildWorkshop2Prompt` 對 fixture 逐字相等）在階段 5–7 就已經全部落地，共 180 項檢查。
+- 文件裡的數字改成**由測試釘住**：`tests/test_proactive.py::test_the_docs_quote_the_numbers_this_engine_actually_produces` 從引擎重算那張四列對照表，再去 `docs/workshop-2.md` 與 `docs/instructor-guide.md` 的內文裡比對。講師會把那些數字念出來，事件表一改文件就會自信地說錯——這跟 Prompt 的 golden fixture 是同一個道理。同一支測試也釘住「正式 dodo 固定閘門在她身上兩軸都較差」這個論證本身。
+
+寫文件時修掉一個規格自己的錯：§0 說對照開關的賣點是「她的用餐時間落在固定用餐窗之外」，但秀蘭阿嬤的午餐 11:00、晚餐 17:00 **剛好落在窗裡面**。實跑之後真正的差異更有力：固定閘門在她身上兩軸都較差，而且錯法有兩種——05:30 與 07:30 她醒著卻被 22:00–08:00 擋住（其中 07:30 那次是該追問膝蓋的健康關心），12:45 她在午睡卻被放行去閒聊。**閘門的來源不對**，不是參數不對。午餐 10:30、晚餐 16:30 的例子留給講師口頭補充。階段 3 稽核抽出 `dodo_workshop/prompt_sections.py`（四段生成段落）；`MEMORY_PREVIEW_LIMIT` 兩邊都是 16（參考建檔有 13 筆 A 層事實，必須整份進得了模型），由 golden fixture 逐字釘住。
 
 §7.1 必辦清單：**1–8 全部完成**（#8 的帶狀圖與 #3 的 `declined_until` 在階段 7 落地）。
 
