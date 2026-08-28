@@ -45,6 +45,16 @@ const EXPOSE = `
 globalThis.__t = {
   upsertMemory: W2.upsertMemory, forgetMemory: W2.forgetMemory,
   describeMemoryWrite: W2.describeMemoryWrite, isQuietHour: W2.isQuietHour,
+  // Exactly the sequence core runs when 豆豆 calls update_memory, so a test can
+  // check what a tool write does to the 建檔 tab's baseline.
+  toolMemoryWrite: (layer, key, value, mode) => {
+    const result = W2.upsertMemory(layer, key, value, mode);
+    saveProject();
+    W2.rebuildWorkshop2Prompt();
+    W2.renderMemoryViewer();
+    W2.syncIntakeAfterMemoryChange();
+    return result;
+  },
   renderMemoryViewer: W2.renderMemoryViewer, memoryEntryText: W2.memoryEntryText,
   // §4 前後端同文: the browser composer, driven straight off a fixture workspace.
   buildWorkshop2Prompt: W2.buildWorkshop2Prompt, intakeFromFields: W2.intakeFromFields,
@@ -249,6 +259,35 @@ ok("...restores the weekday boxes", [...$("#routineRows").querySelectorAll("[dat
    .map((b) => b.dataset.weekday).join(",") === "2,4",
    [...$("#routineRows").querySelectorAll("[data-weekday]:checked")].map((b) => b.dataset.weekday).join(","));
 ok("...and clears the dot for good", !intakeDirty());
+
+// --- a memory write must not absorb a pending 建檔 edit --------------------
+// 豆豆 writing memory re-renders the symptom rows, so 建檔's baseline has to move
+// with them — but only that slice. Re-freezing the whole tab would adopt a row
+// the student typed and never applied: the dot clears, 套用 hides, and the row
+// exists on screen only until the next F5 silently drops it.
+$('[data-add="routine"]').click();
+const pending = [...$("#routineRows").querySelectorAll(".row-item")].at(-1);
+pending.querySelector('[data-field="label"]').value = "書法班";
+pending.querySelector('[data-field="start"]').value = "15:00";
+pending.querySelector('[data-field="end"]').value = "16:00";
+fire("#routineRows", "input");
+const routinesBefore = routineRows();
+ok("a typed-but-unapplied routine is dirty", intakeDirty() && !$("#saveWorkshop2").hidden);
+
+// `$t` is declared further down, so reach through the global it aliases.
+globalThis.__t.toolMemoryWrite("B", "膝蓋", "好多了", "supersede");
+ok("a memory write leaves the pending edit dirty", intakeDirty());
+ok("...and 套用 still offered", !$("#saveWorkshop2").hidden);
+ok("...without dropping the row from the screen", routineRows() === routinesBefore);
+ok("...while the symptom rows did re-render", $("#memoryViewer").textContent.includes("好多了"));
+// Applying now must still settle: the patched slice has to agree with read().
+$("#saveWorkshop2").click();
+await new Promise((r) => setTimeout(r, 300));
+ok("...and 套用 afterwards still reaches a fixed point", !intakeDirty() && $("#saveWorkshop2").hidden);
+ok("...with the routine actually saved", (() => {
+  const stored = JSON.parse(localStorage.getItem("dodo-workshop.project") || "{}");
+  return (stored.profile?.elder_profile?.routines || []).some((r) => r.label === "書法班");
+})());
 
 // --- collapsible results --------------------------------------------------
 // 記憶分類 was a quiz with a score; 建檔 is a form with a completeness count, so

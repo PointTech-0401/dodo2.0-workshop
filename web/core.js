@@ -154,12 +154,21 @@ function revertGroup(groupName) {
   notify("已取消未套用的變更，欄位回到上次套用的內容。");
 }
 
-/** Re-baseline one tab. A memory tool write only touches 建檔's symptom rows, so
- *  re-baselining the whole group would swallow edits still pending on another
- *  tab — and re-baselining nothing would leave 建檔 dirty for a change the
- *  student never made. */
-function markTabApplied(tabId) {
-  appliedSnapshots[tabId] = tabSnapshot(tabId);
+/** Move one slice of a tab's applied baseline, leaving the rest of it alone.
+ *
+ *  A memory tool write changes only 建檔's symptom rows, but re-freezing the
+ *  whole tab would also absorb whatever the student had typed and not yet
+ *  applied: the dirty dot clears, 套用 hides, and the typed row lives on screen
+ *  only until the next F5 drops it — with no warning that it was never saved.
+ *
+ *  Parsing and reassigning one key keeps the remaining key order byte-identical,
+ *  so a tab that really was clean stays clean. */
+function patchAppliedSnapshot(tabId, key, value) {
+  const applied = appliedSnapshots[tabId];
+  if (applied === undefined) return;   // never baselined; nothing to patch
+  const snapshot = JSON.parse(applied);
+  snapshot[key] = value;
+  appliedSnapshots[tabId] = JSON.stringify(snapshot);
   refreshApplyState();
 }
 

@@ -764,7 +764,12 @@ function deleteMemoryEntry(layer, index) {
 function syncIntakeAfterMemoryChange() {
   renderRows("symptom", caregiverEntries("events"));
   renderIntakeHints();
-  markTabApplied("tabW2Intake");
+  // Only the symptom rows moved, so only their slice of the baseline moves with
+  // them. Re-freezing the whole tab would quietly adopt a row the student typed
+  // and never applied. `facts` needs no patch: a caregiver A fact is locked
+  // against the model, and what 豆豆 adds beside it carries source "dodo", which
+  // caregiverEntries() does not collect.
+  patchAppliedSnapshot("tabW2Intake", "events", intakeFromFields().events);
 }
 
 /** Whoever 豆豆 is talking to, by name. */

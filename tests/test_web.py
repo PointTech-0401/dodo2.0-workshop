@@ -699,6 +699,11 @@ def test_memory_layers_and_the_caregiver_lock_decide_who_may_write() -> None:
     # again and the health follow-up never stops.
     assert script.count("W2.syncIntakeAfterMemoryChange();") == 2
     assert "function syncIntakeAfterMemoryChange()" in script
+    # It patches ONE slice of the applied baseline. Re-freezing the whole tab
+    # would also adopt whatever the student typed and never applied — the dot
+    # clears, 套用 hides, and the row survives only until the next F5.
+    assert 'patchAppliedSnapshot("tabW2Intake", "events", intakeFromFields().events);' in script
+    assert "function markTabApplied(" not in script
 
 
 def test_one_simulated_day_is_reachable_from_the_client() -> None:
