@@ -451,6 +451,7 @@ legend { margin-bottom: 10px; font-weight: 800; }
    wears off — otherwise it reads as a permanent mute. */
 .decline-state { display: block; margin-top: 3px; color: var(--ink-soft); font-size: 10px; line-height: 1.4; }
 #declineChat.is-active { border: 1px solid var(--danger); background: var(--white); color: var(--danger); }
+#loadReferenceIntake.is-armed { border: 1px solid var(--danger); background: var(--white); color: var(--danger); }
 
 /* 先預測再跑: the guess is the point, so it sits above the button, not beside
    the result it is about to be compared with. */

@@ -1369,6 +1369,32 @@ def test_bootstrap_ships_the_interview_but_never_the_answer_key() -> None:
     assert "expected_counts" not in data and "reference" not in data
 
 
+def test_the_reference_intake_endpoint_hands_over_the_answer_key_on_purpose() -> None:
+    """建檔 is the exercise, so /api/bootstrap never carries the filled form. This
+    endpoint does, and that is the point: someone who joined for the 主動 half, or
+    who is falling behind, presses one button instead of typing for 35 minutes.
+
+    It is a separate GET so the default path — the one every other page load
+    takes — still cannot leak the answer key.
+    """
+
+    from dodo_workshop.intake import completeness
+    from dodo_workshop.web import REFERENCE, reference_intake
+
+    data = reference_intake()
+
+    assert data["elder_profile"]["address"] == "秀蘭阿嬤"
+    assert len(data["elder_profile"]["routines"]) >= REFERENCE["expected_counts"]["routines"]
+    assert [item["time"] for item in data["elder_profile"]["medications"]] == ["07:00", "21:00"]
+    assert all(item["source"] == "caregiver" for item in data["memory"]["facts"])
+    assert sum(1 for item in data["memory"]["events"] if item["tag"] == "symptom") == 3
+    # It is the whole 建檔 and nothing else: no expected counts, no discussion notes.
+    assert set(data) == {"elder_profile", "memory"} and set(data["memory"]) == {"facts", "events"}
+    # And loading it satisfies the completeness list the student sees.
+    assert all(row["done"] for row in completeness(
+        data["elder_profile"], data["memory"], REFERENCE["expected_counts"]))
+
+
 def test_the_two_proactive_tabs_are_one_line_top_to_bottom() -> None:
     """主動規則 and 觸發主動 were two tabs describing one mechanism: the rules on
     one, the only place that exercises them on the other. Spec §5.3 merges them

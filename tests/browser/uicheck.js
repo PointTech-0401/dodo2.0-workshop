@@ -27,7 +27,7 @@ globalThis.fetch = async (url, init) => {
   // and so do schema migration and the 建檔 completeness count, which are the
   // browser's two other server round-trips.
   if (["/api/proactive-decide", "/api/proactive-simulate", "/api/workspace/normalize",
-       "/api/intake-check", "/api/day-summary"].some((path) => String(url).includes(path))) {
+       "/api/intake-check", "/api/day-summary", "/api/reference-intake"].some((path) => String(url).includes(path))) {
     return realFetch(`http://127.0.0.1:${PORT}${url}`, init);
   }
   throw new Error(`unexpected fetch: ${url}`);
@@ -280,6 +280,32 @@ ok("...restores the weekday boxes", [...$("#routineRows").querySelectorAll("[dat
    .map((b) => b.dataset.weekday).join(",") === "2,4",
    [...$("#routineRows").querySelectorAll("[data-weekday]:checked")].map((b) => b.dataset.weekday).join(","));
 ok("...and clears the dot for good", !intakeDirty());
+
+// --- 直接載入範例建檔 fills the form, and stops there ----------------------
+// The opt-out for people who did not come to type for 35 minutes. It must land
+// as an *unapplied* edit: if it wrote straight to `workspace` it would bypass
+// 套用, and 取消變更 would have nothing to put back.
+const savedRoutineCount = () => (JSON.parse(localStorage.getItem("dodo-workshop.project") || "{}")
+  .profile?.elder_profile?.routines || []).length;
+const appliedRoutines = savedRoutineCount();
+$("#loadReferenceIntake").click();
+await new Promise((r) => setTimeout(r, 200));
+ok("a filled form arms first instead of overwriting",
+   $("#loadReferenceIntake").textContent.includes("再按一次") && routineRows() === 1,
+   `${routineRows()} rows`);
+$("#loadReferenceIntake").click();
+await new Promise((r) => setTimeout(r, 300));
+ok("the second press fills 建檔 from the reference", routineRows() >= 6, `${routineRows()} rows`);
+ok("...including the scalars", $("#elderAddress").value === "秀蘭阿嬤" && $("#elderBed").value === "21:30");
+ok("...and the caregiver-written memory rows",
+   $("#factRows").querySelectorAll(".row-item").length >= 4
+   && $("#symptomRows").querySelectorAll(".row-item").length >= 3);
+ok("...and the button disarms itself", !$("#loadReferenceIntake").textContent.includes("再按一次"));
+ok("it is an unapplied edit, not a write", intakeDirty() && !$("#saveWorkshop2").hidden);
+ok("...so nothing reached the saved project yet", savedRoutineCount() === appliedRoutines,
+   `${savedRoutineCount()} saved`);
+$("#revertWorkshop2").click();
+ok("取消變更 undoes the whole load", !intakeDirty() && routineRows() === 1, `${routineRows()} rows`);
 
 // --- a memory write must not absorb a pending 建檔 edit --------------------
 // 豆豆 writing memory re-renders the symptom rows, so 建檔's baseline has to move

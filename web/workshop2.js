@@ -292,6 +292,54 @@ function hideInterview() {
   if (!$("#workshop2Panel").hidden && !$("#tabW2Intake").hidden) $("#showInterview").focus();
 }
 
+// 直接載入範例建檔 overwrites the whole form, so a form with anything in it gets
+// one press to think about it first. Same idiom as 她剛說不想聊 — the button says
+// what the next press will do, rather than a dialog nothing else here uses.
+const LOAD_REFERENCE_LABEL = "直接載入範例建檔";
+let referenceIntakeArmed = false;
+
+function resetReferenceIntakeButton() {
+  if (!referenceIntakeArmed) return;
+  referenceIntakeArmed = false;
+  $("#loadReferenceIntake").textContent = LOAD_REFERENCE_LABEL;
+  $("#loadReferenceIntake").classList.remove("is-armed");
+}
+
+function intakeHasContent() {
+  const { elder, facts, events } = intakeFromFields();
+  return Boolean(
+    elder.name || elder.address || elder.room || elder.city || elder.background || elder.expertise.length
+    || elder.routines.length || elder.medications.length || elder.appointments.length
+    || elder.taboos.length || elder.declined_notes.length || elder.emergency_contact.name
+    || facts.length || events.length,
+  );
+}
+
+/** The opt-out from a 35-minute form. It fills the fields and stops there: the
+ *  student still presses 套用, so this takes exactly the path a typed 建檔 takes
+ *  and 取消變更 still undoes it. Nothing is written to `workspace` from here. */
+async function loadReferenceIntake() {
+  if (intakeHasContent() && !referenceIntakeArmed) {
+    referenceIntakeArmed = true;
+    $("#loadReferenceIntake").textContent = "會蓋掉你填的，再按一次";
+    $("#loadReferenceIntake").classList.add("is-armed");
+    return;
+  }
+  let data;
+  try {
+    const response = await fetch("/api/reference-intake");
+    if (!response.ok) throw new Error(String(response.status));
+    data = await response.json();
+  } catch {
+    notify("讀不到範例建檔，請確認伺服器還在跑。");
+    return;
+  }
+  writeIntake({ elder: data.elder_profile, facts: data.memory.facts, events: data.memory.events });
+  resetReferenceIntakeButton();
+  onIntakeChange();
+  notify("範例建檔已經填進表單，還沒生效——按「套用」才會送進 Prompt 與這一次的 session。");
+}
+
 /** 「問豆豆這一區」: apply what is on screen, then ask one fixed question that
  *  only the just-filled section can answer. Six small feedback loops instead of
  *  one 35-minute form. */
@@ -1613,6 +1661,9 @@ const WORKSHOP2_FIELDS = [
 ];
 
 function onIntakeChange() {
+  // Typing anything is an answer to 「會蓋掉你填的」 — disarm rather than leave a
+  // primed overwrite sitting on a button.
+  resetReferenceIntakeButton();
   rebuildWorkshop2Prompt();
   refreshApplyState();
   renderIntakeHints();
@@ -1650,6 +1701,7 @@ function init() {
     refreshApplyState();
   }));
   $$("[data-ask]").forEach((button) => button.addEventListener("click", () => askDodo(button.dataset.ask)));
+  $("#loadReferenceIntake").addEventListener("click", loadReferenceIntake);
   $("#showInterview").addEventListener("click", showInterview);
   $("#closeInterview").addEventListener("click", hideInterview);
   // 安靜與不打擾 live in 建檔, so the band has to redraw when 作息 changes — and
@@ -1716,6 +1768,7 @@ globalThis.W2 = {
   renderInterview,
   showInterview,
   hideInterview,
+  loadReferenceIntake,
   renderProactiveEventOptions,
   renderMemoryViewer,
   renderPolicyPreview,

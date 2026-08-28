@@ -38,8 +38,10 @@ from dodo_workshop.weather import get_weather
 
 WEB_DIR = ROOT / "web"
 INTERVIEW_PATH = ROOT / "scenarios" / "interview.md"
-# The answer key stays server-side: the browser gets the interview, the expected
-# counts and the results, never the reference 建檔 itself.
+# The answer key is server-side by default: 建檔 is the exercise, so the browser
+# gets the interview, the expected counts and the results, not the filled form.
+# `/api/reference-intake` is the one deliberate exception — an opt-out for people
+# who came for the second half and do not want to spend 35 minutes typing.
 REFERENCE = load_json("scenarios/reference_profile.json")
 load_dotenv(ROOT / ".env")
 
@@ -383,6 +385,23 @@ def proactive_simulate(payload: DaySimulationRequest) -> dict[str, Any]:
             if payload.events_from == "reference"
             else []
         ),
+    }
+
+
+@app.get("/api/reference-intake")
+def reference_intake() -> dict[str, Any]:
+    """The filled 建檔, for「直接載入範例」.
+
+    This is the answer key, handed over on purpose: someone who joined for the
+    主動 half, or who is falling behind, should be able to skip the typing and
+    still have a working 秀蘭阿嬤. It arrives in the form as an unapplied edit —
+    the student still presses 套用 — so it goes through exactly the same path a
+    typed 建檔 does.
+    """
+
+    return {
+        "elder_profile": REFERENCE["elder_profile"],
+        "memory": {"facts": REFERENCE["memory"]["facts"], "events": REFERENCE["memory"]["events"]},
     }
 
 
