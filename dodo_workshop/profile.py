@@ -66,7 +66,7 @@ def resolve_voice(value: Any, fallback: str = DEFAULT_VOICE) -> str:
     return candidate if candidate in REALTIME_VOICES else fallback
 
 
-# Workshop 2's own editable prompt layer. 建檔決定資料，Prompt 只寫態度: the four
+# Workshop 2's own editable prompt layer. 建檔決定資料，Prompt 只寫規範: the four
 # blocks are attitudes, and every fact the model needs is generated from the
 # 建檔 and the memory below them. Workshop 1 decides how 豆豆 talks; these decide
 # what it does with her memory and how it opens its mouth first.

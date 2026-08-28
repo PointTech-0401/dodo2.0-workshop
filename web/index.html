@@ -192,7 +192,7 @@
           </div>
           <div class="tab-bar" role="tablist" aria-label="Workshop 2 設定">
             <button type="button" class="tab-button is-active" role="tab" aria-selected="true" aria-controls="tabW2Intake" data-tab="tabW2Intake">建檔</button>
-            <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Prompt" data-tab="tabW2Prompt">態度</button>
+            <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Prompt" data-tab="tabW2Prompt">對話規範</button>
             <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Policy" data-tab="tabW2Policy">主動</button>
           </div>
         </div>
@@ -312,8 +312,13 @@
         </div>
 
         <div id="tabW2Prompt" class="tab-panel" role="tabpanel" tabindex="0" hidden>
-          <h3>態度：建檔決定資料，Prompt 只寫態度</h3>
+          <h3>對話規範：建檔決定資料，Prompt 只寫規範</h3>
           <p class="block-purpose">四個小格是你可以改的——它們只寫豆豆<strong>怎麼</strong>記、<strong>怎麼</strong>開口。她的資料、她記得的事、禁區與程式規則四段由建檔與主動分頁自動生成，改資料請回到建檔。</p>
+          <div class="preset-row">
+            <p class="preset-label">快速套用規範範例</p>
+            <div id="rulePresets" class="preset-buttons"></div>
+            <small>三組寫法，一鍵換掉下面四格。<strong>完全不動建檔</strong>——同一個秀蘭阿嬤、同一份資料，只換說話的規矩。按「套用」才會生效。</small>
+          </div>
           <div class="prompt-stack" aria-label="可編輯的 Workshop 2 分塊">
             <article class="prompt-block">
               <header><span>06</span><div><h4 id="promptMemoryUseLabel">記憶使用規則</h4><p>三層怎麼讀、怎麼寫、什麼絕不寫、護理員建的不能改。</p></div><em>EDIT</em></header>
@@ -338,6 +343,16 @@
             <li><code># 不主動提起</code><span>← 建檔 › 只能她自己提</span></li>
             <li><code># 主動訊息的程式規則</code><span>← 主動分頁的兩個數字＋建檔 › 作息</span></li>
           </ul>
+          <!-- The demo the docs used to describe in prose: ask, change, apply,
+               ask the same thing again, and read the two answers side by side. -->
+          <div class="compare-card">
+            <p class="preview-label">同一句話，前後對照<small>先按一次記下現在的答案，換一組規範、按「套用」，再按一次——兩個答案並排在下面。需要 API Key。</small></p>
+            <div class="field-row">
+              <label>問句<input id="compareQuestion" value="你記得我什麼？"></label>
+              <button id="askCompare" type="button" class="secondary-button">問這一句</button>
+            </div>
+            <div id="compareResult" class="compare-result" aria-live="polite"></div>
+          </div>
           <details class="prompt-preview-panel" open>
             <summary><span>VIEW</span><strong>完整 System Prompt（Workshop 1 + 2）</strong><small>這就是實際送進 Realtime 的內容，只能檢視；上面四段由建檔與欄位自動生成。</small></summary>
             <pre id="workshop2SystemPrompt" class="prompt-preview" tabindex="0" aria-label="Workshop 1 + 2 完整 System Prompt 唯讀預覽"></pre>

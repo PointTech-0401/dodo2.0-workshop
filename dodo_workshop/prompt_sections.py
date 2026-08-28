@@ -1,6 +1,6 @@
 """The generated half of Workshop 2's prompt: 建檔 and memory rendered as text.
 
-建檔決定資料，Prompt 只寫態度 (design spec §4). The four editable attitude blocks
+建檔決定資料，Prompt 只寫規範 (design spec §4). The four editable 對話規範 blocks
 live in `profile.py`; everything here is *generated* — students never type it, and
 每段畫面上都標著來源（來自建檔 › 作息）.
 

@@ -1370,6 +1370,9 @@ async function initialize() {
   // and the next 套用 silently overwrites the student's saved voice.
   W1.renderVoiceOptions();
   W1.renderPresetButtons();
+  // 陪伴型's blocks are read from bootstrap, so the list can only be built once
+  // bootstrapData exists — same reason as the voice options above.
+  W2.renderRulePresets();
   loadFields();
   // The overlay starts closed, but its content is rendered at boot: 顯示訪談稿
   // must never show an empty panel while a fetch it does not do finishes.

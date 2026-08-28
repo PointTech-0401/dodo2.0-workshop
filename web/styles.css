@@ -347,7 +347,15 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 
 /* One event block feeding both modes, and a switch named after the only thing
    that really separates them: which clock decides. */
-.event-card { margin-bottom: 14px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--white); }
+.event-card, .compare-card { margin-bottom: 14px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--white); }
+/* 問句 takes the room; the button sits beside it rather than under it. */
+.compare-card .field-row { grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+.compare-card label { margin-bottom: 0 !important; }
+.compare-result:not(:empty) { margin-top: 11px; display: grid; gap: 9px; }
+.compare-turn { padding: 9px 10px; border-left: 3px solid var(--line); background: var(--paper); }
+.compare-turn.is-after { border-left-color: var(--blue); }
+.compare-turn b { display: block; margin-bottom: 3px; color: var(--ink-soft); font-size: 10px !important; letter-spacing: .1em; }
+.compare-note { margin: 9px 0 0; color: var(--ink-soft); line-height: 1.5; }
 .event-card .field-row { gap: 10px; }
 .event-card label { margin-bottom: 0 !important; }
 .mode-switch { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: var(--white); }

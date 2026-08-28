@@ -1,4 +1,4 @@
-// workshop2.js —— 第二堂：建檔、態度分塊、三層記憶、主動關心規則與待提醒排程。
+// workshop2.js —— 第二堂：建檔、對話規範分塊、三層記憶、主動關心規則與待提醒排程。
 //
 // 整支包在 IIFE 裡，只掛一個全域；IIFE 內一律零縮排 —— tests/test_web.py 用 `\n}`
 // 切函式本體，多一層縮排就切不到。core.js 的頂層 const／let／function 在全域詞法
@@ -41,13 +41,60 @@ const MEMORY_MERGE_RULES = {
   B: { merge: "supersede", label: `取代：同一個 key 只留最新一筆，整層最多 ${MEMORY_PREVIEW_LIMIT} 筆`, capacity: MEMORY_PREVIEW_LIMIT },
   C: { merge: "rewrite", label: "重寫：摘要由系統重算，同一個 key 直接覆蓋", capacity: 0 },
 };
-// Workshop 2's editable blocks: attitudes only. 建檔決定資料，Prompt 只寫態度.
+// Workshop 2's editable blocks: how 豆豆 speaks, never what it knows.
+// 建檔決定資料，Prompt 只寫規範.
 // Default text lives in profile.py and arrives via /api/bootstrap.
 const WORKSHOP2_BLOCKS = [
   ["memory_use", "記憶使用規則", "#promptMemoryUse"],
   ["attitude_reminder", "重要提醒怎麼講", "#promptAttitudeReminder"],
   ["attitude_health", "健康關心怎麼問", "#promptAttitudeHealth"],
   ["attitude_chat", "閒聊從哪裡開始", "#promptAttitudeChat"],
+];
+
+// 規範範例: three ways of writing the same four blocks, against the same 建檔.
+// The point is that none of them touches her data — swap one in, ask the same
+// question, and the difference is entirely 怎麼說, which is what this tab owns.
+// 陪伴型's blocks are the shipped defaults, read from bootstrap rather than
+// copied, so a change in profile.py cannot leave a stale duplicate here.
+const RULE_PRESETS = [
+  {
+    id: "companion",
+    label: "陪伴型",
+    hint: "預設：先問感覺、從興趣起頭、可以請教她",
+    blocks: null,
+  },
+  {
+    id: "brief",
+    label: "話少型",
+    hint: "能不開口就不開口；開口只講一件事，不追問",
+    blocks: {
+      memory_use: `記憶分三層，用 read_memory 讀、用 update_memory 寫，寫入時指定 layer：
+A 重要事實（layer=A）：過敏、慢性病、醫囑、緊急聯絡人、長期偏好。同一個 key 可以並存多筆。標［護理員］的你不能改也不能刪。
+B 近期事件（layer=B）：這幾天的身體與心情。同一件事新的取代舊的——她說好多了就用 mode="replace" 換掉。
+C 跨日摘要：由系統整理，不要自己寫。
+不保存：密碼、卡號、帳號、驗證碼；第三人的健康；對任何人的評價。也不要在對話中複誦。
+寫記憶不要說出來打斷她。只有她問起、或那件事正好要用到時才提記憶，其他時候記住就好。`,
+      attitude_reminder: `一句話：稱呼＋時間＋要做的事。不解釋、不叮嚀、不加關心語。說完就結束，不接話題。`,
+      attitude_health: `只問一句「今天還好嗎」，等她回答。她說好了就用 update_memory 換掉那一筆；她說不好，聽完回一句就好，不追問、不給建議。她沒有要講就不要再問。`,
+      attitude_chat: `除非她先開口，否則不主動閒聊。真的要開口就講一句，講完等她。她沒有接話就結束，不要再找話題。`,
+    },
+  },
+  {
+    id: "clinical",
+    label: "照護嚴謹型",
+    hint: "用藥與回診逐項確認；不確定就請她找護理員",
+    blocks: {
+      memory_use: `記憶分三層，用 read_memory 讀、用 update_memory 寫，寫入時指定 layer：
+A 重要事實（layer=A）：過敏、慢性病、醫囑、緊急聯絡人、長期偏好。同一個 key 可以並存多筆。標［護理員］的是護理員建的，你不能改也不能刪；她要改，請她告訴護理員。
+B 近期事件（layer=B）：這幾天的身體狀況與心情。同一件事新的取代舊的——她說膝蓋好多了，就用 mode="replace" 換掉，並把她的原話一起寫進去。
+C 跨日摘要：由系統整理，不要自己寫。
+不保存：密碼、卡號、帳號、驗證碼；第三人的健康；對任何人的評價。也不要在對話中複誦。
+身體狀況有變化就當場記下來，寫的時候用她自己的說法，不要改寫成醫學名詞。你不是醫護人員：不判斷、不推測原因，該找人的時候請她找護理員。`,
+      attitude_reminder: `先叫她的稱呼，講清楚時間、要做的事、要帶的東西。講完問一句「這樣可以嗎」，確認她聽到了。她說已經做了就回一句知道了，不重複。`,
+      attitude_health: `先問感覺，再問一句具體的（什麼時候開始、跟昨天比怎麼樣），問完就停。不給建議、不推測原因、不說「要多注意」。她說好了就用 update_memory 換掉那一筆；她說不好或聽起來不對勁，請她跟護理員說，並告訴她你會記下來。`,
+      attitude_chat: `從她的興趣起頭，一次一件，兩句以內。閒聊中聽到身體、睡眠、吃飯的事就記下來，但不要把閒聊變成問診。碰到「不主動提起」清單裡的事，等她自己開口。`,
+    },
+  },
 ];
 
 // =====================================================================
@@ -418,6 +465,103 @@ function workshop2BlocksFromFields() {
     key,
     $(selector).value.trim(),
   ]));
+}
+
+/** 陪伴型 is whatever profile.py ships, so the preset list cannot drift from the
+ *  defaults. Called once at boot, after bootstrap has arrived. */
+function renderRulePresets() {
+  RULE_PRESETS[0].blocks = structuredClone(bootstrapData.default_workspace.profile.workshop2_blocks);
+  $("#rulePresets").innerHTML = RULE_PRESETS.map((preset) =>
+    `<button type="button" class="preset-button" data-rule-preset="${preset.id}" title="${escapeHtml(preset.hint)}">${escapeHtml(preset.label)}<small>${escapeHtml(preset.hint)}</small></button>`).join("");
+  $$("#rulePresets .preset-button").forEach((button) => {
+    button.addEventListener("click", () => applyRulePreset(button.dataset.rulePreset));
+  });
+}
+
+/** Load one 規範範例 into the four textareas. Touches nothing else — not 建檔,
+ *  not the two 主動 numbers — which is the claim the tab is making: same data,
+ *  different way of speaking. Nothing reaches the session until 套用. */
+function applyRulePreset(id) {
+  const preset = RULE_PRESETS.find((item) => item.id === id);
+  if (!preset) return;
+  WORKSHOP2_BLOCKS.forEach(([key, , selector]) => { $(selector).value = preset.blocks[key] ?? ""; });
+  rebuildWorkshop2Prompt();
+  // Assigning .value fires no input event, so 套用 has to be told by hand.
+  refreshApplyState();
+  notify(`已載入「${preset.label}」規範範例。建檔完全沒有動；按「套用」才會生效。`);
+}
+
+// --- 同一句話，前後對照 ----------------------------------------------------
+// The demo the docs described in prose: ask, change the 規範, apply, ask the same
+// thing again. Each press records 豆豆's answer *as the session is right now* —
+// it deliberately does not 套用 first, because "before" has to mean before.
+let compareTurns = [];
+
+function renderCompareResult(pending = "") {
+  const labels = ["套用前", "套用後"];
+  const rows = compareTurns.map((turn, index) => `
+    <div class="compare-turn ${index === 1 ? "is-after" : ""}">
+      <b>${labels[index]}</b>${escapeHtml(turn.answer)}
+    </div>`).join("");
+  const note = pending
+    ? `<p class="compare-note">${escapeHtml(pending)}</p>`
+    : compareTurns.length === 1
+      ? '<p class="compare-note">現在換一組規範範例、或改其中一格，按「套用」，再按一次「問這一句」。</p>'
+      : compareTurns.length === 2
+        ? '<p class="compare-note">兩份 System Prompt 的差別只有那四格——她的資料、記得的事、禁區完全一樣。再按一次會把「套用後」推成「套用前」，繼續比下去。</p>'
+        : "";
+  $("#compareResult").innerHTML = rows + note;
+}
+
+async function askCompare() {
+  const question = $("#compareQuestion").value.trim();
+  if (!question) {
+    renderCompareResult("先寫一句要問的話。");
+    return;
+  }
+  if (dataChannel?.readyState !== "open") {
+    renderCompareResult("還沒連上 Realtime（需要 API Key），連線後再按一次。");
+    return;
+  }
+  const button = $("#askCompare");
+  button.disabled = true;
+  // Two answers on screen means the next one starts a fresh pair: 套用後 becomes
+  // the new 套用前, so a student can keep iterating without clearing anything.
+  if (compareTurns.length >= 2) compareTurns = [compareTurns[1]];
+  renderCompareResult("正在問豆豆…");
+  try {
+    sendText(question);
+    const answer = await awaitDodoReply();
+    if (!answer) {
+      renderCompareResult("等不到回答——看一下聊天室發生什麼事，再按一次。");
+      return;
+    }
+    compareTurns = [...compareTurns, { question, answer }];
+    renderCompareResult();
+  } finally {
+    button.disabled = false;
+  }
+}
+
+/** Wait for the next DODO bubble to appear and stop growing.
+ *
+ *  Reading the transcript is the same trick 今日摘要 uses: the reply arrives as
+ *  streamed deltas into one bubble, so "finished" is "stopped changing" rather
+ *  than any single event — audio and text modes end on different ones. */
+async function awaitDodoReply(timeoutMs = 40000, settleMs = 1200) {
+  const before = $$("#messages .message.assistant").length;
+  const deadline = Date.now() + timeoutMs;
+  let seen = "";
+  let lastChange = Date.now();
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const bubbles = $$("#messages .message.assistant");
+    if (bubbles.length <= before) continue;
+    const text = bubbles[bubbles.length - 1].querySelector("p")?.textContent.trim() || "";
+    if (text !== seen) { seen = text; lastChange = Date.now(); continue; }
+    if (seen && Date.now() - lastChange >= settleMs) return seen;
+  }
+  return seen;
 }
 
 /** The whole of `proactive_policy`: two numbers. 安靜與不打擾 are derived from
@@ -1538,7 +1682,7 @@ async function runTodaySummary() {
 /** The brief for one proactive turn. Response-level `instructions` *replace* the
  *  session instructions, so the whole composed prompt has to travel with it —
  *  otherwise 豆豆 would open its mouth as OpenAI's default assistant. */
-// One line of 態度 per type. The attitude blocks on the 態度 tab say how 豆豆
+// One line of 規範 per type. The four blocks on the 對話規範 tab say how 豆豆
 // speaks in general; this is the reminder for *this* turn, and it mirrors them.
 const PROACTIVE_TURN_NOTES = {
   reminder: "這是重要提醒：一句講清楚時間與該做的事，不解釋、不催。",
@@ -1648,7 +1792,7 @@ async function applyWorkshop2() {
   }
   markApplied("workshop2");
   notify(live
-    ? "第二堂設定已套用：建檔、記憶、態度與主動規則都寫進了同一份 instructions，正在確認更新…"
+    ? "第二堂設定已套用：建檔、記憶、對話規範與主動規則都寫進了同一份 instructions，正在確認更新…"
     : "第二堂設定已保存（尚未連線，下次連線時生效）。");
 }
 
@@ -1702,6 +1846,7 @@ function init() {
   }));
   $$("[data-ask]").forEach((button) => button.addEventListener("click", () => askDodo(button.dataset.ask)));
   $("#loadReferenceIntake").addEventListener("click", loadReferenceIntake);
+  $("#askCompare").addEventListener("click", askCompare);
   $("#showInterview").addEventListener("click", showInterview);
   $("#closeInterview").addEventListener("click", hideInterview);
   // 安靜與不打擾 live in 建檔, so the band has to redraw when 作息 changes — and
@@ -1766,6 +1911,9 @@ globalThis.W2 = {
   buildWorkshop2Prompt,
   rebuildWorkshop2Prompt,
   renderInterview,
+  renderRulePresets,
+  applyRulePreset,
+  askCompare,
   showInterview,
   hideInterview,
   loadReferenceIntake,

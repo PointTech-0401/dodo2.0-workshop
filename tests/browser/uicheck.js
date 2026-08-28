@@ -72,6 +72,7 @@ try { eval(script + EXPOSE); } catch (e) { failures.push(`app.js threw: ${e.mess
 await new Promise((r) => setTimeout(r, 400));   // let initialize()'s awaits settle
 
 const $ = (s) => document.querySelector(s);
+const WORKSHOP2_BLOCK_SELECTORS = ["#promptMemoryUse", "#promptAttitudeReminder", "#promptAttitudeHealth", "#promptAttitudeChat"];
 const shown = (id) => !document.getElementById(id).hidden;
 const fire = (sel, type) => $(sel).dispatchEvent(new win.Event(type, { bubbles: true }));
 const defaults = bootstrap.default_workspace.profile.agent;
@@ -690,6 +691,56 @@ ok("B reports the value it threw away by name", ate.superseded.join("、") === "
 ok("...and the TOOL sentence says it out loud",
    $t.describeMemoryWrite(ate, "今天想吃的東西", "柳丁").includes("丟掉了：芭樂"),
    $t.describeMemoryWrite(ate, "今天想吃的東西", "柳丁"));
+
+// --- 對話規範: presets swap the four blocks and nothing else ---------------
+// The claim the tab makes is that these are the ONLY thing a 規範 changes: same
+// 建檔, same memory, different way of speaking. So the check is as much about
+// what stays put as about what moves.
+$('.tab-button[data-tab="tabW2Prompt"]').click();
+const ruleButtons = () => [...$("#rulePresets").querySelectorAll("[data-rule-preset]")];
+ok("三組規範範例 are on the tab", ruleButtons().length === 3,
+   ruleButtons().map((b) => b.dataset.rulePreset).join(","));
+const beforePreset = {
+  blocks: $("#promptMemoryUse").value + $("#promptAttitudeChat").value,
+  routines: $("#routineRows").querySelectorAll(".row-item").length,
+  address: $("#elderAddress").value,
+  cooldown: $("#cooldown").value,
+};
+ruleButtons().find((b) => b.dataset.rulePreset === "brief").click();
+ok("a preset rewrites all four blocks",
+   WORKSHOP2_BLOCK_SELECTORS.every((selector) => $(selector).value.length > 0)
+   && $("#promptMemoryUse").value + $("#promptAttitudeChat").value !== beforePreset.blocks);
+ok("...and 建檔 is untouched",
+   $("#routineRows").querySelectorAll(".row-item").length === beforePreset.routines
+   && $("#elderAddress").value === beforePreset.address);
+ok("...and so are the two 主動 numbers", $("#cooldown").value === beforePreset.cooldown);
+ok("...and it asks to be applied rather than applying itself",
+   !$("#saveWorkshop2").hidden
+   && $('.tab-button[data-tab="tabW2Prompt"]').classList.contains("is-dirty"));
+ok("...and the preview followed it", $("#workshop2SystemPrompt").textContent.includes($("#promptAttitudeChat").value.slice(0, 20)));
+$("#revertWorkshop2").click();
+ok("取消變更 puts the previous 規範 back",
+   $("#promptMemoryUse").value + $("#promptAttitudeChat").value === beforePreset.blocks);
+ok("...with no dot left behind", !$('.tab-button[data-tab="tabW2Prompt"]').classList.contains("is-dirty"));
+// 陪伴型 is read from bootstrap rather than copied into the preset list, so it
+// has to match the shipped defaults exactly — a stale duplicate is the failure
+// this catches.
+ruleButtons().find((b) => b.dataset.rulePreset === "companion").click();
+ok("陪伴型 is byte-identical to the shipped defaults",
+   $("#promptMemoryUse").value === bootstrap.default_workspace.profile.workshop2_blocks.memory_use);
+$("#revertWorkshop2").click();
+
+// 同一句話前後對照 needs a live session, which this harness never has — so what
+// is checkable is that it says so instead of failing silently.
+$("#compareQuestion").value = "";
+$("#askCompare").click();
+await new Promise((r) => setTimeout(r, 100));
+ok("對照 asks for a question when there is none", $("#compareResult").textContent.includes("先寫一句"));
+$("#compareQuestion").value = "你記得我什麼？";
+$("#askCompare").click();
+await new Promise((r) => setTimeout(r, 100));
+ok("...and says why it cannot ask without a key", $("#compareResult").textContent.includes("Realtime"),
+   $("#compareResult").textContent);
 
 // --- 前後端同文: one fixture, two composers -------------------------------
 // Spec §4. `compose_workshop2_prompt` is pinned against this same .txt in
