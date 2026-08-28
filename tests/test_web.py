@@ -1049,6 +1049,13 @@ def test_scheduled_reminders_fire_on_the_real_clock() -> None:
     # the first is supposed to impose on it.
     assert "await fireScheduledItem(due[0]);" in tick
     assert "schedulerBusy" in tick
+    # Ordered by the server's own event_types (重要提醒 first, the one type with a
+    # real-world consequence), then earliest. schema 1 sorted by
+    # proactive_policy.priorities — a field schema 2 does not have, so that sort
+    # had quietly become a no-op that always fell back to insertion order.
+    assert "bootstrapData?.event_types" in tick
+    assert "priorities" not in tick
+    assert "rank(left) - rank(right)" in tick
 
     fire = script.split("async function fireScheduledItem(item) {")[1].split("\n}\n")[0]
     # Real clock and real accumulated spend — that is what separates a scheduled

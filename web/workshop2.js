@@ -1200,18 +1200,28 @@ async function fireScheduledItem(item) {
   renderScheduleList();
 }
 
-/** Compare the pending list against the wall clock. Highest priority first, one
- *  per tick: firing two at once would let both pass the cooldown that the first
- *  one is supposed to impose on the second. */
+/** Compare the pending list against the wall clock. 重要提醒 first, then the
+ *  earliest, one per tick: firing two at once would let both pass the interval
+ *  that the first one is supposed to impose on the second.
+ *
+ *  Ordered by the server's own `event_types`, which lists them by how much it
+ *  matters that this one gets said — 重要提醒 is the type with a real-world
+ *  consequence and the only one the rules never ration. schema 1 sorted by
+ *  `proactive_policy.priorities`; schema 2 has no such field, so that sort had
+ *  quietly become a no-op that always fell back to insertion order. */
 async function tickScheduler() {
   renderScheduleList();
   renderProactiveLiveState();
   if (!$("#scheduleAuto").checked || schedulerBusy) return;
   const nowText = `${pad2(new Date().getHours())}:${pad2(new Date().getMinutes())}`;
-  const priorities = workspace.profile.proactive_policy.priorities || {};
+  const order = Object.keys(bootstrapData?.event_types || {});
+  const rank = (item) => {
+    const index = order.indexOf(item.type);
+    return index < 0 ? order.length : index;
+  };
   const due = scheduledItems()
     .filter((item) => item.status === "pending" && item.time <= nowText)
-    .sort((left, right) => (priorities[right.type] || 0) - (priorities[left.type] || 0));
+    .sort((left, right) => rank(left) - rank(right) || String(left.time).localeCompare(String(right.time)));
   if (!due.length) return;
   schedulerBusy = true;
   try {
