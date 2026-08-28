@@ -89,6 +89,7 @@ Barry 對現在第二堂的判斷：「方向不好、過於枯燥」。三個�
   "name": "邱秀蘭", "address": "秀蘭阿嬤", "room": "305", "city": "苗栗",
   "background": "客家人，苗栗公館市場賣麵三十年；先生三年前過世；一子一女、兩孫",
   "language": "國語為主，夾雜客語",
+  "expertise": ["煮麵（滾水下、不要攪、撈起來甩兩下）", "熬大骨湯頭", "做生意記客人、應付難搞的客人"],
   "wake_time": "05:00", "bed_time": "21:30",
   "routines": [
     {"label": "走廊運動", "start": "05:30", "end": "06:00", "do_not_disturb": false, "weekdays": []},
@@ -121,6 +122,7 @@ Barry 對現在第二堂的判斷：「方向不好、過於枯燥」。三個�
 ```
 
 - `weekdays` 用 **ISO 1–7**（一＝1、日＝7）；空陣列＝每天。前端 `new Date().getDay() || 7`。
+- `expertise`（她會的事）是閒聊裡「請教」格的題材 —— 反向導師的最小版本。從 `background` 用字串切不出可讀的請教題，所以獨立成欄位；建檔表單放在基本資料區。
 - **興趣、偏好、症狀不放在建檔物件裡**：表單那兩區寫進 `workspace.memory`（興趣／偏好／醫囑 → `facts`，症狀／短期念頭 → `events`），帶 `source: "caregiver"` 與 `tag`。記憶檢視器只有一份真相，合併規則一樣生效。
 - **建檔表單的每一區都走「套用／取消變更」快照**，包括寫進 memory 的興趣與症狀；沒有任何一區直接 upsert（架構師：否則半個表單交易式、半個立即寫入）。
 - `taboos` 是**記憶的屬性**，不是一層：存了、模型知道、閒聊生成器排除、Prompt 有 `# 不主動提起`。這是講師指南第三問「AI 能否主動提起？」的實體。
@@ -329,13 +331,13 @@ Barry 對現在第二堂的判斷：「方向不好、過於枯燥」。三個�
 
 ## 7. 實作階段
 
-每階段：實作 → simplifier 稽核 → `uv run pytest` → 一個 commit。每個 commit 後測試要綠，所以舊教材檔在對應程式退場的同一階段刪。
+每階段：實作 → simplifier 稽核 → `uv run pytest` → 一個 commit。每個 commit 後測試要綠：先把新引擎當新檔加進來（階段 2），再一次切換並刪舊碼與舊教材（階段 3）—— 原本「先改 schema 再改決策」的順序會讓中間那個 commit 的舊 `choose_event` 讀不到 `priorities` 而壞掉。
 
 | 階段 | 目標檔案 | 內容 |
 |---|---|---|
-| 1 內容根 | `scenarios/interview.md`（已寫）、`scenarios/reference_profile.json` | 答案卷（§2.1 的完整參考建檔＋興趣／症狀項目） |
-| 2 資料模型與 Prompt | `dodo_workshop/profile.py`、`tests/test_profile.py`、`tests/fixtures/*`、`starter/workshop2-default-dodo.json` | schema 2、遷移（pop／冪等／fixed-point）、四個分塊、四段生成、A 層護理員鎖、golden fixture |
-| 3 決策與一天 | `dodo_workshop/lesson2.py`、`dodo_workshop/web.py`、`tests/test_lesson2.py`、`tests/test_web.py`；刪 `memory_cards.json`／`proactive_scenarios.json`／`day_timeline.json`；`app.py` CLI 的 quiz／lab 退場 | `build_schedule`、三類型 `choose_event`（分鐘級、ISO weekday、`<` 邊界）、`build_day`、新分數、G1–G5 掃描測試、對照模式、漏掉的提醒清單、`declined_until` |
+| 1 內容根 | `scenarios/interview.md`（已寫）、`scenarios/reference_profile.json`、`tests/test_reference_profile.py` | 答案卷（§2.1 的完整參考建檔＋興趣／症狀項目）；釘住埋的數量與訪談稿錨點 |
+| 2 新引擎（只加不改） | `dodo_workshop/proactive.py`、`dodo_workshop/intake.py`、`tests/test_proactive.py` | `build_schedule`、三類型 `choose_event`（分鐘級、ISO weekday、`<` 邊界、規則代碼）、`build_day`、新分數、G1–G5 掃描測試、完整度、漏掉的提醒。舊 `lesson2.py` 原樣保留，所以這個 commit 之後舊測試仍綠 |
+| 3 切換 | `dodo_workshop/profile.py`、`dodo_workshop/web.py`、`dodo_workshop/lesson2.py`（退場）、`app.py`、`tests/test_profile.py`、`tests/test_lesson2.py`（退場）、`tests/test_web.py`、`tests/fixtures/*`、`starter/workshop2-default-dodo.json`；刪 `memory_cards.json`／`proactive_scenarios.json`／`day_timeline.json` | schema 2、遷移（pop／冪等／fixed-point）、四個分塊、四段生成、A 層護理員鎖、golden fixture、端點接上新引擎（含對照模式、`declined_until`）、CLI 的 quiz／lab 退場 |
 | 4 拆檔 | `web/core.js`、`web/workshop1.js`、`web/workshop2.js`、`index.html` | 零行為變更；`registerApplyTab`；`uicheck.js` 全綠 |
 | 5 建檔分頁 | `web/workshop2.js`、`index.html`、`styles.css` | 訪談稿面板、六區表單＋問豆豆＋即時提示、完整度、檢視器來源標記、紅隊 |
 | 6 態度分頁 | `web/workshop2.js`、`index.html` | 四個小格、來源標籤 |
@@ -362,3 +364,5 @@ Barry 對現在第二堂的判斷：「方向不好、過於枯燥」。三個�
 手動（瀏覽器，有 Key）：建檔 → 每區問豆豆 → 態度改一格套用再問 → 跑她的一天四組（預設、30／2、0／20、60／4）＋對照開關 → 健康關心真的開口 → 回「膝蓋好多了」看 B 被取代 → 按「她剛說不想聊」→ 21:45 閒聊被擋、重要提醒照說 → 紅隊四句 → 產生摘要 → 下載再匯入。
 
 複雜度：**高**。估 4–5 個工作 session：階段 1–3 一個、階段 4 半個、階段 5–7 兩個、階段 8 半個。
+
+2026-08-28 進度：階段 1、2 完成（見 git log）。

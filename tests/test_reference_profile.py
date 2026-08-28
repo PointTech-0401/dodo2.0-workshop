@@ -18,7 +18,7 @@ INTERVIEW = (ROOT / "scenarios" / "interview.md").read_text(encoding="utf-8")
 # 設計規格 §2.1 的建檔欄位。階段 2 的 elder_profile schema 照這份寫，
 # 所以多一個或少一個都要先改規格，不能只改 JSON。
 ELDER_PROFILE_KEYS = {
-    "name", "address", "room", "city", "background", "language",
+    "name", "address", "room", "city", "background", "language", "expertise",
     "wake_time", "bed_time", "routines", "medications", "appointments",
     "emergency_contact", "taboos", "declined_notes",
 }
