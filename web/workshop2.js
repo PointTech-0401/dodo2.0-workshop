@@ -547,19 +547,30 @@ async function askCompare() {
  *
  *  Reading the transcript is the same trick 今日摘要 uses: the reply arrives as
  *  streamed deltas into one bubble, so "finished" is "stopped changing" rather
- *  than any single event — audio and text modes end on different ones. */
+ *  than any single event — audio and text modes end on different ones.
+ *
+ *  Two things a naive「最後一顆泡泡」would get wrong, and 「你記得我什麼？」 —
+ *  the default question here — triggers both:
+ *
+ *  - A **preamble**（「我看一下記得什麼…」）is a real assistant bubble that is
+ *    not the answer: it shares a response with the `read_memory` call, and the
+ *    answer arrives in the next response. core stamps those `is-preamble` inside
+ *    the `response.done` handler, before it awaits the tool, so they are already
+ *    marked by the time this loop could mistake one for the reply.
+ *  - `responseActive` is still true while a reply streams, so a pause between
+ *    deltas longer than settleMs cannot end the wait early. */
 async function awaitDodoReply(timeoutMs = 40000, settleMs = 1200) {
-  const before = $$("#messages .message.assistant").length;
+  const existing = new Set($$("#messages .message.assistant"));
   const deadline = Date.now() + timeoutMs;
   let seen = "";
   let lastChange = Date.now();
   while (Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, 200));
-    const bubbles = $$("#messages .message.assistant");
-    if (bubbles.length <= before) continue;
-    const text = bubbles[bubbles.length - 1].querySelector("p")?.textContent.trim() || "";
+    const fresh = $$("#messages .message.assistant")
+      .filter((bubble) => !existing.has(bubble) && !bubble.classList.contains("is-preamble"));
+    const text = fresh.length ? fresh[fresh.length - 1].querySelector("p")?.textContent.trim() || "" : "";
     if (text !== seen) { seen = text; lastChange = Date.now(); continue; }
-    if (seen && Date.now() - lastChange >= settleMs) return seen;
+    if (seen && !responseActive && Date.now() - lastChange >= settleMs) return seen;
   }
   return seen;
 }

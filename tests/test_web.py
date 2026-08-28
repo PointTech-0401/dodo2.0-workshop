@@ -641,7 +641,7 @@ def test_workshop2_has_its_own_viewable_editable_prompt_layer() -> None:
 
     # Editable blocks, plus the same read-only full-prompt VIEW as Workshop 1.
     assert '<textarea id="promptMemoryUse"' in page
-    # 態度, not data: the four editable blocks say *how* 豆豆 records and speaks.
+    # 規範, not data: the four editable blocks say *how* 豆豆 records and speaks.
     for block in ("promptAttitudeReminder", "promptAttitudeHealth", "promptAttitudeChat"):
         assert f'<textarea id="{block}"' in page, block
     # The schema-1 block that mixed rules and data in one box is retired.
