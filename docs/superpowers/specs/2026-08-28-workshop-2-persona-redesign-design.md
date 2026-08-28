@@ -344,6 +344,19 @@ Barry 對現在第二堂的判斷：「方向不好、過於枯燥」。三個�
 | 7 主動分頁 | `web/workshop2.js`、`index.html`、`styles.css` | 合併、按鈕、帶狀圖由建檔算、她的一天＋對照＋漏掉的提醒、三類型觸發、今日摘要按鈕 |
 | 8 文件與收尾 | `docs/workshop-2.md`、`docs/instructor-guide.md`、`README.md`、`tests/browser/uicheck.js` | 全部重寫第二堂；成功標準改寫；講師口頭舉例的註記 |
 
+## 7.1 階段 5–7 必辦清單（稽核與執行中累積，前端動工前逐條核對）
+
+這些散在稽核回報與對話裡，集中寫在這裡以免遺失：
+
+1. **`MEMORY_PREVIEW_LIMIT` 前端 8 → 16**，與 `prompt_sections.py` 同值；`tests/browser/uicheck.js` 載入 `tests/fixtures/workshop2_workspace.json`，比對 `W2.buildWorkshop2Prompt` 與 `workshop2_prompt.txt` 逐字相等（規格 §4 的「前後端同文」目前只做了後端那一半）。
+2. **`REALTIME_TOOLS` 的 `update_memory` 描述**仍是舊語意（六類型時代）：改寫成護理員鎖（A 層 `source=caregiver` 不能 replace／remove）與症狀取代（B 層「好多了」→ replace）；`upsertMemory` 實作 A 層護理員鎖並寫入 `source`／`tag`；工具拒絕時回「這筆是護理員建的，豆豆不能改，請告訴護理員」。紅隊「把『少甜少油』刪掉」靠這個。
+3. **排程器與觸發的 payload 欄位改名**：`minutes_since_last_message` → `minutes_since_last`、`messages_today` → `sent_today`；`user_declined` 由 `proactive_state.declined_until` 算出（建檔沒填起床時間時 `wake=0`，上限退化為「60 分鐘」）。事件類型下拉只剩三種，`elder_profile` 一起送。
+4. **舊 W2 的原始碼字串測試**（`tests/test_web.py`：優先權下拉、記憶卡、「保存 365 天」標題、6 個情境、`memoryLayerHeadings(memoryPolicy)`、`MEMORY_USE_GUIDANCE`）與它們釘住的程式**同一階段刪**——不能提前、不能落後。
+5. `checkMemory`／`renderMemoryCards`／`migrateWorkshop2Blocks`／`migrateAgent` 是死碼：拆檔會逐字帶過去，階段 5 建檔表單落地時刪；瀏覽器端的 schema 遷移改走 **`POST /api/workspace/normalize`**（已在後端加上，`tests/test_workspace_api.py`），`importProject` 不再硬擋 `schema_version !== 1`，localStorage 載入時也送去正規化，前端不再保留任何遷移邏輯。
+6. 建檔表單每一區（含寫進 memory 的興趣與症狀）都走 `registerApplyGroup` 的快照；列表欄位的 `read()` 要正規化（濾空白列、時間補零、`Number()`、依開始時間排序），`write()` 整段重繪。
+7. `proactivePolicyFromFields()` 不再展開舊物件（避免殘留鍵混進快照）。
+8. 24 小時帶狀圖由建檔算出：前端需要一份與 `build_schedule` 同義的窗計算（分鐘級、跨午夜、weekday 過濾）；它只畫圖，決策一律走後端。
+
 ## 8. 風險
 
 | 風險 | 等級 | 緩解 |

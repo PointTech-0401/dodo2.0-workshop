@@ -184,6 +184,12 @@ class WeatherRequest(BaseModel):
     city: str = Field(min_length=1, max_length=100)
 
 
+class WorkspaceRequest(BaseModel):
+    """A stored or imported 我的 Dodo, in whatever schema it was saved."""
+
+    workspace: dict[str, Any]
+
+
 @app.get("/")
 def index() -> FileResponse:
     return FileResponse(WEB_DIR / "index.html")
@@ -212,6 +218,22 @@ def bootstrap() -> dict[str, Any]:
             else ("environment" if active_weather_api_key() else None)
         ),
     }
+
+
+@app.post("/api/workspace/normalize")
+def normalize_workspace_endpoint(payload: WorkspaceRequest) -> dict[str, Any]:
+    """One migration path, not two.
+
+    The browser used to re-implement schema fixes in JavaScript for localStorage
+    hydration and for 匯入 — the drift class the golden fixture exists to kill.
+    The page is served by this process, so there is no offline hydration case:
+    the browser posts whatever it has and stores what comes back.
+    """
+
+    try:
+        return {"workspace": normalize_workspace(payload.workspace)}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/settings/api-key")
