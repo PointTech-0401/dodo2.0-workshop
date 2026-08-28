@@ -381,6 +381,13 @@ Barry 對現在第二堂的判斷：「方向不好、過於枯燥」。三個�
 
 §7.1 必辦清單：1–7 完成，**8（帶狀圖由建檔算出）留給階段 7**；#3 的 `user_declined` 由 `declined_until` 算出也留給階段 7，因為「她剛說不想聊」按鈕是那一階段才長出來的。
 
+### 階段 7 要先修的兩件事（階段 5＋6 留下的）
+
+1. **`markTabApplied` 會吞掉建檔分頁自己的未套用編輯**（已實測確認）。順序：學生在建檔打了一列作息但**還沒按套用** → 豆豆呼叫 `update_memory`（任何一筆）→ core 呼叫 `W2.syncIntakeAfterMemoryChange()` → `markTabApplied("tabW2Intake")` 把**當下的欄位**整份當成新基線。髒點消失、套用鍵藏起來，但那列作息從來沒經過 `collectWorkshop2()`——只在畫面上，F5 就沒了，而且學生沒有任何提示。
+   正確修法：不要整份重新凍結，而是只把舊的 applied snapshot 裡 `events` 那一段換掉（護理員建的 A 層事實豆豆改不動，`facts` 不需要同步；豆豆自己新增的那筆 source 是 `dodo`，`caregiverEntries()` 本來就不收）。需要在 core 加一個「只補一段」的 helper，取代 `markTabApplied` 在這條路上的用法。
+   目前風險低但不是零：`askDodo()` 會先套用才問，而課表上建檔（35–70 分）排在真的開口（120–140 分）之前，所以正常流程撞不到；亂序操作會。
+2. **主動規則分頁的帶狀圖與提示還在讀 `#quietStart`／`#quietEnd`**，可是真正的決策一律走建檔作息推導的閘門（`build_schedule`）。畫面現在會對學生說謊：改那兩個欄位，帶狀圖會動，她的一天不會。這是 §7.1 #8 的另一面，也是階段 7 最該先動的東西。
+
 階段 5＋6 執行中發現、順手一起修掉的（都屬 §7.1 #3 的欄位改名同一類）：
 
 - 前端送 `minutes_since_last_message`／`messages_today`，後端 `ProactiveScenario` 收 `minutes_since_last`／`sent_today`。pydantic 忽略不認得的欄位，所以決策一直是拿**預設值**（「24 小時沒講話、今天還沒講過」）算的——每一關都通過，但理由是錯的。兩個端點現在也一起送 `elder_profile`，否則閘門是對著空作息表在判斷。
