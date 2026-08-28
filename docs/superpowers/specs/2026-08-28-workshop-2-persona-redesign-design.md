@@ -377,16 +377,27 @@ Barry 對現在第二堂的判斷：「方向不好、過於枯燥」。三個�
 
 複雜度：**高**。估 4–5 個工作 session：階段 1–3 一個、階段 4 半個、階段 5–7 兩個、階段 8 半個。
 
-2026-08-28 進度：階段 1–6 完成（分支 `w2-persona`，見 git log）。階段 3 稽核抽出 `dodo_workshop/prompt_sections.py`（四段生成段落）；`MEMORY_PREVIEW_LIMIT` 兩邊都是 16（參考建檔有 13 筆 A 層事實，必須整份進得了模型），由 golden fixture 逐字釘住。
+2026-08-28 進度：階段 1–7 完成（分支 `w2-persona`，見 git log）。**剩下階段 8：文件與收尾**（`docs/workshop-2.md`、`docs/instructor-guide.md`、`README.md`）——合併分頁後那三份文件講的介面已經不存在。階段 3 稽核抽出 `dodo_workshop/prompt_sections.py`（四段生成段落）；`MEMORY_PREVIEW_LIMIT` 兩邊都是 16（參考建檔有 13 筆 A 層事實，必須整份進得了模型），由 golden fixture 逐字釘住。
 
-§7.1 必辦清單：1–7 完成，**8（帶狀圖由建檔算出）留給階段 7**；#3 的 `user_declined` 由 `declined_until` 算出也留給階段 7，因為「她剛說不想聊」按鈕是那一階段才長出來的。
+§7.1 必辦清單：**1–8 全部完成**（#8 的帶狀圖與 #3 的 `declined_until` 在階段 7 落地）。
 
-### 階段 7 要先修的兩件事（階段 5＋6 留下的）
+階段 7 開場先修掉階段 5＋6 留下的兩件事，兩者都已實測確認過再改：
 
-1. **`markTabApplied` 會吞掉建檔分頁自己的未套用編輯**（已實測確認）。順序：學生在建檔打了一列作息但**還沒按套用** → 豆豆呼叫 `update_memory`（任何一筆）→ core 呼叫 `W2.syncIntakeAfterMemoryChange()` → `markTabApplied("tabW2Intake")` 把**當下的欄位**整份當成新基線。髒點消失、套用鍵藏起來，但那列作息從來沒經過 `collectWorkshop2()`——只在畫面上，F5 就沒了，而且學生沒有任何提示。
-   正確修法：不要整份重新凍結，而是只把舊的 applied snapshot 裡 `events` 那一段換掉（護理員建的 A 層事實豆豆改不動，`facts` 不需要同步；豆豆自己新增的那筆 source 是 `dodo`，`caregiverEntries()` 本來就不收）。需要在 core 加一個「只補一段」的 helper，取代 `markTabApplied` 在這條路上的用法。
-   目前風險低但不是零：`askDodo()` 會先套用才問，而課表上建檔（35–70 分）排在真的開口（120–140 分）之前，所以正常流程撞不到；亂序操作會。
-2. **主動規則分頁的帶狀圖與提示還在讀 `#quietStart`／`#quietEnd`**，可是真正的決策一律走建檔作息推導的閘門（`build_schedule`）。畫面現在會對學生說謊：改那兩個欄位，帶狀圖會動，她的一天不會。這是 §7.1 #8 的另一面，也是階段 7 最該先動的東西。
+1. **`markTabApplied` 會吞掉建檔分頁自己的未套用編輯**（commit `15c605c`）。學生在建檔打了一列作息但還沒按套用，豆豆任何一次 `update_memory` 都會讓 `syncIntakeAfterMemoryChange()` 把當下欄位整份當成新基線——髒點消失、套用鍵藏起來，但那一列從來沒進 `workspace`，F5 就沒了。改成只搬 `events` 那一段（`patchAppliedSnapshot`）。
+2. **帶狀圖與提示讀 `#quietStart`／`#quietEnd`，決策卻走作息推導的閘門**——畫面對學生說謊。階段 7 把那兩個欄位整個拿掉。
+
+### 階段 7 的形狀（§5.3）
+
+三個分頁定案：建檔 → 態度 → **主動**（`tabW2Trigger` 刪除，id 沿用 `tabW2Policy`，只有標籤合併）。主動分頁由上到下一條線：
+
+1. **兩個旋鈕**。規則表重寫成 `choose_event()` 的真實順序七列：重要提醒不受限制、她剛說不想聊、安靜時段、不打擾時段、間隔、每日上限、每則句數。只有間隔與每日上限是欄位；安靜與不打擾標成 `is-derived` 並附「在建檔 › 作息改」；每則句數固定 2 句（§2.3），`#maxSentences` 刪除。
+2. **帶狀圖由建檔算出**。前端 `buildScheduleWindows()` 是 `build_schedule` 的雙生子（分鐘級、跨午夜、weekday 過濾），48 格半小時解析度——13:00–14:30 的午睡要落在格線上。它**只畫圖**，決策一律走後端；兩邊同義不靠註解守：`uicheck` 拿一次真實 day run 回傳的 `schedule` 跟它 deep-equal。帶狀圖唯讀，點擊跳到建檔的作息區。它讀**表單**而不是 `workspace`——沒套用前 `workspace` 還是舊的，讀它就會落後一整次編輯，那正是這一階段要消滅的謊。
+3. **「現在哪條規則在卡人」**（`renderBlockingRuleNow`）按 `choose_event` 的順序對現在這一刻算一次，並說明重要提醒照樣送得出去。
+4. **她的一天**：先猜再跑（兩個欄位＋結果旁對照）、`blocked_by` 逐條統計、時間軸、與上次差異、漏掉的用藥／回診、「用正式 dodo 的固定閘門跑」對照開關（`gates="dodo_fixed"`）。`workshop_2_completed` 改由跑完一天標記——原本是 `runProactiveTests` 標的。
+5. **真的開口**沿用，三類型下拉；健康關心的事件內容從 B 層最新症狀帶入（只填空白欄位，學生寫的永遠優先）。
+6. **今日摘要**（C 層）：逐字稿從聊天室 DOM 讀 `.message.user`／`.message.assistant`，TOOL 與 SYSTEM 是課堂儀器不是有人說過的話；寫入一律走 `upsertMemory`，所以 C 的「重寫」規則同樣適用。
+
+一併退場：`執行 6 個情境`（`/api/proactive-check` 已隨 `lesson2.py` 消失，這支早就是死碼）、`memoryPassed`、`事件優先權` 欄位與 `prioritiesFromFields`、`isQuietHour`、`.test-item`／`.test-results`／`.priority-field*` CSS。`speakProactive`／`proactiveTurnInstructions` 的 `policy` 參數在每則句數固定後不再使用，一起拿掉。
 
 階段 5＋6 執行中發現、順手一起修掉的（都屬 §7.1 #3 的欄位改名同一類）：
 

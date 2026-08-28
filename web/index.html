@@ -180,8 +180,7 @@
           <div class="tab-bar" role="tablist" aria-label="Workshop 2 設定">
             <button type="button" class="tab-button is-active" role="tab" aria-selected="true" aria-controls="tabW2Intake" data-tab="tabW2Intake">建檔</button>
             <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Prompt" data-tab="tabW2Prompt">態度</button>
-            <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Policy" data-tab="tabW2Policy">主動規則</button>
-            <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Trigger" data-tab="tabW2Trigger">觸發主動</button>
+            <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="tabW2Policy" data-tab="tabW2Policy">主動</button>
           </div>
         </div>
 
@@ -327,149 +326,127 @@
         </div>
 
         <div id="tabW2Policy" class="tab-panel policy-block" role="tabpanel" tabindex="0" hidden>
-          <h3>實作二：主動規則</h3>
-          <p class="block-purpose"><strong>程式決定說不說，模型只決定怎麼說。</strong>下面就是那套程式規則的全部內容，按判斷順序排。中間那一欄是它存在的理由 —— 拿掉它，右邊「跑一整天」裡就真的會發生那件事。</p>
+          <h3>實作二：她的一天</h3>
+          <p class="block-purpose"><strong>程式決定說不說，模型只決定怎麼說。</strong>下表就是那套程式規則的全部內容，按 <code>choose_event()</code> 的判斷順序排。中間那一欄是它存在的理由——拿掉它，下面「跑她的一天」裡就真的會發生那件事。</p>
           <details class="why-details">
             <summary>為什麼會主動說話的 Agent 一定要有規則？</summary>
             <div>
-              <p>最大的風險不是講錯，是<strong>在不該講的時候講</strong>：半夜、你剛說不想聊、五分鐘前才講過、今天已經煩你四次。</p>
-              <p>而且這幾條不能只寫在 Prompt 裡拜託模型自律 —— 模型可以不聽 Prompt，但過不了程式。所以它們寫在 <code>dodo_workshop/lesson2.py</code> 的 <code>choose_event()</code> 裡，判斷順序就是下表的順序。</p>
+              <p>最大的風險不是講錯，是<strong>在不該講的時候講</strong>：她還沒起床、她剛說不想聊、五分鐘前才講過、今天已經煩她四次。</p>
+              <p>而且這幾條不能只寫在 Prompt 裡拜託模型自律——模型可以不聽 Prompt，但過不了程式。所以它們寫在 <code>dodo_workshop/proactive.py</code> 的 <code>choose_event()</code> 裡，判斷順序就是下表的順序。</p>
             </div>
           </details>
 
-          <!-- Five scattered number fields never said what they were for. The
-               middle column is the whole point of this page: every line names a
-               real event in 跑一整天 that the rule is there to stop. -->
+          <h4 class="sub-heading">一、你只有兩個旋鈕</h4>
+          <p class="block-purpose">七條規則裡，只有兩條是數字讓你調。安靜與不打擾<strong>由建檔的作息算出來</strong>，不在這裡改——因為那是她的生活，不是設定值。</p>
           <div class="rule-table">
             <div class="rule-row is-head"><span>#</span><span>規則</span><span>沒有它會發生什麼</span><span>你的設定</span></div>
             <div class="rule-row is-fixed">
               <span class="rule-order">1</span>
-              <span class="rule-name">緊急事件豁免</span>
-              <span class="rule-why">23:40 偵測到跌倒，卻因為「現在是安靜時段」而不出聲。</span>
+              <span class="rule-name">重要提醒不受限制</span>
+              <span class="rule-why">21:00 的安眠藥因為「今天已經講四則了」而不提醒，她整晚沒吃藥。</span>
               <span class="rule-set"><em>永遠放行</em></span>
             </div>
-            <div class="rule-row is-fixed">
-              <span class="rule-order">2</span>
-              <span class="rule-name">尊重拒絕</span>
-              <span class="rule-why">13:20 剛說了不想聊，還是繼續講下午的老歌節目。</span>
-              <span class="rule-set"><em>一律不說</em></span>
-            </div>
             <div class="rule-row">
-              <span class="rule-order">3</span>
-              <span class="rule-name">安靜時段</span>
-              <span class="rule-why">06:40 天還沒亮，就先播一則花卉展新聞。</span>
+              <span class="rule-order">2</span>
+              <span class="rule-name">她剛說不想聊</span>
+              <span class="rule-why">13:20 她說了不想聊，13:25 又來講下午的老歌節目。</span>
               <span class="rule-set">
-                <input id="quietStart" type="number" min="0" max="23" aria-label="安靜時段開始（小時）">
-                <span class="rule-dash">–</span>
-                <input id="quietEnd" type="number" min="0" max="23" aria-label="安靜時段結束（小時）">
-                <span class="rule-unit">點</span>
+                <button id="declineChat" type="button" class="secondary-button">她剛說不想聊</button>
+                <small id="declineState" class="decline-state" aria-live="polite"></small>
               </span>
             </div>
-            <div class="rule-row">
+            <div class="rule-row is-derived">
+              <span class="rule-order">3</span>
+              <span class="rule-name">安靜時段</span>
+              <span class="rule-why">06:40 她還沒起床，就先播一則花卉展新聞。</span>
+              <span class="rule-set"><em>上床→起床</em><button type="button" class="link-to-intake" data-goto-intake>在建檔 › 作息改</button></span>
+            </div>
+            <div class="rule-row is-derived">
               <span class="rule-order">4</span>
-              <span class="rule-name">冷卻時間</span>
+              <span class="rule-name">不打擾時段</span>
+              <span class="rule-why">13:30 她在午睡，豆豆問她膝蓋好不好。</span>
+              <span class="rule-set"><em>勾了「不打擾」的作息</em><button type="button" class="link-to-intake" data-goto-intake>在建檔 › 作息改</button></span>
+            </div>
+            <div class="rule-row">
+              <span class="rule-order">5</span>
+              <span class="rule-name">間隔</span>
               <span class="rule-why">08:10 剛講完血壓藥，08:35 又講一次記得帶傘。</span>
               <span class="rule-set">
-                <input id="cooldown" type="number" min="0" aria-label="冷卻分鐘">
+                <input id="cooldown" type="number" min="0" aria-label="兩則主動訊息至少間隔幾分鐘">
                 <span class="rule-unit">分鐘</span>
               </span>
             </div>
             <div class="rule-row">
-              <span class="rule-order">5</span>
+              <span class="rule-order">6</span>
               <span class="rule-name">每日上限</span>
-              <span class="rule-why">一天 13 件全講出去，重要的三件（血壓藥、回診、睡前藥）被埋在新聞和天氣裡。</span>
+              <span class="rule-why">一天的事全講出去，重要的幾件被埋在閒聊裡。</span>
               <span class="rule-set">
                 <input id="dailyLimit" type="number" min="1" aria-label="每日主動訊息上限">
                 <span class="rule-unit">則</span>
               </span>
             </div>
-            <div class="rule-row is-wide">
-              <span class="rule-order">6</span>
-              <span class="rule-name">事件優先權</span>
-              <span class="rule-why">回診提醒和新聞同時來、只能講一件時，講錯那一件。數字大的先講；<code>emergency</code> 另外套用第 1 條。</span>
-              <!-- Rendered from the student's own `priorities`, so the 觸發主動
-                   dropdown's numbers move the moment these do. The docs told
-                   students to tune priorities; the screen had no field for it. -->
-              <div id="priorityFields" class="priority-fields"></div>
-            </div>
             <div class="rule-row is-model">
               <span class="rule-order">7</span>
               <span class="rule-name">每則句數</span>
-              <span class="rule-why">主動開口變成一段演講，長者記不住第三句。<strong>這是唯一交給模型執行的一條</strong> —— 程式只把句數寫進 Prompt。</span>
-              <span class="rule-set">
-                <input id="maxSentences" type="number" min="1" max="6" aria-label="每則主動訊息最多幾句">
-                <span class="rule-unit">句</span>
-              </span>
+              <span class="rule-why">主動開口變成一段演講，長者記不住第三句。<strong>這是唯一交給模型執行的一條</strong>——程式只把句數寫進 Prompt。</span>
+              <span class="rule-set"><em>2 句</em></span>
             </div>
           </div>
 
-          <!-- The band and the two lines redraw on every keystroke, so a change
-               to 安靜時段 or 冷卻 is visible before anything is run. -->
+          <!-- The band is derived, not typed: `buildScheduleWindows()` is the
+               browser's twin of build_schedule(), and a day run's own
+               `schedule` is compared against it in tests/browser/uicheck.js. -->
           <div class="policy-preview">
-            <p class="preview-label">這套規則現在長什麼樣</p>
-            <div id="quietBand" class="quiet-band" aria-hidden="true"></div>
+            <p class="preview-label">她今天的作息長什麼樣<small>灰色＝安靜與不打擾，由建檔算出。點一下跳到建檔的作息區。</small></p>
+            <div id="quietBand" class="quiet-band is-derived" role="button" tabindex="0" data-goto-intake aria-label="24 小時帶狀圖，點擊跳到建檔的作息區"></div>
             <div class="band-scale" aria-hidden="true"><span>0</span><span>6</span><span>12</span><span>18</span><span>24</span></div>
             <p id="policySummary" class="policy-summary" aria-live="polite"></p>
             <p id="policyBinding" class="policy-binding" aria-live="polite"></p>
           </div>
 
-          <h4 class="sub-heading">驗證一：規則寫對了嗎</h4>
-          <p class="block-purpose">6 個寫死的情境各有一個正確答案。<strong>不呼叫模型、不需要 API Key</strong>，所以隨便改隨便跑。</p>
+          <h4 class="sub-heading">二、跑她的一天（星期二）</h4>
+          <p class="block-purpose">用你這兩個數字，把她星期二的事件從頭走到尾。回報兩個互相拉扯的數字：<strong>漏掉的健康關心</strong>與<strong>打擾</strong>。<strong>沒有滿分答案。</strong></p>
           <details class="why-details">
-            <summary>為什麼要跑這個</summary>
-            <div><p>這一步等於<strong>把你的規則當程式來單元測試</strong>，只回答「規則寫對了嗎」。把安靜時段或冷卻改掉再跑一次，看哪幾個情境翻轉了 —— 那就是你剛剛真正改動的東西。「改完之後好不好」留給下面的一整天。</p></div>
-          </details>
-          <div class="lab-actions">
-            <button id="runProactiveTests" class="primary-button">執行 6 個情境</button>
-          </div>
-          <details id="proactiveOutcome" class="result-panel" hidden>
-            <summary><span id="proactiveScore" class="single-result"></span><em>收合／展開</em></summary>
-            <div id="proactiveResults" class="test-results" aria-live="polite"></div>
-          </details>
-
-          <h4 class="sub-heading">驗證二：這套規則過完一天的代價</h4>
-          <p class="block-purpose">用你現在這份規則跑完 24 小時的 13 個事件，回報兩個互相拉扯的數字：<strong>漏掉重要事</strong>與<strong>打擾</strong>。<strong>沒有滿分。</strong></p>
-          <details class="why-details">
-            <summary>為什麼要跑這個</summary>
+            <summary>為什麼要先猜再跑</summary>
             <div>
-              <p>6 個情境有個盲點：<strong>每個都從乾淨狀態開始</strong>。真實的一天不是這樣 —— 冷卻與每日額度會累積下去，早上多聊一句，晚上的睡前藥提醒就少一次額度。</p>
-              <p>規則放寬就少漏、但更煩；規則收緊就清靜、但會漏掉吃藥。這一題要的是你的取捨與理由，不是分數。</p>
+              <p>先寫下你猜的數字，再按下去。<strong>猜錯的地方就是你對這套規則的誤解</strong>——直接看結果很容易變成「哦，原來是這樣」，猜過再看才會記得為什麼。</p>
+              <p>而且一整天不是六個獨立情境：間隔與每日額度會<strong>累積下去</strong>，早上多聊一句，晚上的睡前提醒就少一次額度。</p>
             </div>
           </details>
+          <div class="predict-row">
+            <label>我猜會漏掉<input id="predictMissed" type="number" min="0" max="20" placeholder="?"><span>次健康關心</span></label>
+            <label>我猜會打擾<input id="predictNoise" type="number" min="0" max="20" placeholder="?"><span>次</span></label>
+          </div>
           <div class="lab-actions">
-            <button id="runDaySimulation" class="primary-button">跑一整天</button>
+            <button id="runDaySimulation" class="primary-button">跑她的一天</button>
+            <label class="toggle-row"><input id="dayGatesFixed" type="checkbox">用正式 dodo 的固定閘門跑（22:00–08:00＋用餐時段）</label>
           </div>
           <details id="dayOutcome" class="result-panel" hidden>
             <summary><span id="dayScore" class="single-result"></span><em>收合／展開</em></summary>
+            <div id="dayPredictEcho" class="predict-echo" aria-live="polite"></div>
             <div id="daySummary" class="day-summary" aria-live="polite"></div>
+            <div id="dayMissing" class="day-missing" aria-live="polite"></div>
             <div id="dayTimeline" class="day-timeline"></div>
           </details>
-        </div>
 
-        <div id="tabW2Trigger" class="tab-panel policy-block" role="tabpanel" tabindex="0" hidden>
-          <h3>現在觸發一次主動關心</h3>
-          <p class="block-purpose">這裡是唯一會讓豆豆<strong>真的在聊天室先開口</strong>的地方。同一套規則（<code>choose_event</code>）先判斷這個情境，通過才送 <code>response.create</code> 讓它說話，被擋下來就只顯示理由。</p>
+          <h4 class="sub-heading">三、真的開口</h4>
+          <p class="block-purpose">這裡是唯一會讓豆豆<strong>真的在聊天室先開口</strong>的地方。同一套 <code>choose_event</code> 先判斷，通過才送 <code>response.create</code> 讓它說話，被擋下來就只顯示理由。</p>
           <details class="why-details">
             <summary>先講清楚這裡「沒有」什麼</summary>
             <div>
               <p><strong>沒有排程器</strong>：真實的 dodo 由事件源在背後推事件，這裡由你排一筆待提醒代替它。</p>
-              <p>事件<strong>類型沒有串接任何資料來源</strong>（連 weather 都不會去查天氣），它只做兩件事 —— 決定優先權數字、以「事件類型：X」寫進這一輪的 Prompt。要說什麼完全來自你填的「事件內容」。</p>
+              <p>事件<strong>類型沒有串接任何資料來源</strong>，它只做兩件事——決定要不要吃額度、以「事件類型：X」寫進這一輪的 Prompt。要說什麼完全來自你填的「事件內容」。</p>
             </div>
           </details>
 
-          <!-- One event block feeding both modes. It used to sit above an A/B
-               pair with no heading of its own, so nobody could tell which
-               section it belonged to. -->
           <div class="event-card">
             <p class="preview-label">這次要處理的事件</p>
             <div class="field-row">
               <label>類型<select id="proactiveEventType"></select></label>
-              <label>內容<input id="proactiveTopic" placeholder="例如：16:00 回診，要帶健保卡"></label>
+              <label>內容<input id="proactiveTopic" placeholder="例如：16:00 回診，要帶健保卡"><small id="topicHint"></small></label>
             </div>
           </div>
 
-          <!-- A/B headings replaced by the one thing that actually separates
-               them: which clock decides. -->
           <div class="mode-switch" role="tablist" aria-label="觸發方式">
             <button type="button" class="mode-button is-active" role="tab" aria-selected="true" aria-controls="triggerModeSchedule" data-trigger-mode="schedule">⏰ 排到真實時間</button>
             <button type="button" class="mode-button" role="tab" aria-selected="false" aria-controls="triggerModeManual" data-trigger-mode="manual">🧪 假設狀態試打一次</button>
@@ -484,12 +461,11 @@
           </div>
 
           <div id="triggerModeManual" class="trigger-mode" role="tabpanel" tabindex="0" hidden>
-            <!-- These four numbers are the ONLY inputs to the 安靜時段／冷卻／
-                 每日上限 rules, and the values they have to beat live one tab
-                 away in 主動規則. The hints carry them here, live. -->
+            <!-- These are the ONLY inputs to the 間隔／每日上限 rules; 安靜與不打擾
+                 come from 建檔 instead, which is why the hints name her 作息. -->
             <div class="field-row">
               <label>模擬現在時間<input id="proactiveNow" type="time"><small id="nowHint"></small></label>
-              <label class="toggle-row"><input id="proactiveDeclined" type="checkbox">使用者剛剛拒絕聊天</label>
+              <label class="toggle-row"><input id="proactiveDeclined" type="checkbox">假設她剛剛拒絕聊天</label>
             </div>
             <div class="field-row">
               <label>距上次主動訊息（分鐘）<input id="proactiveSinceLast" type="number" min="0" value="999"><small id="sinceLastHint"></small></label>
@@ -511,6 +487,13 @@
           </div>
           <div id="scheduleList" class="schedule-list" aria-live="polite"></div>
           <p class="block-purpose">真實累積量（排程與手動實際說出去的訊息都算在內）：<span id="proactiveLiveState" class="live-state"></span></p>
+
+          <h4 class="sub-heading">四、產生今日摘要（記憶 C 層）</h4>
+          <p class="block-purpose">C 層是<strong>唯一不是人打字寫進去的</strong>：它從今天的對話整理出來。按下去會把聊天室裡的對話送去摘要，寫成一筆 C 層記憶——回建檔的檢視器就看得到。</p>
+          <div class="lab-actions">
+            <button id="runTodaySummary" class="primary-button">產生今日摘要</button>
+          </div>
+          <p id="todaySummary" class="single-result" aria-live="polite"></p>
         </div>
       </section>
     </aside>

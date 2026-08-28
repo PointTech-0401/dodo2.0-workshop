@@ -306,19 +306,10 @@ registerApplyGroup("workshop2", {
       write: (policy) => {
         $("#cooldown").value = policy.interval_minutes;
         $("#dailyLimit").value = policy.daily_limit;
-        $("#quietStart").value = policy.quiet_hours.start;
-        $("#quietEnd").value = policy.quiet_hours.end;
-        $("#maxSentences").value = policy.max_message_sentences;
-        renderPriorityFields(policy.priorities);
-        renderProactiveEventOptions();
       },
     },
   },
 });
-// Only Workshop 2 reads or writes this: 執行 6 個情境 gates on it (dead until
-// the 主動 tab is rebuilt; the quiz that used to set it is gone).
-let memoryPassed = true;
-
 // The three types `choose_event` decides between. schema 1 had six, each with a
 // priority number; 緊急／天氣／新聞／反向請教 left with it.
 const PROACTIVE_EVENT_LABELS = {
@@ -326,23 +317,6 @@ const PROACTIVE_EVENT_LABELS = {
   health: "health 健康關心",
   chat: "chat 閒聊",
 };
-
-function renderPriorityFields(priorities = {}) {
-  const entries = Object.entries(priorities || {})
-    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]));
-  $("#priorityFields").innerHTML = entries.map(([type, score]) => `
-    <label class="priority-field">
-      <span>${escapeHtml(PROACTIVE_EVENT_LABELS[type] || type)}</span>
-      <input type="number" min="0" max="999" data-priority="${escapeHtml(type)}" value="${Number(score) || 0}">
-    </label>`).join("");
-}
-
-function prioritiesFromFields() {
-  const inputs = [...document.querySelectorAll("#priorityFields [data-priority]")];
-  return Object.fromEntries(inputs
-    .map((input) => [input.dataset.priority, Math.max(0, Number(input.value) || 0)])
-    .sort((left, right) => left[0].localeCompare(right[0])));
-}
 
 /** The event types the backend actually decides between. schema 1 had six, each
  *  with a priority number the student could type; schema 2 has three and no
@@ -367,14 +341,10 @@ function loadFields() {
   WORKSHOP2_BLOCKS.forEach(([key, , selector]) => {
     $(selector).value = workspace.profile.workshop2_blocks?.[key] ?? "";
   });
-  // The 主動 tab is rebuilt in the next phase; until then its two surviving
-  // fields carry the two knobs and the rest sit at fixed values.
+  // The two knobs are the whole of proactive_policy now.
   $("#cooldown").value = proactive.interval_minutes;
   $("#dailyLimit").value = proactive.daily_limit;
-  $("#quietStart").value = 22;
-  $("#quietEnd").value = 8;
-  $("#maxSentences").value = MAX_MESSAGE_SENTENCES;
-  renderPriorityFields({});
+  renderDeclineState();
   scheduleIntakeCheck();
 }
 
@@ -385,17 +355,14 @@ function workshop2BlocksFromFields() {
   ]));
 }
 
-/** Two knobs — plus, until the 主動 tab is rebuilt, the legacy preview fields
- *  the old band and hints still read. Only the two knobs are ever stored. */
+/** The whole of `proactive_policy`: two numbers. 安靜與不打擾 are derived from
+ *  建檔, 每則句數 is fixed at MAX_MESSAGE_SENTENCES, and 事件優先權 left with
+ *  schema 1 — so this is also exactly what gets stored, with no legacy keys to
+ *  leak back into a snapshot. */
 function proactivePolicyFromFields() {
   return {
     interval_minutes: Math.max(0, Number($("#cooldown").value) || 0),
     daily_limit: Math.max(0, Number($("#dailyLimit").value) || 0),
-    quiet_hours: { start: Number($("#quietStart").value), end: Number($("#quietEnd").value) },
-    cooldown_minutes: Math.max(0, Number($("#cooldown").value) || 0),
-    daily_message_limit: Math.max(0, Number($("#dailyLimit").value) || 0),
-    max_message_sentences: MAX_MESSAGE_SENTENCES,
-    priorities: prioritiesFromFields(),
   };
 }
 
@@ -781,69 +748,286 @@ function elderAddress() {
 }
 
 const pad2 = (value) => String(value).padStart(2, "0");
+const MINUTES_PER_DAY = 24 * 60;
+const HHMM_PATTERN = /^([01]?\d|2[0-3]):[0-5]\d$/;
+// Half-hour cells: a 13:00–14:30 午睡 has to land on a boundary, or the picture
+// disagrees with the decider about the second half of hour 14.
+const BAND_CELLS = 48;
+const BAND_CELL_MINUTES = MINUTES_PER_DAY / BAND_CELLS;
 
-/** Hours the rules keep 豆豆 quiet. `start > end` wraps midnight, matching
- *  `is_quiet_hour` in lesson2.py — the band has to agree with the decider or it
- *  teaches the wrong thing. */
-function isQuietHour(hour, start, end) {
-  if (start === end) return false;
-  return start > end ? hour >= start || hour < end : hour >= start && hour < end;
+/** Minutes past midnight for a well-formed HH:MM, else null — twin of
+ *  `parse_hhmm`. Everything the student types comes through here, so a 建檔 with
+ *  「早上七點」 in a time field loses that one row instead of breaking the day. */
+function parseHhmm(text) {
+  const value = String(text ?? "").trim();
+  if (!HHMM_PATTERN.test(value)) return null;
+  const [hour, minute] = value.split(":");
+  return Number(hour) * 60 + Number(minute);
 }
 
-/** Five number fields, redrawn as one 24-hour band plus a sentence. Runs on
- *  every keystroke, so 安靜時段 and 冷卻 stop being abstract before anything is
- *  executed. Nothing here calls the server. */
+function formatMinutes(total) {
+  const wrapped = ((Math.round(total) % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+  return `${pad2(Math.floor(wrapped / 60))}:${pad2(wrapped % 60)}`;
+}
+
+/** `start > end` wraps past midnight; `start === end` is no window at all.
+ *  Twin of `Window.contains`. */
+function windowContains(window, minute) {
+  if (!window || window.start === window.end) return false;
+  return window.start < window.end
+    ? minute >= window.start && minute < window.end
+    : minute >= window.start || minute < window.end;
+}
+
+/** An empty `weekdays` list means every day, matching `_applies_today`. */
+function appliesToday(weekdays, weekday) {
+  const days = (weekdays || []).map(Number).filter((day) => Number.isInteger(day) && day > 0);
+  return !days.length || days.includes(weekday);
+}
+
+/** ISO weekday, Monday=1 … Sunday=7. `getDay()` is Sunday=0, so 0 becomes 7. */
+function isoWeekday(date = new Date()) {
+  return date.getDay() || 7;
+}
+
+/** The browser's twin of `build_schedule` (spec §3.1, §7.1 #8): 安靜 is
+ *  上床→起床, 不打擾 is every routine ticked 不打擾 that applies today.
+ *
+ *  It exists ONLY to draw the band and word the hints — every decision still
+ *  goes through the server. That the two agree is not left to this comment:
+ *  tests/browser/uicheck.js deep-equals this against the `schedule` a real day
+ *  run hands back.
+ *
+ *  No 安靜 window until BOTH times are filled in — an empty 建檔 must not quietly
+ *  inherit anyone's bedtime — and `bed === wake` also means none. A row with a
+ *  malformed time is skipped, never thrown. */
+function buildScheduleWindows(elder = {}, weekday = isoWeekday()) {
+  const wake = parseHhmm(elder.wake_time);
+  const bed = parseHhmm(elder.bed_time);
+  const quiet = wake !== null && bed !== null && bed !== wake
+    ? { label: "上床", start: bed, end: wake }
+    : null;
+  const dnd = (elder.routines || []).flatMap((routine) => {
+    const start = parseHhmm(routine?.start);
+    const end = parseHhmm(routine?.end);
+    if (!routine?.do_not_disturb || start === null || end === null) return [];
+    if (!appliesToday(routine.weekdays, weekday)) return [];
+    return [{ label: String(routine.label || "作息"), start, end }];
+  });
+  // `wake` repeats quiet.end, and is 0 when 建檔 has no 起床時間 — which is what
+  // makes the declined_until cap degrade to a flat 60 minutes (spec §2.3).
+  return { quiet, dnd, wake: wake ?? 0 };
+}
+
+/** Her schedule as the form currently reads, not as it was last applied.
+ *
+ *  The band has to move while she types 作息 — nothing reaches `workspace` until
+ *  套用, so reading the stored profile would leave the picture a whole edit
+ *  behind, which is precisely the lie this phase set out to remove. */
+function scheduleNow() {
+  return buildScheduleWindows(intakeFromFields().elder);
+}
+
+/** Every minute the rules keep 豆豆 quiet, 安靜 and 不打擾 together. */
+function closedWindows(schedule) {
+  return [schedule.quiet, ...schedule.dnd].filter(Boolean);
+}
+
+function minutesClosed(schedule) {
+  const windows = closedWindows(schedule);
+  let count = 0;
+  for (let minute = 0; minute < MINUTES_PER_DAY; minute += 1) {
+    if (windows.some((window) => windowContains(window, minute))) count += 1;
+  }
+  return count;
+}
+
+// =====================================================================
+// 「她剛說不想聊」 —— real state, not a what-if
+// =====================================================================
+const DECLINE_MINUTES = 60;
+
+/** When a decline expires: 60 分鐘, but never past her next 起床.
+ *
+ *  The cap is what stops one press from silencing 豆豆 for good — a decline at
+ *  23:30 must not run through the whole morning. With no 起床時間 in 建檔 there is
+ *  nothing to clamp to, so it stays a flat 60 分 (spec §2.3). */
+function declineExpiry(now = new Date()) {
+  const flat = new Date(now.getTime() + DECLINE_MINUTES * 60000);
+  const { wake } = scheduleNow();
+  if (!wake) return flat;
+  const nextWake = new Date(now);
+  nextWake.setHours(0, wake, 0, 0);
+  if (nextWake <= now) nextWake.setDate(nextWake.getDate() + 1);
+  return nextWake < flat ? nextWake : flat;
+}
+
+/** Whether she has declined and it has not expired yet. This is the `user_declined`
+ *  a *real* trigger sends; the 🧪 checkbox is a hypothesis for the manual one. */
+function isDeclinedNow() {
+  const until = proactiveState().declined_until;
+  return Boolean(until) && new Date(until).getTime() > Date.now();
+}
+
+function declineChat() {
+  const state = proactiveState();
+  state.declined_until = declineExpiry().toISOString();
+  saveProject();
+  renderDeclineState();
+  renderPolicyPreview();
+  renderTriggerHints();
+  const at = new Date(state.declined_until);
+  notify(`已記錄她剛說不想聊：到 ${pad2(at.getHours())}:${pad2(at.getMinutes())} 之前只送重要提醒。`);
+}
+
+function clearDecline() {
+  proactiveState().declined_until = null;
+  saveProject();
+  renderDeclineState();
+  renderPolicyPreview();
+  renderTriggerHints();
+  notify("已取消「她剛說不想聊」，閒聊與健康關心恢復。");
+}
+
+/** The button has to show when it wears off, or it reads as a permanent mute. */
+function renderDeclineState() {
+  const until = proactiveState().declined_until;
+  const active = isDeclinedNow();
+  $("#declineChat").textContent = active ? "取消（她願意聊了）" : "她剛說不想聊";
+  $("#declineChat").classList.toggle("is-active", active);
+  if (!until) {
+    $("#declineState").textContent = "現在沒有拒絕。";
+    return;
+  }
+  const at = new Date(until);
+  const clock = `${pad2(at.getHours())}:${pad2(at.getMinutes())}`;
+  $("#declineState").textContent = active
+    ? `到 ${clock} 之前只送重要提醒。`
+    : `上次拒絕已於 ${clock} 失效。`;
+}
+
+// =====================================================================
+// The band and the two lines under it
+// =====================================================================
+
+/** Her day as a picture, drawn from 建檔 rather than typed here.
+ *
+ *  Grey is every minute the rules keep 豆豆 quiet. It is deliberately read-only:
+ *  上床／起床 and 不打擾 are facts about her life, not settings, so the band sends
+ *  a click to the 建檔 作息 section instead of editing anything. */
 function renderPolicyPreview() {
-  const policy = proactivePolicyFromFields();
-  const start = policy.quiet_hours.start;
-  const end = policy.quiet_hours.end;
-  const nowHour = new Date().getHours();
-  $("#quietBand").innerHTML = Array.from({ length: 24 }, (_, hour) => {
-    const quiet = isQuietHour(hour, start, end);
-    const classes = ["band-hour", quiet ? "is-quiet" : "is-open", hour === nowHour ? "is-now" : ""];
-    return `<span class="${classes.filter(Boolean).join(" ")}" title="${pad2(hour)}:00 ${quiet ? "安靜" : "可以開口"}"></span>`;
+  const schedule = scheduleNow();
+  const windows = closedWindows(schedule);
+  const nowMinute = new Date().getHours() * 60 + new Date().getMinutes();
+  $("#quietBand").innerHTML = Array.from({ length: BAND_CELLS }, (_, cell) => {
+    const start = cell * BAND_CELL_MINUTES;
+    const hit = windows.find((window) => windowContains(window, start));
+    const isNow = nowMinute >= start && nowMinute < start + BAND_CELL_MINUTES;
+    const classes = ["band-hour", hit ? "is-quiet" : "is-open", isNow ? "is-now" : ""];
+    return `<span class="${classes.filter(Boolean).join(" ")}" title="${formatMinutes(start)} ${hit ? escapeHtml(hit.label) : "可以開口"}"></span>`;
   }).join("");
 
-  const quietCount = Array.from({ length: 24 }, (_, hour) => hour).filter((hour) => isQuietHour(hour, start, end)).length;
-  const awakeMinutes = (24 - quietCount) * 60;
-  const cooldownCap = policy.cooldown_minutes > 0
-    ? Math.floor(awakeMinutes / policy.cooldown_minutes) + (awakeMinutes % policy.cooldown_minutes ? 1 : 0)
+  const policy = proactivePolicyFromFields();
+  const closed = minutesClosed(schedule);
+  const openMinutes = MINUTES_PER_DAY - closed;
+  const intervalCap = policy.interval_minutes > 0
+    ? Math.ceil(openMinutes / policy.interval_minutes)
     : Infinity;
-  const allowed = Math.min(cooldownCap, policy.daily_message_limit);
+  const bands = [
+    schedule.quiet
+      ? `安靜 ${formatMinutes(schedule.quiet.start)}–${formatMinutes(schedule.quiet.end)}`
+      : "<b>還沒填上床與起床時間</b>（整天都能開口）",
+    schedule.dnd.length
+      ? `不打擾 ${schedule.dnd.map((window) => `${escapeHtml(window.label)} ${formatMinutes(window.start)}–${formatMinutes(window.end)}`).join("、")}`
+      : "沒有不打擾時段",
+  ];
   $("#policySummary").innerHTML = [
-    `安靜 <b>${quietCount}</b> 小時（${pad2(start)}:00–${pad2(end)}:00）`,
-    `可以開口 <b>${24 - quietCount}</b> 小時`,
-    `冷卻 <b>${policy.cooldown_minutes}</b> 分鐘 → 最多容得下 <b>${cooldownCap === Infinity ? "不限" : cooldownCap}</b> 則`,
-    `每日上限 <b>${policy.daily_message_limit}</b> 則`,
+    ...bands,
+    `可以開口 <b>${Math.round((openMinutes / 60) * 10) / 10}</b> 小時`,
+    `間隔 <b>${policy.interval_minutes}</b> 分鐘 → 最多容得下 <b>${intervalCap === Infinity ? "不限" : intervalCap}</b> 則`,
+    `每日上限 <b>${policy.daily_limit}</b> 則`,
   ].join(" ｜ ");
-
-  // Which of the three limits is doing the work. Students change 冷卻 and see
-  // nothing move because 每日上限 was the binding one all along.
-  let binding;
-  if (quietCount >= 24) binding = "整天都在安靜時段：除了緊急事件，什麼都出不去。";
-  else if (cooldownCap < policy.daily_message_limit) binding = `真正卡住的是<strong>冷卻時間</strong>：每日上限 ${policy.daily_message_limit} 則根本用不完，一天最多只擠得出 ${cooldownCap} 則。`;
-  else if (policy.daily_message_limit < cooldownCap) binding = `真正卡住的是<strong>每日上限</strong>：時間夠塞 ${cooldownCap} 則，但額度只給 ${policy.daily_message_limit} 則。`;
-  else binding = `冷卻與每日上限剛好一樣緊（都是 ${policy.daily_message_limit} 則）。`;
-  $("#policyBinding").innerHTML = `${binding} 緊急事件不受這三條限制。`;
+  renderBlockingRuleNow(schedule, policy, intervalCap);
 }
 
-/** The manual trigger's four fields are the only inputs to the rules, and the
- *  numbers they must beat live one tab away. These hints bring them here and say
- *  which way the comparison goes. */
+/** 「現在哪條規則在卡人」 —— the same order as `choose_event`, evaluated against the
+ *  real clock and the real accumulated spend for a 閒聊.
+ *
+ *  Display only: every actual decision goes to the server. What it answers is
+ *  the question a student cannot otherwise ask without waiting — 「我現在按下去，
+ *  會被哪一條擋住」 —— and why 重要提醒 would still get through. */
+function renderBlockingRuleNow(schedule, policy, intervalCap) {
+  const labels = bootstrapData?.rule_labels || {};
+  const minute = new Date().getHours() * 60 + new Date().getMinutes();
+  const state = proactiveState();
+  const dnd = schedule.dnd.find((window) => windowContains(window, minute));
+  let blocking;
+  if (isDeclinedNow()) blocking = labels.declined || "她剛說不想聊";
+  else if (windowContains(schedule.quiet, minute)) {
+    blocking = `${labels.quiet || "安靜時段"}（${minute < schedule.wake ? "她還沒起床" : "她已經上床了"}）`;
+  } else if (dnd) blocking = `${labels.dnd || "不打擾時段"}（她在${dnd.label}）`;
+  else if (minutesSinceLastProactive() < policy.interval_minutes) {
+    blocking = `${labels.interval || "間隔"}（距上一句才 ${minutesSinceLastProactive()} 分鐘）`;
+  } else if (state.sent_today >= policy.daily_limit) {
+    blocking = `${labels.limit || "每日上限"}（今天已經 ${state.sent_today} 則）`;
+  }
+  const tighter = intervalCap < policy.daily_limit
+    ? `真正卡住一天的是<strong>間隔</strong>：每日上限 ${policy.daily_limit} 則用不完，最多只擠得出 ${intervalCap} 則。`
+    : intervalCap > policy.daily_limit
+      ? `真正卡住一天的是<strong>每日上限</strong>：時間夠塞 ${intervalCap === Infinity ? "不限" : intervalCap} 則，額度只給 ${policy.daily_limit} 則。`
+      : `間隔與每日上限剛好一樣緊（都是 ${policy.daily_limit} 則）。`;
+  $("#policyBinding").innerHTML = blocking
+    ? `<strong>現在閒聊會被〈${blocking}〉擋下</strong>，但重要提醒照樣送得出去。${tighter}`
+    : `<strong>現在閒聊過得去。</strong>${tighter}`;
+}
+
+/** The manual trigger's fields are the only inputs to 間隔 and 每日上限; 安靜與
+ *  不打擾 come from 建檔 instead. These hints bring both numbers here and say
+ *  which way each comparison goes. */
 function renderTriggerHints() {
   const policy = proactivePolicyFromFields();
-  const start = policy.quiet_hours.start;
-  const end = policy.quiet_hours.end;
+  const schedule = scheduleNow();
 
   const now = $("#proactiveNow").value || "12:00";
-  const quiet = isQuietHour(Number(now.slice(0, 2)), start, end);
-  $("#nowHint").textContent = `主動規則的安靜時段是 ${pad2(start)}:00–${pad2(end)}:00。${quiet ? `${now} 落在安靜時段裡，只有緊急事件過得去。` : `${now} 不在安靜時段，這一關會通過。`}`;
+  const minute = parseHhmm(now) ?? 12 * 60;
+  const dnd = schedule.dnd.find((window) => windowContains(window, minute));
+  if (windowContains(schedule.quiet, minute)) {
+    $("#nowHint").textContent = `${now} 落在她的安靜時段（${formatMinutes(schedule.quiet.start)}–${formatMinutes(schedule.quiet.end)}），只有重要提醒過得去。`;
+  } else if (dnd) {
+    $("#nowHint").textContent = `${now} 她在${dnd.label}（${formatMinutes(dnd.start)}–${formatMinutes(dnd.end)}），只有重要提醒過得去。`;
+  } else {
+    $("#nowHint").textContent = schedule.quiet
+      ? `${now} 不在安靜或不打擾時段，這一關會通過。`
+      : `建檔還沒填上床與起床時間，所以沒有安靜時段 —— 這一關一律通過。`;
+  }
 
   const sinceLast = Number($("#proactiveSinceLast").value) || 0;
-  $("#sinceLastHint").textContent = `對上「主動規則」的冷卻 ${policy.cooldown_minutes} 分鐘：小於 ${policy.cooldown_minutes} 就會被擋下。現在填 ${sinceLast} → ${sinceLast < policy.cooldown_minutes ? "會被擋下" : "會通過"}。`;
+  $("#sinceLastHint").textContent = `對上間隔 ${policy.interval_minutes} 分鐘：小於 ${policy.interval_minutes} 就會被擋下。現在填 ${sinceLast} → ${sinceLast < policy.interval_minutes ? "會被擋下" : "會通過"}。`;
 
   const sentToday = Number($("#proactiveSentToday").value) || 0;
-  $("#sentTodayHint").textContent = `對上「主動規則」的每日上限 ${policy.daily_message_limit} 則：達到 ${policy.daily_message_limit} 就會被擋下。現在填 ${sentToday} → ${sentToday >= policy.daily_message_limit ? "會被擋下" : "會通過"}。`;
+  $("#sentTodayHint").textContent = `對上每日上限 ${policy.daily_limit} 則：達到 ${policy.daily_limit} 就會被擋下。現在填 ${sentToday} → ${sentToday >= policy.daily_limit ? "會被擋下" : "會通過"}。重要提醒不吃額度，所以這一關對它無效。`;
+}
+
+/** 健康關心 speaks about a symptom she actually has, so the content comes from
+ *  the B layer rather than being typed twice. Only fills a blank field: what the
+ *  student wrote always wins. */
+function suggestTriggerTopic() {
+  const type = $("#proactiveEventType").value;
+  const hint = $("#topicHint");
+  if (type !== "health") {
+    hint.textContent = "";
+    return;
+  }
+  const symptom = (workspace.memory?.events || [])
+    .filter((entry) => entry?.tag === "symptom" && String(entry.value || "").trim())
+    .at(-1);
+  if (!symptom) {
+    hint.textContent = "建檔的「近期身體狀況」還沒有症狀，健康關心沒有題材。";
+    return;
+  }
+  const suggestion = `關心她的${symptom.key}（目前記錄：${symptom.value}）`;
+  hint.textContent = `B 層最新的症狀是「${symptom.key}：${symptom.value}」。`;
+  if (!$("#proactiveTopic").value.trim()) $("#proactiveTopic").value = suggestion;
 }
 
 // =====================================================================
@@ -866,7 +1050,7 @@ function todayKey() {
  *  Rolls over at midnight so 每日上限 means one day. */
 function proactiveState() {
   if (!workspace.proactive_state || typeof workspace.proactive_state !== "object") {
-    workspace.proactive_state = { last_spoken_at: null, sent_today: 0, day: "" };
+    workspace.proactive_state = { last_spoken_at: null, sent_today: 0, day: "", declined_until: null };
   }
   const state = workspace.proactive_state;
   if (state.day !== todayKey()) {
@@ -989,10 +1173,11 @@ async function fireScheduledItem(item) {
     type: item.type,
     minutes_since_last: minutesSinceLastProactive(),
     sent_today: proactiveState().sent_today,
-    // NOT the 剛被拒絕 checkbox: that belongs to the manual what-if trigger, and
-    // this client has no real signal for it. Reading it here would let a
-    // hypothesis ticked in section B silently kill a scheduled 吃藥提醒.
-    user_declined: false,
+    // The REAL decline, not the 🧪 checkbox beside the manual trigger: 「她剛說
+    // 不想聊」 writes state with an expiry, so this is a signal a scheduled item
+    // should respect. A 吃藥提醒 still gets through — `choose_event` clears
+    // reminders before it ever looks at this — and that asymmetry is the lesson.
+    user_declined: isDeclinedNow(),
   });
   if (!decision) {
     // A dead backend must not burn the item; it stays pending and retries.
@@ -1001,7 +1186,7 @@ async function fireScheduledItem(item) {
 
   let reason = decision.reason;
   if (decision.should_speak) {
-    const outcome = await speakProactive(event, time, policy);
+    const outcome = await speakProactive(event, time);
     // Mid-sentence is temporary: leave the item pending and try again in 5s.
     if (outcome === "busy") return;
     if (outcome !== "spoken") reason = "規則允許開口，但目前沒有連線，豆豆說不出話。";
@@ -1062,35 +1247,6 @@ function switchTriggerMode(mode) {
   $("#triggerModeNote").innerHTML = TRIGGER_MODE_NOTES[target];
 }
 
-async function runProactiveTests() {
-  collectWorkshop2();
-  setState("thinking", "正在執行 6 個主動情境");
-  const response = await fetch("/api/proactive-check", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ policy: workspace.profile.proactive_policy }),
-  });
-  const result = await response.json();
-  $("#proactiveResults").innerHTML = result.results.map((item) => `
-    <div class="test-item ${item.passed ? "is-pass" : "is-fail"}">
-      <strong>${item.passed ? "✓" : "×"}</strong>
-      <span>${item.name}<br><small>${item.should_speak ? "主動開口" : "保持安靜"}：${item.reason}</small></span>
-    </div>
-  `).join("");
-  const passedCount = result.results.filter((item) => item.passed).length;
-  showResult("#proactiveOutcome", "#proactiveScore", result.passed
-    ? `✓ ${passedCount}/${result.results.length}，規則通過全部情境`
-    : `${passedCount}/${result.results.length}，看下面哪幾個翻轉了`);
-  if (result.passed && memoryPassed) {
-    workspace.progress.workshop_2_completed = true;
-    saveProject();
-    addMessage("system", `第二階段完成！${workspace.profile.agent.name} 會記得重要的事，也知道何時不該打擾。`);
-  } else if (result.passed) {
-    addMessage("system", "主動情境已經 6/6 通過，再完成記憶分類就升級成功了。");
-  }
-  setState("listening", result.passed ? "Workshop 2：主動情境 6/6" : "調整規則後再試一次");
-}
-
 // Kept so a re-run can say what got better and what got worse. A student who
 // only sees the latest numbers cannot tell a trade from an improvement.
 let lastDayRun = null;
@@ -1138,10 +1294,50 @@ function renderDayBlockers(result) {
  *  API-free, so the whole class can run it. Deliberately reports two numbers
  *  and no single grade: tightening the rules trades noise for misses, and there
  *  is no 6/6 to converge on. */
+/** What the student guessed, next to what happened. The guess is the point: read
+ *  straight off, a result is 「哦，原來是這樣」; guessed first, a wrong guess names
+ *  exactly which rule was misunderstood. */
+function renderPredictEcho(result) {
+  const rows = [
+    ["漏掉的健康關心", $("#predictMissed").value, result.missed_health],
+    ["打擾", $("#predictNoise").value, result.noise],
+  ].filter(([, guess]) => String(guess).trim() !== "");
+  if (!rows.length) {
+    $("#dayPredictEcho").innerHTML = '<p class="predict-none">下次先猜一下再跑 —— 猜錯的地方就是你對規則的誤解。</p>';
+    return;
+  }
+  $("#dayPredictEcho").innerHTML = `<p class="predict-line">${rows.map(([label, guess, actual]) => {
+    const off = Number(guess) - actual;
+    const verdict = off === 0 ? "猜中了" : `差 ${Math.abs(off)}（${off > 0 ? "比你想的少" : "比你想的多"}）`;
+    return `${label}：你猜 <b>${escapeHtml(String(guess))}</b>，實際 <b>${actual}</b> —— ${off === 0 ? "<b>猜中了</b>" : verdict}`;
+  }).join("<br>")}</p>`;
+}
+
+/** 「參考建檔 21:00 有安眠藥半顆，你的沒有 → 她今晚沒吃藥」. Matched by time, so a
+ *  student who wrote her own wording still has the reminder. Only meaningful
+ *  against the shared day, which is why the server returns [] otherwise. */
+function renderDayMissing(result) {
+  const missing = result.missing_reminders || [];
+  if (!missing.length) {
+    $("#dayMissing").innerHTML = '<p class="day-missing-none">✓ 參考建檔裡的用藥與回診，你的建檔都有對上的時間。</p>';
+    return;
+  }
+  $("#dayMissing").innerHTML = `
+    <p class="day-missing-head">你的建檔漏掉 <b>${missing.length}</b> 筆參考建檔有的提醒 —— 這一天她不會被提醒：</p>
+    <ul class="day-missing-list">${missing.map((item) => `
+      <li><time>${escapeHtml(item.time)}</time><span>${escapeHtml(item.topic)}</span><em>${escapeHtml(item.source || "")}</em></li>`).join("")}</ul>
+    <p class="day-missing-note">回建檔 › 用藥與回診補上，再跑一次。</p>`;
+}
+
 async function runDaySimulation() {
   collectWorkshop2();
   const button = $("#runDaySimulation");
   button.disabled = true;
+  // 對照: run the student's two knobs against what the production orchestrator
+  // hard-codes today (22:00–08:00 plus meal windows) instead of against her
+  // 作息. Same rules, same day, a different schedule — which is the cleanest way
+  // to say 「這門課的機制比產品超前一版」 without a slide.
+  const gates = $("#dayGatesFixed").checked ? "dodo_fixed" : "routines";
   try {
     const response = await fetch("/api/proactive-simulate", {
       method: "POST",
@@ -1152,10 +1348,12 @@ async function runDaySimulation() {
         // what supplies the schedule the gates read.
         elder_profile: workspace.profile.elder_profile,
         memory: workspace.memory,
+        gates,
       }),
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.detail || "模擬失敗。");
+    const fixed = result.gates === "dodo_fixed";
     $("#daySummary").innerHTML = `
       <div class="day-score">
         <span>說出 <b>${result.spoken}</b> 則</span>
@@ -1163,9 +1361,12 @@ async function runDaySimulation() {
         <span class="${result.missed_health ? "is-worse" : "is-better"}">漏掉的健康關心 <b>${result.missed_health}</b>／${result.health_total}</span>
         <span class="${result.noise > 2 ? "is-worse" : ""}">打擾 <b>${result.noise}</b>／${result.chat_total}</span>
       </div>
+      <p class="day-gates ${fixed ? "is-fixed" : ""}">閘門：<strong>${fixed ? "正式 dodo 的固定時段" : "她建檔的作息"}</strong>${describeGates(result.schedule)}</p>
       ${renderDayBlockers(result)}
       ${renderDayDelta(result)}
       <p class="day-hint">兩個數字會互相拉扯：規則放寬，打擾變多；規則收緊，重要的事會被漏掉。沒有滿分答案。</p>`;
+    renderPredictEcho(result);
+    renderDayMissing(result);
     // 重要提醒 is the type the rules never ration, which is what makes it the
     // one worth marking on the timeline.
     $("#dayTimeline").innerHTML = result.steps.map((step) => `
@@ -1178,8 +1379,76 @@ async function runDaySimulation() {
     showResult("#dayOutcome", "#dayScore",
       `漏掉的健康關心 ${result.missed_health}／${result.health_total} · 打擾 ${result.noise}／${result.chat_total}`);
     lastDayRun = result;
+    // 實作二 is done when she has actually walked a day — there is no quiz to
+    // pass any more, and the two numbers are the deliverable.
+    if (!workspace.progress.workshop_2_completed) {
+      workspace.progress.workshop_2_completed = true;
+      saveProject();
+    }
   } catch (error) {
     $("#daySummary").textContent = error.message || "無法連接本機服務。";
+  } finally {
+    button.disabled = false;
+  }
+}
+
+/** The windows the run actually used, named. Without this the 對照 switch is a
+ *  checkbox that changes two numbers for no visible reason. */
+function describeGates(schedule) {
+  if (!schedule) return "";
+  const parts = [];
+  if (schedule.quiet) parts.push(`安靜 ${formatMinutes(schedule.quiet.start)}–${formatMinutes(schedule.quiet.end)}`);
+  (schedule.dnd || []).forEach((window) => {
+    parts.push(`${escapeHtml(window.label)} ${formatMinutes(window.start)}–${formatMinutes(window.end)}`);
+  });
+  return parts.length ? `（${parts.join("、")}）` : "（沒有任何安靜或不打擾時段）";
+}
+
+// =====================================================================
+// 今日摘要 —— the one memory write nobody makes by hand
+// =====================================================================
+
+/** Today's chat, as the summariser wants it. Read from the transcript rather
+ *  than a parallel array: TOOL and SYSTEM rows are workshop instrumentation, not
+ *  things she or 豆豆 said, and sending them would summarise the furniture. */
+function chatTranscript() {
+  return $$("#messages .message").flatMap((row) => {
+    const role = row.classList.contains("user") ? "user"
+      : row.classList.contains("assistant") ? "dodo" : null;
+    const text = row.querySelector("p")?.textContent.trim() || "";
+    return role && text ? [{ role, text: text.slice(0, 2000) }] : [];
+  }).slice(-200);
+}
+
+/** C 層 is grown from the conversation, never typed — that is the whole point of
+ *  the layer. Writes through upsertMemory like everything else, so the merge
+ *  rule (C 重寫) applies and the viewer shows it immediately. */
+async function runTodaySummary() {
+  const button = $("#runTodaySummary");
+  const transcript = chatTranscript();
+  if (!transcript.length) {
+    $("#todaySummary").textContent = "今天還沒有對話可以摘要 —— 先跟豆豆聊幾句。";
+    return;
+  }
+  button.disabled = true;
+  $("#todaySummary").textContent = "正在整理今天的對話…";
+  try {
+    const response = await fetch("/api/day-summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address: elderAddress(), transcript }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || "摘要失敗。");
+    const written = upsertMemory("C", "今日摘要", result.summary, undefined, { source: "system" });
+    saveProject();
+    rebuildWorkshop2Prompt();
+    renderMemoryViewer();
+    pushMemoryToSession();
+    $("#todaySummary").textContent = `已寫進 C 跨日摘要：「${result.summary}」`;
+    addMessage("tool", `update_memory（今日摘要）：${describeMemoryWrite(written, "今日摘要", result.summary)}`);
+  } catch (error) {
+    $("#todaySummary").textContent = error.message || "無法連接本機服務。";
   } finally {
     button.disabled = false;
   }
@@ -1188,7 +1457,15 @@ async function runDaySimulation() {
 /** The brief for one proactive turn. Response-level `instructions` *replace* the
  *  session instructions, so the whole composed prompt has to travel with it —
  *  otherwise 豆豆 would open its mouth as OpenAI's default assistant. */
-function proactiveTurnInstructions(event, time, policy) {
+// One line of 態度 per type. The attitude blocks on the 態度 tab say how 豆豆
+// speaks in general; this is the reminder for *this* turn, and it mirrors them.
+const PROACTIVE_TURN_NOTES = {
+  reminder: "這是重要提醒：一句講清楚時間與該做的事，不解釋、不催。",
+  health: "先問她現在的感覺，不要斷定。她說好了就不要追問，並把那一筆換掉。",
+  chat: "從她的興趣或她會的事起頭，可以請教她。不要製造壓力，也不要連續追問。",
+};
+
+function proactiveTurnInstructions(event, time) {
   return [
     realtimeInstructions(),
     [
@@ -1196,15 +1473,15 @@ function proactiveTurnInstructions(event, time, policy) {
       `現在是 ${time}。你要「主動」開啟對話，不是回答問題 —— 對方還沒說話。`,
       `事件類型：${event.type}`,
       `事件內容：${event.topic || "（未填寫）"}`,
-      `最多 ${policy.max_message_sentences} 句，直接說出口，不要說明你為什麼現在開口。`,
-      event.type === "emergency"
-        ? "這是緊急事件：先確認對方當下是否安全，並明確說你會請真人照護者介入。"
-        : "不要製造壓力，也不要連續追問。",
+      // Fixed at 2 (spec §2.3): 每則句數 stopped being a field, so `policy` no
+      // longer carries it — reading it from there would print `undefined`.
+      `最多 ${MAX_MESSAGE_SENTENCES} 句，直接說出口，不要說明你為什麼現在開口。`,
+      PROACTIVE_TURN_NOTES[event.type] || PROACTIVE_TURN_NOTES.chat,
     ].join("\n"),
   ].filter((part) => part.trim()).join("\n\n");
 }
 
-/** Ask the same `choose_event` the 6 scenarios and 跑一整天 use. Returns null on
+/** Ask the same `choose_event` 跑她的一天 uses. Returns null on
  *  a transport failure so callers can tell "the rules said no" apart from "the
  *  question never got asked" — the scheduler must not burn an item on the latter. */
 async function decideProactive(policy, scenario) {
@@ -1234,7 +1511,7 @@ async function decideProactive(policy, scenario) {
  *  "unavailable" (no session — waiting will not help). The scheduler needs the
  *  difference: a 待提醒 row must not claim 已說出 when nothing was said, and it
  *  must not burn itself because 豆豆 happened to be mid-sentence. */
-async function speakProactive(event, time, policy) {
+async function speakProactive(event, time) {
   if (!apiConfigured) {
     addMessage("system", "規則允許主動開口，但還沒有連接 OpenAI，所以豆豆說不出話。請先完成系統設定。");
     return "unavailable";
@@ -1246,7 +1523,7 @@ async function speakProactive(event, time, policy) {
     return "busy";
   }
   setState("thinking", "豆豆正在主動開口");
-  sendProactiveResponse(proactiveTurnInstructions(event, time, policy));
+  sendProactiveResponse(proactiveTurnInstructions(event, time));
   // The rules only mean something if speaking feeds them: the next attempt now
   // runs into the cooldown and the daily budget, exactly as it would live.
   recordProactiveSpoken();
@@ -1277,7 +1554,7 @@ async function triggerProactive() {
     "tool",
     `主動決策（${event.type} @ ${time}）：${decision.should_speak ? "主動開口" : "保持安靜"} — ${decision.reason}`,
   );
-  if (decision.should_speak) await speakProactive(event, time, policy);
+  if (decision.should_speak) await speakProactive(event, time);
 }
 
 async function applyWorkshop2() {
@@ -1299,7 +1576,7 @@ const WORKSHOP2_FIELDS = [
   ...INTAKE_SCALARS.map(([selector]) => selector),
   "#elderExpertise", "#contactName", "#contactRelation", "#contactPhone",
   ...WORKSHOP2_BLOCKS.map(([, , selector]) => selector),
-  "#quietStart", "#quietEnd", "#cooldown", "#dailyLimit", "#maxSentences",
+  "#cooldown", "#dailyLimit",
 ];
 
 function onIntakeChange() {
@@ -1340,11 +1617,29 @@ function init() {
     refreshApplyState();
   }));
   $$("[data-ask]").forEach((button) => button.addEventListener("click", () => askDodo(button.dataset.ask)));
-  ["input", "change"].forEach((event) => $("#priorityFields").addEventListener(event, () => {
-    rebuildWorkshop2Prompt();
-    refreshApplyState();
-    renderProactiveEventOptions();
-  }));
+  // 安靜與不打擾 live in 建檔, so the band has to redraw when 作息 changes — and
+  // the band is on a different tab, which is exactly why it is easy to forget.
+  Object.values(ROW_KINDS).forEach(({ container }) => {
+    ["input", "change"].forEach((event) => $(container).addEventListener(event, renderPolicyPreview));
+  });
+  bindFieldEvents(["#elderWake", "#elderBed"], () => {
+    renderPolicyPreview();
+    renderTriggerHints();
+  });
+  // Read-only on purpose: 上床／起床 and 不打擾 are facts about her life, so the
+  // band sends you to 建檔 rather than letting you edit them here.
+  $$("[data-goto-intake]").forEach((element) => {
+    const goto = () => {
+      switchTab("tabW2Intake");
+      $('[data-intake="routines"]').scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+    element.addEventListener("click", goto);
+    element.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); goto(); }
+    });
+  });
+  $("#declineChat").addEventListener("click", () => (isDeclinedNow() ? clearDecline() : declineChat()));
+  $("#proactiveEventType").addEventListener("change", suggestTriggerTopic);
   $$("[data-trigger-mode]").forEach((button) => {
     button.addEventListener("click", () => switchTriggerMode(button.dataset.triggerMode));
   });
@@ -1352,8 +1647,13 @@ function init() {
   bindFieldEvents(["#proactiveNow", "#proactiveSinceLast", "#proactiveSentToday"], renderTriggerHints);
 
   $("#saveWorkshop2").addEventListener("click", applyWorkshop2);
-  $("#runProactiveTests").addEventListener("click", runProactiveTests);
   $("#runDaySimulation").addEventListener("click", runDaySimulation);
+  $("#dayGatesFixed").addEventListener("change", () => {
+    notify($("#dayGatesFixed").checked
+      ? "對照模式：這一次會用正式 dodo 寫死的 22:00–08:00＋用餐時段，而不是她的作息。"
+      : "回到她建檔的作息當閘門。");
+  });
+  $("#runTodaySummary").addEventListener("click", runTodaySummary);
   $("#triggerProactive").addEventListener("click", triggerProactive);
   $("#addSchedule").addEventListener("click", addSchedule);
   $("#scheduleAuto").addEventListener("change", () => {
@@ -1398,11 +1698,16 @@ globalThis.W2 = {
   syncIntakeAfterMemoryChange,
   MEMORY_LAYERS,
   MEMORY_MERGE_RULES,
+  renderDeclineState,
   // No production caller outside this file; tests/browser/uicheck.js drives
-  // these directly to check the merge rules, the quiet-hour wrap-around and
-  // the golden-fixture parity of the prompt composer.
+  // these directly to check the merge rules, the golden-fixture parity of the
+  // prompt composer, and that the band's schedule matches the server's.
   memoryEntryText,
-  isQuietHour,
   intakeFromFields,
+  buildScheduleWindows,
+  windowContains,
+  // The schedule a real run used, so uicheck can compare it against the one
+  // buildScheduleWindows drew instead of trusting a comment that they agree.
+  get lastDayRun() { return lastDayRun; },
 };
 })();

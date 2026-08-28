@@ -26,8 +26,8 @@ globalThis.fetch = async (url, init) => {
   // The scheduler decides through the server, exactly as the classroom does —
   // and so do schema migration and the 建檔 completeness count, which are the
   // browser's two other server round-trips.
-  if (["/api/proactive-decide", "/api/proactive-simulate",
-       "/api/workspace/normalize", "/api/intake-check"].some((path) => String(url).includes(path))) {
+  if (["/api/proactive-decide", "/api/proactive-simulate", "/api/workspace/normalize",
+       "/api/intake-check", "/api/day-summary"].some((path) => String(url).includes(path))) {
     return realFetch(`http://127.0.0.1:${PORT}${url}`, init);
   }
   throw new Error(`unexpected fetch: ${url}`);
@@ -44,7 +44,7 @@ const ok = (label, cond, extra = "") => {
 const EXPOSE = `
 globalThis.__t = {
   upsertMemory: W2.upsertMemory, forgetMemory: W2.forgetMemory,
-  describeMemoryWrite: W2.describeMemoryWrite, isQuietHour: W2.isQuietHour,
+  describeMemoryWrite: W2.describeMemoryWrite,
   // Exactly the sequence core runs when 豆豆 calls update_memory, so a test can
   // check what a tool write does to the 建檔 tab's baseline.
   toolMemoryWrite: (layer, key, value, mode) => {
@@ -58,6 +58,11 @@ globalThis.__t = {
   renderMemoryViewer: W2.renderMemoryViewer, memoryEntryText: W2.memoryEntryText,
   // §4 前後端同文: the browser composer, driven straight off a fixture workspace.
   buildWorkshop2Prompt: W2.buildWorkshop2Prompt, intakeFromFields: W2.intakeFromFields,
+  // §7.1 #8: the band's own window maths, pinned against the server's below.
+  buildScheduleWindows: W2.buildScheduleWindows, windowContains: W2.windowContains,
+  // The last /api/proactive-simulate response, so a test can compare the
+  // schedule the server used against the one the band drew.
+  lastDayRun: () => W2.lastDayRun,
   get workspace() { return workspace; },
 };
 // eval() never fires DOMContentLoaded, so start the app by hand — fire and
@@ -290,10 +295,11 @@ ok("...with the routine actually saved", (() => {
 })());
 
 // --- collapsible results --------------------------------------------------
-// 記憶分類 was a quiz with a score; 建檔 is a form with a completeness count, so
-// it has no result panel. The two lab runs still collapse.
-ok("6-scenario result starts hidden", $("#proactiveOutcome").hidden);
+// 記憶分類 was a quiz with a score and 執行 6 個情境 was a unit test with a
+// tally; 建檔 counts, and 她的一天 is the only run left that collapses.
 ok("day result starts hidden", $("#dayOutcome").hidden);
+ok("the 6-scenario panel is gone with its runner", $("#proactiveOutcome") === null
+   && !script.includes("runProactiveTests"));
 
 // --- 觸發主動: the three event types the backend decides between -----------
 // schema 1 offered six with a student-typed priority each; schema 2 has three
@@ -378,35 +384,108 @@ ok("...and hands back the real values so it can be retried", miss.remaining.join
 ok("an unknown key removes nothing", $t.forgetMemory("A", "沒這個 key", "x").removed === 0
    && layerTexts("facts").length === 2);
 
-// --- 主動規則 draws itself ------------------------------------------------
-$("#quietStart").value = "22"; fire("#quietStart", "input");
-$("#quietEnd").value = "8"; fire("#quietEnd", "input");
-ok("the band has one cell per hour", $("#quietBand").children.length === 24);
-ok("22:00–08:00 silences 10 hours",
-   [...$("#quietBand").children].filter((c) => c.classList.contains("is-quiet")).length === 10);
-ok("the summary line is filled in", $("#policySummary").textContent.includes("安靜"));
-$("#quietStart").value = "20"; fire("#quietStart", "input");
-ok("widening 安靜時段 widens the band",
-   [...$("#quietBand").children].filter((c) => c.classList.contains("is-quiet")).length === 12);
+// --- the band is DERIVED from 建檔, not typed on this tab -------------------
+// 安靜 and 不打擾 are facts about her life, so the only way to move them is to
+// edit 作息. The band redraws from there — across a tab boundary, which is
+// exactly the wiring that is easy to forget.
+// Earlier blocks left routines on the form; the band maths is easier to read
+// against a known-empty 作息, so clear them before measuring.
+while ($("#routineRows").querySelector("[data-remove]")) {
+  $("#routineRows").querySelector("[data-remove]").click();
+}
+const cells = () => [...$("#quietBand").children];
+const greyCells = () => cells().filter((c) => c.classList.contains("is-quiet")).length;
+ok("the band has one cell per half hour", cells().length === 48, `${cells().length} cells`);
+
+// An empty 建檔 must not inherit anyone's bedtime.
+$("#elderWake").value = ""; fire("#elderWake", "input");
+$("#elderBed").value = ""; fire("#elderBed", "input");
+ok("no 上床／起床 means no 安靜時段 at all", greyCells() === 0, `${greyCells()} grey`);
+ok("...and the summary says so rather than showing 00:00–00:00",
+   $("#policySummary").textContent.includes("還沒填上床與起床時間"));
+
+$("#elderBed").value = "22:00"; fire("#elderBed", "input");
+$("#elderWake").value = "06:00"; fire("#elderWake", "input");
+ok("上床 22:00 → 起床 06:00 greys 8 hours", greyCells() === 16, `${greyCells()} half-hours`);
+ok("the summary names the window it drew", $("#policySummary").textContent.includes("22:00–06:00"));
+$("#elderBed").value = "20:00"; fire("#elderBed", "input");
+ok("moving 上床 earlier widens the band", greyCells() === 20, `${greyCells()} half-hours`);
+
+// A 不打擾 routine greys its own window on top of 安靜 — and half-hour cells are
+// why 13:00–14:30 lands where the decider puts it.
+$('[data-add="routine"]').click();
+const nap = [...$("#routineRows").querySelectorAll(".row-item")].at(-1);
+nap.querySelector('[data-field="label"]').value = "午睡";
+nap.querySelector('[data-field="start"]').value = "13:00";
+nap.querySelector('[data-field="end"]').value = "14:30";
+fire("#routineRows", "input");
+ok("a 不打擾 routine greys its own window too", greyCells() === 23, `${greyCells()} half-hours`);
+ok("...and the summary names it", $("#policySummary").textContent.includes("午睡 13:00–14:30"));
+
+// §7.1 #8: the band is the browser's own window maths, so it has to mean the
+// same thing as build_schedule. Pinned against a real day run further down.
+const windowsNow = $t.buildScheduleWindows($t.intakeFromFields().elder, 2);
+ok("buildScheduleWindows returns the server's window shape",
+   windowsNow.quiet.start === 20 * 60 && windowsNow.quiet.end === 6 * 60
+   && windowsNow.dnd.length === 1 && windowsNow.dnd[0].start === 13 * 60 + 0
+   && windowsNow.dnd[0].end === 14 * 60 + 30,
+   JSON.stringify(windowsNow));
+// Cross-midnight is the case an hour-level band used to get wrong.
+ok("a wrapping window contains both sides of midnight",
+   $t.windowContains(windowsNow.quiet, 23 * 60) && $t.windowContains(windowsNow.quiet, 2 * 60)
+   && !$t.windowContains(windowsNow.quiet, 12 * 60));
+ok("a zero-length window contains nothing",
+   !$t.windowContains({ start: 600, end: 600 }, 600));
+// weekdays filter: a Tuesday-only routine is absent on Wednesday.
+nap.querySelector('[data-weekday="2"]').checked = true;
+fire("#routineRows", "input");
+ok("a weekday-limited routine only applies on its day",
+   $t.buildScheduleWindows($t.intakeFromFields().elder, 2).dnd.length === 1
+   && $t.buildScheduleWindows($t.intakeFromFields().elder, 3).dnd.length === 0);
+
+// Which of the two knobs actually binds the day.
 $("#cooldown").value = "600"; fire("#cooldown", "input");
-ok("the binding limit is named", $("#policyBinding").textContent.includes("冷卻時間"));
+ok("the tighter of the two knobs is named", $("#policyBinding").textContent.includes("間隔"));
 $("#cooldown").value = "30"; fire("#cooldown", "input");
 ok("...and switches when the other one bites", $("#policyBinding").textContent.includes("每日上限"));
 
-// Reverting writes fields programmatically, which fires no input event — the
-// band and the hints have to be told, or they keep showing reverted-away numbers.
-$("#cooldown").value = "600"; fire("#cooldown", "input");
-$("#revertWorkshop2").click();
-ok("取消變更 takes the band's numbers back too",
-   $("#policySummary").textContent.includes("冷卻 30 分鐘"), $("#policySummary").textContent);
+// --- 她剛說不想聊 writes real state with an expiry ---------------------------
+// One press must never silence her for good, so the button says when it wears
+// off — and pressing again lets her back in.
+ok("no decline on a clean load", $("#declineState").textContent.includes("沒有拒絕"));
+$("#declineChat").click();
+ok("declining is recorded with an expiry", /到 \d{2}:\d{2} 之前/.test($("#declineState").textContent),
+   $("#declineState").textContent);
+ok("...and the button offers to undo it", $("#declineChat").textContent.includes("取消"));
+ok("...and it is what blocks 閒聊 right now", $("#policyBinding").textContent.includes("不想聊"));
+ok("...capped at her next 起床 rather than a flat hour", (() => {
+  const until = new Date($t.workspace.proactive_state.declined_until);
+  const wake = new Date(); wake.setHours(6, 0, 0, 0);
+  if (wake <= new Date()) wake.setDate(wake.getDate() + 1);
+  // 60 分 unless her 06:00 起床 comes first.
+  return until <= new Date(Date.now() + 61 * 60000) && until <= wake;
+})(), $t.workspace.proactive_state.declined_until);
+ok("...and it survives into the saved project", (() => {
+  const stored = JSON.parse(localStorage.getItem("dodo-workshop.project") || "{}");
+  return Boolean(stored.proactive_state?.declined_until);
+})());
+$("#declineChat").click();
+ok("pressing again lets her back in", $("#declineChat").textContent.includes("她剛說不想聊")
+   && !$("#policyBinding").textContent.includes("不想聊"));
 
 // --- 跑一整天 names the rule that did the blocking ------------------------
 // The most direct answer this page has to 「為什麼要設計這條規則」. The tally is the
 // decider's own `blocked_by`, named through bootstrap's `rule_labels`, so a
 // reworded reason sentence can no longer drop a rule into 「其他」 unnoticed.
+// Guess first: a wrong guess is what names the rule the student misread.
+$("#predictMissed").value = "0";
+$("#predictNoise").value = "9";
 $("#runDaySimulation").click();
 await new Promise((r) => setTimeout(r, 900));
 const daySummary = () => $("#daySummary").textContent;
+ok("跑她的一天 echoes the guess beside the result",
+   /你猜/.test($("#dayPredictEcho").textContent)
+   && /實際/.test($("#dayPredictEcho").textContent), $("#dayPredictEcho").textContent);
 ok("跑一整天 names the rule that blocked the most",
    daySummary().includes("擋掉最多的是"), daySummary().slice(0, 160));
 ok("...and every rule it names is one the server defined",
@@ -419,6 +498,41 @@ ok("both scores are real numbers", /漏掉的健康關心\s*\d+／\d+/.test(dayS
 ok("the timeline names each event's type", [...$("#dayTimeline").querySelectorAll(".day-kind")]
    .every((cell) => ["提醒", "健康", "閒聊"].includes(cell.textContent.trim())),
    [...$("#dayTimeline").querySelectorAll(".day-kind")].map((c) => c.textContent).join(","));
+
+// §7.1 #8, the empirical half: the band's own window maths has to MEAN the same
+// thing as build_schedule. A day run hands back the schedule it actually used,
+// so the two can be compared instead of trusted.
+const runSchedule = $t.lastDayRun().schedule;
+const mine = $t.buildScheduleWindows($t.intakeFromFields().elder, $t.lastDayRun().weekday);
+ok("the band's schedule is the server's schedule",
+   JSON.stringify({ quiet: mine.quiet, dnd: mine.dnd })
+   === JSON.stringify({ quiet: runSchedule.quiet, dnd: runSchedule.dnd }),
+   `browser ${JSON.stringify(mine.quiet)} / server ${JSON.stringify(runSchedule.quiet)}`);
+
+// 漏掉的用藥／回診: the consequence of an incomplete 建檔, against the shared day.
+ok("an incomplete 建檔 is reported as missing reminders",
+   /漏掉|都有對上/.test($("#dayMissing").textContent), $("#dayMissing").textContent.slice(0, 120));
+
+// 對照 switch: same rules, same day, the schedule the production orchestrator
+// hard-codes today instead of her 作息.
+ok("the day run names which gates it used", daySummary().includes("她建檔的作息"));
+$("#dayGatesFixed").checked = true; fire("#dayGatesFixed", "change");
+$("#runDaySimulation").click();
+await new Promise((r) => setTimeout(r, 900));
+ok("對照 mode runs the production gates instead",
+   daySummary().includes("正式 dodo 的固定時段") && daySummary().includes("22:00–08:00"),
+   daySummary().slice(0, 200));
+ok("...and it is the fixed schedule the server returned",
+   $t.lastDayRun().gates === "dodo_fixed" && $t.lastDayRun().schedule.dnd.length === 2);
+ok("...while the band still shows HER 作息, not the comparison",
+   $("#policySummary").textContent.includes("20:00–06:00"), $("#policySummary").textContent.slice(0, 120));
+$("#dayGatesFixed").checked = false; fire("#dayGatesFixed", "change");
+$("#runDaySimulation").click();
+await new Promise((r) => setTimeout(r, 900));
+ok("unticking goes back to her 作息", $t.lastDayRun().gates === "routines");
+// A re-run has to say what got better AND what got worse.
+ok("a re-run reports the delta", /和上一次比較/.test(daySummary()), daySummary().slice(0, 200));
+ok("跑她的一天 marks 實作二 complete", $t.workspace.progress.workshop_2_completed === true);
 
 // --- 觸發主動: one event block, two modes, no A/B headings -----------------
 ok("觸發主動 opens on the real-clock mode",
@@ -440,7 +554,8 @@ ok("...and says which way this value goes", $("#sinceLastHint").textContent.incl
 $("#proactiveSinceLast").value = "999"; fire("#proactiveSinceLast", "input");
 ok("...both ways", $("#sinceLastHint").textContent.includes("會通過"));
 ok("今日已發送 names the daily limit", $("#sentTodayHint").textContent.includes("每日上限"));
-ok("模擬現在時間 names the quiet window", $("#nowHint").textContent.includes("安靜時段"));
+ok("模擬現在時間 names her 作息, not a quiet-hours field",
+   /安靜|不打擾|上床與起床/.test($("#nowHint").textContent), $("#nowHint").textContent);
 
 // --- 待提醒項目: the time field finally means something --------------------
 $("#scheduleAuto").checked = false; fire("#scheduleAuto", "change");
@@ -542,6 +657,55 @@ ok("the browser composes the backend's prompt byte for byte", composed === fixtu
     ? `same lines, length ${composed.length} vs ${fixturePrompt.length}`
     : `first difference on line ${at + 1}:\n    browser: ${JSON.stringify(mine[at])}\n    fixture: ${JSON.stringify(theirs[at])}`;
 })());
+
+// --- 今日摘要: C 層 is grown from the conversation, never typed -------------
+// TOOL and SYSTEM rows are workshop instrumentation, not things she or 豆豆
+// said. The transcript so far holds only those, so the button must refuse
+// rather than summarise the furniture.
+ok("the transcript so far is instrumentation only",
+   document.querySelectorAll("#messages .message.user, #messages .message.assistant").length === 0,
+   `${document.querySelectorAll("#messages .message").length} rows total`);
+$("#runTodaySummary").click();
+await new Promise((r) => setTimeout(r, 150));
+ok("今日摘要 refuses when nothing was actually said",
+   $("#todaySummary").textContent.includes("還沒有對話"), $("#todaySummary").textContent);
+
+// Now give it a real exchange. There is no API key in the harness, so the
+// server answers 503 — what matters is that the reason reaches the student
+// instead of the button failing silently.
+["user", "assistant"].forEach((role, index) => {
+  const row = document.createElement("article");
+  row.className = `message ${role}`;
+  row.innerHTML = `<span class="speaker">x</span><p>${index ? "那就好，記得慢慢走。" : "我今天膝蓋好多了。"}</p>`;
+  $("#messages").append(row);
+});
+$("#runTodaySummary").click();
+await new Promise((r) => setTimeout(r, 500));
+ok("...and says why when there is no key, rather than failing silently",
+   $("#todaySummary").textContent.includes("OPENAI_API_KEY"), $("#todaySummary").textContent);
+
+// --- 健康關心 takes its content from the B layer, not a second typing --------
+$t.workspace.memory.events = [{ key: "膝蓋", value: "上下樓會痛", tag: "symptom", source: "caregiver" }];
+$("#proactiveTopic").value = "";
+$("#proactiveEventType").value = "health";
+fire("#proactiveEventType", "change");
+ok("健康關心 names the symptom it would ask about",
+   $("#topicHint").textContent.includes("膝蓋") && $("#topicHint").textContent.includes("上下樓會痛"),
+   $("#topicHint").textContent);
+ok("...and fills the blank 事件內容 from it", $("#proactiveTopic").value.includes("膝蓋"),
+   $("#proactiveTopic").value);
+// What the student wrote always wins.
+$("#proactiveTopic").value = "我自己想問的事";
+fire("#proactiveEventType", "change");
+ok("...but never overwrites what the student typed", $("#proactiveTopic").value === "我自己想問的事");
+$t.workspace.memory.events = [];
+$("#proactiveTopic").value = "";
+fire("#proactiveEventType", "change");
+ok("...and says so when the B layer has no symptom",
+   $("#topicHint").textContent.includes("沒有症狀"), $("#topicHint").textContent);
+$("#proactiveEventType").value = "chat";
+fire("#proactiveEventType", "change");
+ok("閒聊 gets no symptom hint at all", $("#topicHint").textContent === "");
 
 // --- the header block stays put while the fields scroll -------------------
 ok("both panels have a sticky header", document.querySelectorAll(".lab-sticky").length === 2);

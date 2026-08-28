@@ -455,9 +455,11 @@ def test_settings_dry_run_is_gone_and_apply_marks_workshop_one_done() -> None:
     assert "workspace.progress.workshop_1_completed = true;" in apply_fn
     assert "saveProject();" in apply_fn
 
-    # Workshop 2's results list shares .test-item styling, so it must survive.
+    # 執行 6 個情境 was Workshop 2's only .test-item list; both left with it, and
+    # 跑她的一天 has its own timeline rather than a pass/fail tally.
     styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
-    assert ".test-item" in styles and 'id="proactiveResults"' in page
+    assert ".test-item" not in styles
+    assert 'id="proactiveResults"' not in page and ".day-timeline" in styles
 
 
 def test_voice_is_part_of_the_project_and_needs_a_reconnect_to_change() -> None:
@@ -647,7 +649,11 @@ def test_workshop2_has_its_own_viewable_editable_prompt_layer() -> None:
     assert "完整 System Prompt（Workshop 1 + 2）" in page
     assert '<pre id="workshop2SystemPrompt"' in page
     assert '<textarea id="workshop2SystemPrompt"' not in page
-    assert 'id="elderCity"' in page and 'id="maxSentences"' in page
+    assert 'id="elderCity"' in page
+    # 每則句數 is fixed at 2 now (spec §2.3) — it stopped being a field, so the
+    # Prompt reads the constant instead of a policy key that no longer exists.
+    assert 'id="maxSentences"' not in page
+    assert "const MAX_MESSAGE_SENTENCES = 2;" in script
     assert "function buildWorkshop2Prompt(source)" in script
     assert "function rebuildWorkshop2Prompt()" in script
     assert "workspace.profile.workshop2_blocks = workshop2BlocksFromFields();" in script
@@ -827,17 +833,17 @@ def test_proactive_can_actually_speak_first() -> None:
     assert "async function triggerProactive()" in script
     # Response-level instructions REPLACE the session's, so the persona has to
     # travel with the proactive brief.
-    assert "function proactiveTurnInstructions(event, time, policy)" in script
+    assert "function proactiveTurnInstructions(event, time)" in script
     assert "if (instructions) response.instructions = instructions;" in script
     # A proactive message must not talk over 豆豆's current sentence. The guard
     # lives in the speak path both the manual button and the 待提醒 scheduler use,
     # so a scheduled reminder cannot interrupt what a manual one may not.
-    speak = script.split("async function speakProactive(event, time, policy) {")[1].split("\n}\n")[0]
+    speak = script.split("async function speakProactive(event, time) {")[1].split("\n}\n")[0]
     assert "if (isDodoSpeaking())" in speak
     assert "sendProactiveResponse(proactiveTurnInstructions(" in speak
     assert "recordProactiveSpoken();" in speak
     trigger = script.split("async function triggerProactive() {")[1].split("\n}\n")[0]
-    assert "await speakProactive(event, time, policy)" in trigger
+    assert "await speakProactive(event, time)" in trigger
     # The dead endpoint nothing ever called is gone.
     assert "/api/proactive-message" not in server
     assert "/api/proactive-message" not in script
@@ -965,30 +971,57 @@ def test_a_supersede_names_the_value_it_threw_away() -> None:
     assert "丟掉了：${result.superseded.join" in describe
     assert "覆蓋原本" not in describe
 
-def test_proactive_policy_has_a_live_picture_and_self_explaining_fields() -> None:
-    """Five bare number fields never showed what they add up to, and the manual
-    trigger's 距上次／今日已發送 never said which policy value they are compared
-    against — that lived one tab away."""
+def test_the_band_is_derived_from_her_作息_not_typed_on_this_tab() -> None:
+    """The band used to be drawn from #quietStart／#quietEnd while every real
+    decision went through the 作息-derived gate — so changing those two fields
+    moved the picture and nothing else. 安靜 and 不打擾 are facts about her life,
+    so the only way to move them is to edit 建檔."""
 
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
     script = client_script()
     styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
 
     assert 'id="quietBand"' in page and 'id="policySummary"' in page and 'id="policyBinding"' in page
+    # The two fields that used to lie are gone, along with the hour-level helper.
+    for gone in ('id="quietStart"', 'id="quietEnd"'):
+        assert gone not in page, gone
+    assert "function isQuietHour(" not in script
+
     assert "function renderPolicyPreview()" in script
-    assert 'Array.from({ length: 24 }, (_, hour)' in script
-    # The band must agree with the decider, wrap-around included.
-    quiet = script.split("function isQuietHour(hour, start, end) {")[1].split("\n}")[0]
-    assert "start > end ? hour >= start || hour < end : hour >= start && hour < end" in quiet
-    # Naming the binding limit is the point: changing 冷卻 does nothing visible
+    assert "function buildScheduleWindows(elder = {}, weekday = isoWeekday())" in script
+    # Minute-level, so a 13:00–14:30 午睡 lands where the decider puts it.
+    assert "const BAND_CELLS = 48;" in script
+    # Twin of Window.contains: `start > end` wraps midnight, equal means none.
+    window_fn = script.split("function windowContains(window, minute) {")[1].split("\n}")[0]
+    assert "window.start === window.end" in window_fn
+    assert "minute >= window.start || minute < window.end" in window_fn
+    # Twin of build_schedule: both times required, bed == wake means no window.
+    build_fn = script.split("function buildScheduleWindows(elder = {}, weekday = isoWeekday()) {")[1]
+    build_fn = build_fn.split("\n}")[0]
+    assert "wake !== null && bed !== null && bed !== wake" in build_fn
+    assert "appliesToday(routine.weekdays, weekday)" in build_fn
+    assert "routine?.do_not_disturb" in build_fn
+    # It draws; it never decides.
+    assert "只畫圖" in script or "ONLY to draw the band" in script
+
+    # Read-only: the band sends a click to 建檔 rather than editing anything.
+    assert "data-goto-intake" in page
+    assert 'switchTab("tabW2Intake")' in script
+
+    # Naming the binding knob is the point: changing 間隔 does nothing visible
     # when 每日上限 was the one biting all along.
-    assert "真正卡住的是" in script
+    assert "真正卡住一天的是" in script
+    # And 「現在哪條規則在卡人」 answers it for right now, in choose_event's order.
+    assert "function renderBlockingRuleNow(schedule, policy, intervalCap)" in script
     assert ".quiet-band" in styles and ".band-hour.is-quiet" in styles
 
     assert 'id="sinceLastHint"' in page and 'id="sentTodayHint"' in page and 'id="nowHint"' in page
     hints = script.split("function renderTriggerHints() {")[1].split("\n}\n")[0]
-    assert "policy.cooldown_minutes" in hints and "policy.daily_message_limit" in hints
+    # The two knobs by their schema-2 names; the legacy keys are gone entirely.
+    assert "policy.interval_minutes" in hints and "policy.daily_limit" in hints
     assert "會被擋下" in hints and "會通過" in hints
+    for legacy in ("cooldown_minutes", "daily_message_limit", "quiet_hours", "max_message_sentences"):
+        assert legacy not in script, legacy
 
     # 取消變更 writes fields programmatically, which fires no input event.
     revert = script.split("function revertGroup(groupName) {")[1].split("\n}\n")[0]
@@ -1026,9 +1059,11 @@ def test_scheduled_reminders_fire_on_the_real_clock() -> None:
     assert "minutes_since_last: minutesSinceLastProactive()" in fire
     assert "sent_today: proactiveState().sent_today" in fire
     assert "minutes_since_last_message" not in script and "messages_today" not in script
-    # The 剛被拒絕 checkbox is a what-if for the manual trigger only; reading it
-    # here would let a hypothesis silently kill a real scheduled reminder.
-    assert "user_declined: false," in fire
+    # 「她剛說不想聊」 writes real state with an expiry, so a scheduled item DOES
+    # respect it — the inverse of the old rule, which held only while the sole
+    # signal was the 🧪 what-if checkbox. A 吃藥提醒 still gets through, because
+    # choose_event clears reminders before it ever looks at this.
+    assert "user_declined: isDeclinedNow()," in fire
     assert 'user_declined: $("#proactiveDeclined").checked' not in fire
     # A transport failure must not burn the item, and mid-sentence is temporary.
     assert "if (!decision) {" in fire
@@ -1180,14 +1215,15 @@ def test_lab_results_collapse_and_keep_their_score() -> None:
 
     # 記憶分類 was a quiz with a score; 建檔 is a form with a completeness count,
     # so it has no result panel to collapse. The two lab runs still do.
-    for panel in ("proactiveOutcome", "dayOutcome"):
-        assert f'<details id="{panel}" class="result-panel" hidden>' in page, panel
-    assert 'id="memoryOutcome"' not in page
-    # The existing result containers keep their ids; they are wrapped, not moved.
-    for kept in ("proactiveResults", "daySummary", "dayTimeline"):
+    assert '<details id="dayOutcome" class="result-panel" hidden>' in page
+    # 記憶分類 was a quiz and 執行 6 個情境 a unit test; both are gone, so 她的一天
+    # is the only run left with a score worth collapsing.
+    for gone in ("memoryOutcome", "proactiveOutcome", "proactiveResults"):
+        assert f'id="{gone}"' not in page, gone
+    for kept in ("daySummary", "dayTimeline", "dayMissing", "dayPredictEcho"):
         assert f'id="{kept}"' in page, kept
     assert "function showResult(panelSelector, headlineSelector, headline)" in script
-    assert script.count("showResult(") == 3  # definition + two call sites
+    assert script.count("showResult(") == 2  # definition + one call site
     assert ".result-panel > summary" in styles
 
 
@@ -1319,3 +1355,58 @@ def test_bootstrap_ships_the_interview_but_never_the_answer_key() -> None:
     # The taboo *rules* exist only in the reference file; the interview never says them.
     assert "她自己提起才回應" not in dumped
     assert "expected_counts" not in data and "reference" not in data
+
+
+def test_the_two_proactive_tabs_are_one_line_top_to_bottom() -> None:
+    """主動規則 and 觸發主動 were two tabs describing one mechanism: the rules on
+    one, the only place that exercises them on the other. Spec §5.3 merges them
+    into a single 主動 tab read top to bottom — two knobs, her day, real speech,
+    today's summary."""
+
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    script = client_script()
+
+    # Three tabs, not four. The id stays tabW2Policy; only the label merges.
+    assert page.count('data-tab="tabW2') == 3
+    assert '>主動</button>' in page
+    assert 'id="tabW2Trigger"' not in page and 'data-tab="tabW2Trigger"' not in page
+    # Both halves are inside the surviving panel, in order.
+    panel = page.split('<div id="tabW2Policy"')[1].split("</section>")[0]
+    for heading in ("一、你只有兩個旋鈕", "二、跑她的一天", "三、真的開口", "四、產生今日摘要"):
+        assert heading in panel, heading
+    # 執行 6 個情境 is gone, runner and all (spec §5.3 item 4).
+    assert "執行 6 個情境" not in page
+    assert "runProactiveTests" not in script and "/api/proactive-check" not in script
+
+    # 先預測再跑, then the comparison.
+    assert 'id="predictMissed"' in page and 'id="predictNoise"' in page
+    assert "function renderPredictEcho(result)" in script
+    # 對照 switch: the student's rules against the gates production hard-codes.
+    assert 'id="dayGatesFixed"' in page
+    assert '"dodo_fixed" : "routines"' in script
+    assert "gates," in script
+    # 漏掉的用藥／回診 as a consequence, not a score.
+    assert 'id="dayMissing"' in page
+    assert "result.missing_reminders" in script
+
+
+def test_layer_c_is_grown_from_the_conversation_not_typed() -> None:
+    """A 跨日摘要 nobody can write by hand is the whole point of the layer: it is
+    the one memory row that exists only because a day happened."""
+
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    script = client_script()
+
+    assert 'id="runTodaySummary"' in page and 'id="todaySummary"' in page
+    assert 'fetch("/api/day-summary"' in script
+    summary = script.split("async function runTodaySummary() {")[1].split("\n}\n")[0]
+    # Written through the one memory helper, so C's 重寫 rule applies to it too.
+    assert 'upsertMemory("C", "今日摘要", result.summary, undefined, { source: "system" })' in summary
+    assert "renderMemoryViewer();" in summary and "pushMemoryToSession();" in summary
+
+    # TOOL and SYSTEM rows are workshop instrumentation, not things anyone said.
+    transcript = script.split("function chatTranscript() {")[1].split("\n}\n")[0]
+    assert 'classList.contains("user") ? "user"' in transcript
+    assert 'classList.contains("assistant") ? "dodo"' in transcript
+    # The endpoint caps both fields; sending more would 422 the whole summary.
+    assert "text.slice(0, 2000)" in transcript and "slice(-200)" in transcript

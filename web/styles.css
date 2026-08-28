@@ -167,10 +167,6 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .preset-row > small { display: block; margin-top: 8px; color: var(--ink-soft); font-size: 11px; line-height: 1.5; }
 /* The preview sits on a dark panel, so the warning needs a light accent. */
 .prompt-preview.is-empty { color: var(--apricot); font-style: italic; }
-.test-results { margin-top: 18px; border-top: 1px solid var(--line); }
-.test-item { display: grid; grid-template-columns: 22px 1fr; gap: 6px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; line-height: 1.5; }
-.test-item.is-pass strong { color: #287653; }
-.test-item.is-fail strong { color: var(--danger); }
 .single-result { margin-top: 12px; font-weight: 700; }
 /* Results used to pile up under the button that made them with no way to close
    them. Collapsed still shows the headline, so the score survives the collapse. */
@@ -181,7 +177,6 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .result-panel > summary em { flex: 0 0 auto; color: var(--ink-soft); font-style: normal; font-weight: 400; }
 .result-panel[open] > summary { border-bottom: 1px solid var(--line); }
 .result-panel > :not(summary) { padding: 0 13px 13px; }
-.result-panel .test-results { margin-top: 0; border-top: 0; }
 .block-purpose { margin: 0 0 14px; padding: 11px 12px; border-left: 4px solid var(--blue); background: var(--white); color: var(--ink-soft); line-height: 1.6; }
 .block-purpose code { color: var(--blue); }
 .sub-heading { margin: 26px 0 8px; font-size: 15px; }
@@ -320,12 +315,6 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .rule-row.is-fixed { background: #fbf7ef; }
 .rule-row.is-fixed .rule-set em { padding: 3px 6px; border: 1px solid var(--line); border-radius: 3px; color: var(--ink-soft); font-size: 11px !important; font-style: normal; white-space: nowrap; }
 .rule-row.is-model { border-left: 3px solid var(--mint); padding-left: 7px; }
-/* 事件優先權 needs six fields, so it takes the full width of its own row. */
-.rule-row.is-wide { grid-template-columns: 20px 74px minmax(0, 1fr); }
-.priority-fields { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 6px; margin-top: 6px; }
-.priority-field { display: grid; grid-template-columns: minmax(0, 1fr) 52px; gap: 6px; align-items: center; margin: 0 !important; }
-.priority-field span { color: var(--ink-soft); font-size: 11px !important; overflow-wrap: anywhere; }
-.priority-field input { margin-top: 0 !important; padding: 6px 4px !important; text-align: center; font-variant-numeric: tabular-nums; }
 
 /* Long explanations that used to be four stacked paragraphs of 說明. */
 .why-details { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 4px; background: var(--white); }
@@ -442,3 +431,50 @@ legend { margin-bottom: 10px; font-weight: 800; }
   .composer textarea { flex-basis: 100%; width: 100%; }
   .prompt-variables { grid-template-columns: 1fr; }
 }
+
+/* 建檔 completeness: counts, never a score. */
+.check-chip { padding: 4px 9px; border: 1px solid var(--line); border-radius: 999px; background: var(--white); color: var(--ink-soft); font-size: 11px; white-space: nowrap; }
+.check-chip b { color: var(--ink); }
+.check-chip.is-done { border-color: var(--mint); background: #eff7f2; color: #287653; }
+
+/* 安靜與不打擾 are facts about her life, so their rows carry no field — the
+   derived look is what says「不在這裡改」before anyone tries. */
+.rule-row.is-derived .rule-set { color: var(--ink-soft); }
+.link-to-intake { display: block; margin-top: 3px; border: 0; padding: 0; background: transparent; color: var(--blue); font-size: 10px; text-decoration: underline; }
+.link-to-intake:hover { color: var(--ink); }
+.quiet-band.is-derived { cursor: pointer; }
+.quiet-band.is-derived:hover { outline: 2px solid var(--apricot); outline-offset: 2px; }
+.preview-label small { display: block; margin-top: 2px; color: var(--ink-soft); font-size: 10px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+
+/* 「她剛說不想聊」 writes state with an expiry, so the button has to say when it
+   wears off — otherwise it reads as a permanent mute. */
+.decline-state { display: block; margin-top: 3px; color: var(--ink-soft); font-size: 10px; line-height: 1.4; }
+#declineChat.is-active { border: 1px solid var(--danger); background: var(--white); color: var(--danger); }
+
+/* 先預測再跑: the guess is the point, so it sits above the button, not beside
+   the result it is about to be compared with. */
+.predict-row { display: flex; flex-wrap: wrap; gap: 14px; margin: 0 0 12px; padding: 11px 12px; border: 1px dashed var(--line); border-radius: 6px; background: var(--white); }
+.predict-row label { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+.predict-row input { width: 62px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; text-align: center; font-variant-numeric: tabular-nums; }
+.predict-echo:empty { display: none; }
+.predict-line { margin: 0 0 10px; padding: 9px 11px; border-left: 3px solid var(--apricot); background: var(--white); line-height: 1.7; }
+.predict-none { margin: 0 0 10px; color: var(--ink-soft); font-size: 12px; }
+
+/* Which schedule the run actually used. Without this the 對照 switch is a
+   checkbox that changes two numbers for no visible reason. */
+.day-gates { margin: 0 0 10px; color: var(--ink-soft); font-size: 12px; line-height: 1.55; }
+.day-gates.is-fixed { color: var(--ink); }
+.day-gates.is-fixed strong { color: var(--danger); }
+
+/* 漏掉的用藥／回診 —— the consequence of an incomplete 建檔, named per row. */
+.day-missing { margin: 0 0 12px; }
+.day-missing-head { margin: 0 0 6px; line-height: 1.6; }
+.day-missing-none { margin: 0 0 6px; color: #287653; font-size: 12px; }
+.day-missing-list { margin: 0 0 6px; padding: 0; list-style: none; display: grid; gap: 4px; }
+.day-missing-list li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; padding: 6px 9px; border-left: 3px solid var(--danger); border-radius: 0 4px 4px 0; background: var(--white); }
+.day-missing-list time { color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.day-missing-list em { color: var(--ink-soft); font-size: 11px; font-style: normal; }
+.day-missing-note { margin: 0; color: var(--ink-soft); font-size: 11px; }
+
+/* The timeline's topic column carries the wording, so it takes the slack. */
+.day-topic { flex: 1 1 40%; min-width: 0; overflow-wrap: anywhere; }
