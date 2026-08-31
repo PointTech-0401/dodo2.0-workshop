@@ -298,7 +298,7 @@
     <div style="display: flex; flex-direction: column; gap: 26px;">
       <h1 style="margin: 0; max-width: 1250px; color: #fffdf8; font: 700 96px/1.06 'Noto Serif TC',Georgia,serif; letter-spacing: -.045em; text-wrap: pretty;">讓 Dodo 聽完，再回答</h1>
       <div style="width: 132px; height: 6px; border-radius: 3px; background: #f1b879;"></div>
-      <p style="margin: 0; max-width: 1080px; color: rgba(255, 253, 248, .84); font: 500 29px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">正確拆解 Realtime Voice Agent 的 Prompt、回合控制與輸出長度</p>
+      <p style="margin: 0; max-width: 1080px; color: rgba(255, 253, 248, .84); font: 500 29px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">把一個會講話的 AI 拆成三件事：講什麼、什麼時候換人講、一次講多長</p>
     </div>
     <div style="display: flex; flex-wrap: wrap; gap: 12px;">
         <span style="padding: 9px 16px; border: 1px solid rgba(255, 253, 248, .28); border-radius: 999px; color: rgba(255, 253, 248, .82); font: 500 18px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif;">OpenAI Realtime API</span>
@@ -321,32 +321,32 @@
       <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">02 / 16</span>
     </div>
     <div style="display: flex; flex-direction: column; gap: 13px;">
-      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">Voice Agent 不是「多寫一些 Prompt」就會自然</h1>
-      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">學生要能分清楚三個層次 —— 每一層在本專案都有一個實際對應的位置。</p>
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">會講話的 AI，不是 Prompt 多寫幾句就會變自然</h1>
+      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">三件事要分清楚：每一件在畫面上都找得到位置。</p>
     </div>
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
       <div style="display: flex; gap: 22px; align-items: stretch;"><div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #397d9f; border-radius: 0 0 4px 4px; background: #f7f2e8;">
     <span style="color: #397d9f; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">MODEL INSTRUCTIONS</span>
-    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">角色、語氣、回答內容與安全界線</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">寫在畫面左側 A 區的五個分塊裡。</p>
-    <span style="margin-top: 2px; color: #397d9f; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">instructions</span>
+    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">它是誰、什麼口氣、能講什麼不能講什麼</h3>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">寫在畫面右邊 A 區那五個分塊裡。</p>
+    <span style="margin-top: 2px; color: #397d9f; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">（A 區）</span>
   </div>
 <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #f1b879; border-radius: 0 0 4px 4px; background: #f7f2e8;">
     <span style="color: #f1b879; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">TURN DETECTION</span>
-    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">何時開始聽、何時判定說完、是否允許插話</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">由右側 B 區的回合設定決定。</p>
-    <span style="margin-top: 2px; color: #f1b879; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">session.audio.input.turn_detection</span>
+    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">什麼時候開始聽、怎麼算你講完了、能不能插話</h3>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">由右邊 B 區的設定決定。</p>
+    <span style="margin-top: 2px; color: #f1b879; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">（B 區）</span>
   </div>
 <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #287653; border-radius: 0 0 4px 4px; background: #f7f2e8;">
     <span style="color: #287653; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">OUTPUT LENGTH</span>
-    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">單次回答多長</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">寫在「對話方式」分塊裡，不設 API 上限 —— 這是刻意的選擇。</p>
-    <span style="margin-top: 2px; color: #287653; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">（沒有 max_output_tokens）</span>
+    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">一次回答多長</h3>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">寫在「對話方式」分塊裡，不設硬上限，這是刻意的選擇。</p>
+    <span style="margin-top: 2px; color: #287653; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">（不設字數上限）</span>
   </div></div>
     </div>
     <div style="display: flex; align-items: center; gap: 14px; padding-top: 16px; border-top: 1px solid #cfd9dc;">
       <span style="flex-shrink: 0; width: 9px; height: 9px; border-radius: 50%; background: #f1b879;"></span>
-      <span style="color: #4d6475; font: 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">Prompt 不負責偵測使用者是否說完；回合控制也不負責決定它說什麼。</span>
+      <span style="color: #4d6475; font: 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">Prompt 不負責判斷你講完了沒；回合控制也不決定它要說什麼。</span>
     </div>
   </div>
 </div>
@@ -394,9 +394,9 @@
     <rect x="40" y="170" width="300" height="150" rx="8" fill="#d9edf7" stroke="#cfd9dc" stroke-width="1"></rect>
     
     <text x="62" y="196" fill="#397d9f" font-size="13" font-weight="800" letter-spacing="1.6">瀏覽器</text>
-    <text x="62" y="222" fill="#15324a" font-size="19" font-weight="700">web/app.js</text>
-    <text x="62" y="250" fill="#4d6475" font-size="15.5">index.html · styles.css</text>
-    <text x="62" y="272" fill="#4d6475" font-size="15.5">分塊組裝 · WebRTC</text>
+    <text x="62" y="222" fill="#15324a" font-size="19" font-weight="700">web/ 前端</text>
+    <text x="62" y="250" fill="#4d6475" font-size="15.5">core · workshop1 · workshop2</text>
+    <text x="62" y="272" fill="#4d6475" font-size="15.5">組 Prompt · 連線</text>
     <text x="62" y="294" fill="#4d6475" font-size="15.5">記憶工具</text>
   </g>
     <g>
@@ -406,14 +406,14 @@
     <text x="537" y="222" fill="#15324a" font-size="19" font-weight="700">dodo_workshop/web.py</text>
     <text x="537" y="250" fill="#4d6475" font-size="15.5">API Key 只留在這裡</text>
     <text x="537" y="272" fill="#4d6475" font-size="15.5">profile.py 組 Prompt</text>
-    <text x="537" y="294" fill="#4d6475" font-size="15.5">lesson1／lesson2 判斷</text>
+    <text x="537" y="294" fill="#4d6475" font-size="15.5">lesson1.py 課堂判斷</text>
   </g>
     <g>
     <rect x="515" y="372" width="220" height="76" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
     
     
     <text x="537" y="408" fill="#15324a" font-size="16" font-weight="700">student/my-dodo.json</text>
-    <text x="537" y="436" fill="#4d6475" font-size="15.5">scenarios/*.json</text>
+    <text x="537" y="436" fill="#4d6475" font-size="15.5">scenarios/ 的訪談稿</text>
   </g>
     <g>
     <rect x="990" y="170" width="300" height="150" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
@@ -461,7 +461,7 @@
       <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">04 / 16</span>
     </div>
     <div style="display: flex; flex-direction: column; gap: 13px;">
-      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">一句話從送出到回答，中間走過哪裡</h1>
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">一句話從你按送出，到它開口，中間走過哪裡</h1>
       
     </div>
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
@@ -586,23 +586,23 @@
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
       <ul style="display: flex; flex-direction: column; gap: 20px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #397d9f;"></span>
-      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">說明 Prompt、VAD 與 Push-to-talk 各自負責什麼，以及為什麼回覆長度留給 Prompt 而不是 token 上限。</span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">講得出 Prompt、VAD、Push-to-talk 各自負責什麼，以及為什麼長度交給 Prompt，而不是設硬上限。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #397d9f;"></span>
-      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">透過真正的 OpenAI Realtime API，比較修改不同 Prompt 分塊後的回答差異。</span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">用真正的 OpenAI Realtime API，比較改了不同分塊之後回答有什麼不一樣。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #397d9f;"></span>
-      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">比較 <span style="padding: 2px 7px; border-radius: 4px; background: #d9edf7; color: #397d9f; font: 700 21px/1.5 Consolas,'Noto Sans TC',monospace;">server_vad</span>、<span style="padding: 2px 7px; border-radius: 4px; background: #d9edf7; color: #397d9f; font: 700 21px/1.5 Consolas,'Noto Sans TC',monospace;">semantic_vad</span>、Push-to-talk 三種回合方式。</span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">比較 <span style="padding: 2px 7px; border-radius: 4px; background: #d9edf7; color: #397d9f; font: 700 21px/1.5 Consolas,'Noto Sans TC',monospace;">Server VAD</span>、<span style="padding: 2px 7px; border-radius: 4px; background: #d9edf7; color: #397d9f; font: 700 21px/1.5 Consolas,'Noto Sans TC',monospace;">Semantic VAD</span>、Push-to-talk 三種判斷方式。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #397d9f;"></span>
-      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">按「套用」把設定實際送進 Realtime session.update，並用同一句話比較前後差異。</span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">按「套用」把設定真的送進正在進行的對話，再用同一句話比前後差別。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #397d9f;"></span>
-      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">把 Prompt 分塊、組裝結果與 Realtime 設定保存到 my-dodo.json，第二堂繼續使用。</span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">把這一堂的成果存進 my-dodo.json，第二堂接著用。</span>
     </li></ul>
     </div>
     
@@ -628,21 +628,21 @@
     <div style="padding: 0 0 12px; color: #397d9f; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .14em; text-align: left;">時間</div>
     <div style="padding: 0 0 12px; color: #397d9f; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .14em; text-align: left;">內容</div>
     <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #15324a; font: 700 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">0–15 分</div>
-    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">示範：文字立即送出；語音則要先判斷「說完了沒」</div>
+    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">示範：打字按送出就走；用講的，得先有人判斷「他講完了沒」</div>
     <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #15324a; font: 700 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">15–35 分</div>
-    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">Voice Agent 架構：WebRTC、Realtime model、輸入音訊、逐字稿與輸出音訊</div>
+    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">這東西怎麼接起來的：瀏覽器、模型、你的聲音、逐字稿、它的聲音</div>
     <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #15324a; font: 700 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">35–55 分</div>
-    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">關鍵分層：Prompt 管內容與長度；VAD／按鍵管回合；instructions 在 mint 時送出</div>
+    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">三件事分清楚：Prompt 管內容和長度；VAD／按鍵管換誰講；Prompt 一連線就送出去</div>
     <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #15324a; font: 700 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">55–70 分</div>
-    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">三種回合方式：Server VAD、Semantic VAD、Push-to-talk</div>
+    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">三種判斷方式：Server VAD、Semantic VAD、Push-to-talk</div>
     <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #15324a; font: 700 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">70–80 分</div>
     <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">休息</div>
     <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #15324a; font: 700 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">80–105 分</div>
-    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;"><strong style="color: #15324a;">實作一</strong>　用同一句話 A/B 測試 System instructions</div>
+    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;"><strong style="color: #15324a;">實作一</strong>　用同一句話測 Prompt 改了以後差在哪</div>
     <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #15324a; font: 700 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">105–140 分</div>
-    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;"><strong style="color: #15324a;">實作二</strong>　設定回合方式並套用；有耳麥者做真實語音驗證</div>
+    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;"><strong style="color: #15324a;">實作二</strong>　設定回合方式並套用；有耳麥的人真的用講的試一次</div>
     <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #15324a; font: 700 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">140–165 分</div>
-    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">下載 my-dodo.json、確認第二堂延續方式</div>
+    <div style="padding: 15px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">下載 my-dodo.json、確認第二堂怎麼接下去</div>
   </div>
     </div>
     
@@ -660,30 +660,30 @@
       <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">07 / 16</span>
     </div>
     <div style="display: flex; flex-direction: column; gap: 13px;">
-      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">為什麼不設 max_output_tokens</h1>
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">為什麼不乾脆設一個字數上限</h1>
       <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">兩種做法都有代價，正式 dodo 選了其中一邊，本專案跟進。</p>
     </div>
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
       <div style="display: flex; flex-direction: column; gap: 26px;"><div style="display: flex; gap: 22px; align-items: stretch;"><div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #397d9f; border-radius: 0 0 4px 4px; background: #d9edf7;">
     <span style="color: #397d9f; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">方案 A · PROMPT 指引</span>
     <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">「一次最多兩個短句」</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">模型不保證逐字遵守，但句子一定是完整的。</p>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">模型不保證每次都照做，但句子一定是完整的。</p>
     
   </div>
 <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #a84a42; border-radius: 0 0 4px 4px; background: #f7f2e8;">
-    <span style="color: #a84a42; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">方案 B · TOKEN 硬上限</span>
+    <span style="color: #a84a42; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">方案 B · 字數硬上限</span>
     <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">長度守得住，但句子會被切在一半</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">講到第 47 個 token 就停，不管那句話說完了沒有。</p>
-    <span style="margin-top: 2px; color: #a84a42; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">max_output_tokens</span>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">字數一到就停，不管那句講完了沒。</p>
+    <span style="margin-top: 2px; color: #a84a42; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">（一到就砍）</span>
   </div></div>
 <div style="display: flex; align-items: center; gap: 20px; padding: 26px 32px; border-radius: 4px 18px 18px 4px; background: #15324a;">
     <div style="flex-shrink: 0; width: 6px; align-self: stretch; border-radius: 3px; background: #f1b879;"></div>
-    <p style="margin: 0; color: #fffdf8; font: 700 28px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">正式 dodo 不設 max_output_tokens，本專案跟進：長度交給 Prompt 描述。</p>
+    <p style="margin: 0; color: #fffdf8; font: 700 28px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">正式 dodo 不設字數上限，本專案跟進：長度用 Prompt 描述，不用程式砍。</p>
   </div></div>
     </div>
     <div style="display: flex; align-items: center; gap: 14px; padding-top: 16px; border-top: 1px solid #cfd9dc;">
       <span style="flex-shrink: 0; width: 9px; height: 9px; border-radius: 50%; background: #f1b879;"></span>
-      <span style="color: #4d6475; font: 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">「停頓門檻」只在 server_vad 語音輸入有效，打字送出不會經過 VAD。</span>
+      <span style="color: #4d6475; font: 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">「安靜多久算講完」只有用麥克風講話時才有意義，打字送出不會經過它。</span>
     </div>
   </div>
 </div>
@@ -699,20 +699,20 @@
       <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">08 / 16</span>
     </div>
     <div style="display: flex; flex-direction: column; gap: 13px;">
-      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">instructions 什麼時候送出？</h1>
-      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">流程圖上的第 ① 步就是這件事。它也是「豆豆為什麼用英文回答」的根因。</p>
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">Prompt 是什麼時候送出去的？</h1>
+      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">流程圖上的第 ① 步就是這件事，也是「豆豆為什麼用英文回答」的原因。</p>
     </div>
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
       <div style="display: flex; flex-direction: column; gap: 26px;"><div style="display: flex; gap: 22px; align-items: stretch;"><div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #287653; border-radius: 0 0 4px 4px; background: #f7f2e8;">
     <span style="color: #287653; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">正確做法</span>
-    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">建立連線時就跟 SDP offer 一起送</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">第一句話就已經是豆豆。按「套用」時會再用 session.update 更新一次。</p>
+    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">一連上線就跟著送出去</h3>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">第一句話就已經是豆豆。按「套用」會再送一次更新。</p>
     
   </div>
 <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #a84a42; border-radius: 0 0 4px 4px; background: #f7f2e8;">
     <span style="color: #a84a42; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">錯誤做法</span>
-    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">只靠 session.update 補送</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">第一個回合會落在 OpenAI 的預設人格上 —— 你會看到豆豆用英文回答。</p>
+    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">等連上了才補送</h3>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">第一個回合會落在 OpenAI 的預設人格上，你會看到豆豆用英文回答。</p>
     
   </div></div>
 <div style="display: flex; align-items: center; gap: 20px; padding: 26px 32px; border-radius: 4px 18px 18px 4px; background: #15324a;">
@@ -735,31 +735,31 @@
       <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">09 / 16</span>
     </div>
     <div style="display: flex; flex-direction: column; gap: 13px;">
-      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">三種回合方式，三種取捨</h1>
-      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">右側 B 區的設定會組成 Realtime session.update。</p>
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">三種判斷方式，三種代價</h1>
+      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">右邊 B 區改的東西，會直接送進正在進行的那段對話。</p>
     </div>
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
       <div style="display: flex; flex-direction: column; gap: 26px;"><div style="display: flex; gap: 22px; align-items: stretch;"><div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #287653; border-radius: 0 0 4px 4px; background: #f7f2e8;">
     <span style="color: #287653; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">SEMANTIC VAD</span>
-    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">依語意判斷是否說完</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">較適合說話慢、句中會停頓的長者。</p>
-    <span style="margin-top: 2px; color: #287653; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">eagerness = low</span>
+    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">聽意思，判斷你講完了沒</h3>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">比較適合講話慢、句子中間會停頓的長者。</p>
+    <span style="margin-top: 2px; color: #287653; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">等待傾向 = low</span>
   </div>
 <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #397d9f; border-radius: 0 0 4px 4px; background: #f7f2e8;">
     <span style="color: #397d9f; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">SERVER VAD</span>
-    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">依靜音時間切回合</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">容易直接觀察延遲與搶話的取捨。</p>
-    <span style="margin-top: 2px; color: #397d9f; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">silence_duration_ms = 800</span>
+    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">你安靜夠久就算講完</h3>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">最容易看出「反應快」和「被搶話」互相拉扯。</p>
+    <span style="margin-top: 2px; color: #397d9f; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">安靜 800 毫秒</span>
   </div>
 <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #f1b879; border-radius: 0 0 4px 4px; background: #f7f2e8;">
     <span style="color: #f1b879; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">PUSH TO TALK</span>
     <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">按住錄音，放開才送出</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">停用 VAD，最容易在吵雜教室穩定操作。</p>
-    <span style="margin-top: 2px; color: #f1b879; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">（不使用 turn_detection）</span>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">完全不用猜，吵雜的教室裡最穩。</p>
+    <span style="margin-top: 2px; color: #f1b879; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">（完全不猜）</span>
   </div></div>
 <div style="display: flex; align-items: center; gap: 20px; padding: 26px 32px; border-radius: 4px 18px 18px 4px; background: #15324a;">
     <div style="flex-shrink: 0; width: 6px; align-self: stretch; border-radius: 3px; background: #f1b879;"></div>
-    <p style="margin: 0; color: #fffdf8; font: 700 28px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">barge-in 由 <span style="padding: 2px 7px; border-radius: 4px; background: #d9edf7; color: #397d9f; font: 700 25px/1.5 Consolas,'Noto Sans TC',monospace;">interrupt_response=true</span> 與 Push-to-talk 的 <span style="padding: 2px 7px; border-radius: 4px; background: #d9edf7; color: #397d9f; font: 700 25px/1.5 Consolas,'Noto Sans TC',monospace;">response.cancel</span> 負責，不是靠一句 Prompt 停止音訊。</p>
+    <p style="margin: 0; color: #fffdf8; font: 700 28px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">你一插話，是程式中斷它正在講的那句，不是靠 Prompt 拜託它停下來。</p>
   </div></div>
     </div>
     
@@ -778,29 +778,29 @@
     </div>
     <div style="display: flex; flex-direction: column; gap: 13px;">
       <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">開始前：連接真正的模型</h1>
-      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">未設定 Key 時聊天功能會明確停用；不會用固定句型假裝成模型回覆。</p>
+      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">沒填 Key 時聊天會直接停用，不會拿罐頭句子假裝自己是模型。</p>
     </div>
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
       <div style="display: flex; gap: 34px; align-items: stretch;"><div style="display: flex; flex-direction: column; gap: 18px;"><ul style="display: flex; flex-direction: column; gap: 18px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 13px; border-radius: 50%; background: #397d9f;"></span>
-      <span style="color: #15324a; font: 23px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">第一次啟動時，在畫面內分別輸入 OpenAI API Key 與 OpenWeatherMap API Key。</span>
+      <span style="color: #15324a; font: 23px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">第一次啟動時，畫面上會分別要你填 OpenAI 的 Key 和天氣的 Key。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 13px; border-radius: 50%; background: #397d9f;"></span>
-      <span style="color: #15324a; font: 23px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">每個 Key 旁邊只有「測試」按鈕；實際儲存一律由畫面最下方那一個按鈕完成 —— 沒測試過的 Key 會在儲存時自動先測一次。</span>
+      <span style="color: #15324a; font: 23px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">每個 Key 旁邊只有一顆「測試」；真正存下來靠畫面最下面那顆按鈕。沒測過的 Key 會在存之前自動測一次。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 13px; border-radius: 50%; background: #397d9f;"></span>
-      <span style="color: #15324a; font: 23px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">也可以由講師預先在 .env 設定 OPENAI_API_KEY 與 WEATHER_API_KEY。</span>
+      <span style="color: #15324a; font: 23px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">也可以由講師事先幫每台電腦設好。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 13px; border-radius: 50%; background: #397d9f;"></span>
-      <span style="color: #15324a; font: 23px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">天氣 Key 沒有設定時仍可進入 Workshop，但即時天氣工具會明確提示尚未設定。</span>
+      <span style="color: #15324a; font: 23px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">天氣 Key 沒填一樣可以上課，只是問天氣時它會明講「還沒設定」。</span>
     </li></ul></div>
 <div style="flex: 0 0 560px;"><div style="display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #287653; border-radius: 0 0 4px 4px; background: #d9edf7;">
     <span style="color: #287653; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">KEY 去了哪裡</span>
-    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">只送到本機 Python 後端</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">保存在該次程式的記憶體，不寫入 localStorage、my-dodo.json 或前端程式碼。關掉「API 設定」視窗（× 或 Esc）會丟棄尚未儲存的變更。</p>
+    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">只留在你自己這台電腦上</h3>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">跟著程式一起活著，程式一關就沒了。不會存進瀏覽器、不會寫進 my-dodo.json、也不會出現在網頁程式裡。關掉設定視窗（× 或 Esc）會丟掉還沒存的東西。</p>
     
   </div></div></div>
     </div>
@@ -819,8 +819,8 @@
       <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">11 / 16</span>
     </div>
     <div style="display: flex; flex-direction: column; gap: 13px;">
-      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">實作一：Prompt 只改變回答內容</h1>
-      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">80–105 分。全班用「打字輸入／文字輸出」就能完成，不需要耳麥。</p>
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">實作一：Prompt 只改變「它怎麼回答」</h1>
+      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">80–105 分。全班用「打字輸入／文字輸出」就做得完，不需要耳麥。</p>
     </div>
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
       <div style="display: flex; flex-direction: column; gap: 22px;"><div style="display: flex; gap: 32px; align-items: stretch;"><ol style="display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 18px; align-items: center;">
@@ -829,7 +829,7 @@
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #397d9f; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">2</div>
-      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">先問「你叫什麼？我叫什麼？」驗證身分與稱呼。</span>
+      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">先問「你叫什麼？我叫什麼？」，確認名字和稱呼生效了。</span>
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #397d9f; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">3</div>
@@ -837,7 +837,7 @@
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #397d9f; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">4</div>
-      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">選一個分塊修改，觀察唯讀的完整 System Prompt 即時更新。</span>
+      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">選一個分塊改，看下面那份完整 Prompt 馬上跟著變。</span>
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #397d9f; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">5</div>
@@ -849,19 +849,19 @@
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #397d9f; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">7</div>
-      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">在「對話方式」改寫長度規則，再比一次。</span>
+      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">在「對話方式」改長度規則，再比一次。</span>
     </li></ol>
 <div style="flex: 0 0 500px; display: flex; flex-direction: column; gap: 16px;">
         <div style="display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #f1b879; border-radius: 0 0 4px 4px; background: #f7f2e8;">
     <span style="color: #f1b879; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">可以先試</span>
     <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">快速套用範例人格</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">溫柔陪伴／神經模式／啦啦隊長會覆蓋 5 個區塊與聲線，但保留你的 Dodo 名稱與稱呼。</p>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">溫柔陪伴／神經模式／啦啦隊長會換掉 5 個分塊和聲線，但你取的名字和稱呼會留著。</p>
     
   </div>
         <div style="display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #a84a42; border-radius: 0 0 4px 4px; background: #f7f2e8;">
     <span style="color: #a84a42; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">兩個常見誤解</span>
     <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">不要這樣解釋</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">完整 System Prompt 只能檢視，所有修改都要回到對應分塊；也不要把文字輸入的回應時間解釋成 VAD 效果。</p>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">完整 System Prompt 只能看不能改，要改就回上面的分塊；也不要把打字回答的快慢當成 VAD 的效果。</p>
     
   </div>
       </div></div>
@@ -892,22 +892,22 @@
       <div style="display: flex; flex-direction: column; gap: 24px;"><div style="display: flex; gap: 22px; align-items: stretch;"><div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #397d9f; border-radius: 0 0 4px 4px; background: #f7f2e8;">
     <span style="color: #397d9f; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">A 區 · DODO 的聲線</span>
     <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">決定音色</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">10 種內建聲線可選，預設與正式 dodo 一樣。</p>
-    <span style="margin-top: 2px; color: #397d9f; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">voice = sage</span>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">10 種聲線可以挑，預設跟正式 dodo 一樣。</p>
+    <span style="margin-top: 2px; color: #397d9f; font: 700 18px/1.5 Consolas,'Noto Sans TC',monospace; overflow-wrap: anywhere;">預設 sage</span>
   </div>
 <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #287653; border-radius: 0 0 4px 4px; background: #f7f2e8;">
     <span style="color: #287653; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">A 區 · 個性與聲音分塊</span>
-    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">決定用字、節奏與語氣表現</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">改分塊不會換成另一個人的聲音；改聲線也不會讓它變得更有耐心。</p>
+    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">決定用字、節奏和態度</h3>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">改分塊不會換成另一個人的聲音；改聲線也不會讓它變得比較有耐心。</p>
     
   </div></div>
 <div style="display: flex; gap: 22px; align-items: stretch;"><div style="flex: 1 1 0;"><div style="display: flex; align-items: center; gap: 20px; padding: 26px 32px; border-radius: 4px 18px 18px 4px; background: #d9edf7;">
     <div style="flex-shrink: 0; width: 6px; align-self: stretch; border-radius: 3px; background: #f1b879;"></div>
-    <p style="margin: 0; color: #15324a; font: 700 28px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">程式不會以形容詞關鍵字偷偷切換語速。</p>
+    <p style="margin: 0; color: #15324a; font: 700 28px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">程式不會偷偷從你寫的形容詞裡去猜語速。</p>
   </div></div>
 <div style="flex: 1 1 0;"><div style="display: flex; align-items: center; gap: 20px; padding: 26px 32px; border-radius: 4px 18px 18px 4px; background: #15324a;">
     <div style="flex-shrink: 0; width: 6px; align-self: stretch; border-radius: 3px; background: #f1b879;"></div>
-    <p style="margin: 0; color: #fffdf8; font: 700 28px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">同一個 session 不能換聲線，所以按「套用」改聲線會自動斷線重連。</p>
+    <p style="margin: 0; color: #fffdf8; font: 700 28px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">同一段對話中途不能換聲音，所以改了聲線按「套用」會自動斷線重接。</p>
   </div></div></div></div>
     </div>
     <div style="display: flex; align-items: center; gap: 14px; padding-top: 16px; border-top: 1px solid #cfd9dc;">
@@ -928,8 +928,8 @@
       <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">13 / 16</span>
     </div>
     <div style="display: flex; flex-direction: column; gap: 13px;">
-      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">preamble 是哪一段？</h1>
-      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">流程圖右下角那兩個 response，在畫面上長這樣。</p>
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">那句「我幫您看一下」是什麼？</h1>
+      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">流程圖右下角那兩次回覆，在畫面上長這樣。</p>
     </div>
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
       <div style="display: flex; gap: 34px; align-items: stretch;"><div style="flex: 0 0 600px; display: flex; flex-direction: column; gap: 20px;">
@@ -944,19 +944,19 @@
     </div>
 <div style="display: flex; flex-direction: column; gap: 22px;"><ul style="display: flex; flex-direction: column; gap: 16px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #287653;"></span>
-      <span style="color: #15324a; font: 22px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">Realtime API 沒有 preamble 這種 item type。</span>
+      <span style="color: #15324a; font: 22px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">Realtime API 本身沒有「工具前開場白」這種東西。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #287653;"></span>
-      <span style="color: #15324a; font: 22px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">客端靠結構判斷：同一個 response 裡同時出現 message item 與 function_call item，那個 message 就是 preamble。</span>
+      <span style="color: #15324a; font: 22px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">畫面靠結構認出來：同一次回覆裡既說了一句話、又去呼叫工具，那句話就是開場白。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #287653;"></span>
-      <span style="color: #15324a; font: 22px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">工具結果送回去之後建立的<strong>下一個</strong> response 才是正式回答。</span>
+      <span style="color: #15324a; font: 22px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">工具查完之後的<strong>下一次</strong>回覆，才是正式回答。</span>
     </li></ul>
 <div style="display: flex; align-items: center; gap: 20px; padding: 26px 32px; border-radius: 4px 18px 18px 4px; background: #d9edf7;">
     <div style="flex-shrink: 0; width: 6px; align-self: stretch; border-radius: 3px; background: #f1b879;"></div>
-    <p style="margin: 0; color: #15324a; font: 700 28px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">把那句要求從「對話方式」刪掉再按「套用」，preamble 就會消失。</p>
+    <p style="margin: 0; color: #15324a; font: 700 28px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">把那句要求從「對話方式」刪掉再按「套用」，這句開場白就會消失。</p>
   </div></div></div>
     </div>
     
@@ -974,38 +974,38 @@
       <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">14 / 16</span>
     </div>
     <div style="display: flex; flex-direction: column; gap: 13px;">
-      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">實作二：真正的 Realtime 回合控制</h1>
-      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">105–140 分。沒有耳麥也做得完，有耳麥則多一段真實語音驗證。</p>
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">實作二：真正的回合控制</h1>
+      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">105–140 分。沒有耳麥也做得完，有耳麥就多一段真的用講的。</p>
     </div>
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
       <div style="display: flex; flex-direction: column; gap: 22px;"><div style="display: flex; gap: 32px; align-items: stretch;"><div style="flex: 1 1 0;"><div style="display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #397d9f; border-radius: 0 0 4px 4px; background: #f7f2e8;">
     <span style="color: #397d9f; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">沒有耳麥</span>
     <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">改設定後按「套用」</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">用同一句話比較回答差異。客端不會測量真實音訊，所以只能觀察「套用後回答有什麼不同」。</p>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">用同一句話比回答的差別。畫面不會量真實的聲音，只能看「套用後回答有什麼不同」。</p>
     
   </div></div>
 <div style="flex: 1.35 1 0; display: flex; flex-direction: column; gap: 14px;">
-        <span style="color: #287653; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">有耳麥 · 切成語音後客端會自動重新連接</span>
+        <span style="color: #287653; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">有耳麥 · 切成語音後畫面會自動重新連線</span>
         <ol style="display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #287653; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">1</div>
-      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">句中停頓約半秒後繼續說。</span>
+      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">講到一半停半秒，再繼續講。</span>
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #287653; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">2</div>
-      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">用完整語句說完並等待 Dodo 回答。</span>
+      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">一句話講完，等它回答。</span>
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #287653; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">3</div>
-      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">Dodo 回答途中再次開口。</span>
+      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">它正在回答時你再開口。</span>
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #287653; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">4</div>
-      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">切成 Push-to-talk，確認只有放開按鈕後才提交回合。</span>
+      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">換成 Push-to-talk，確認只有放開按鈕才會送出去。</span>
     </li></ol>
       </div></div>
 <div style="display: flex; align-items: center; gap: 16px; padding: 20px 26px; border: 1px dashed #287653; border-radius: 4px 18px 18px 4px; background: #fffdf8;">
     <span style="flex-shrink: 0; color: #287653; font: 800 14px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">做完你會有</span>
-    <p style="margin: 0; color: #15324a; font: 700 24px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">一組你自己調過的回合設定，而且知道它在什麼情況下會搶話。</p>
+    <p style="margin: 0; color: #15324a; font: 700 24px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">一組你自己調過的設定，而且知道它什麼時候會搶話。</p>
   </div></div>
     </div>
     
@@ -1029,28 +1029,28 @@
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
       <ul style="display: flex; flex-direction: column; gap: 20px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #287653;"></span>
-      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">打字與語音訊息都來自真正的 OpenAI Realtime API，不是本地固定回聲或另一個文字模型。</span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">打字和語音的回答都來自真正的 OpenAI Realtime API，不是本機寫死的罐頭回應，也不是另外接的文字模型。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #287653;"></span>
-      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">問「你叫什麼？我叫什麼？」時，能依「角色與身分」分塊回答 Dodo 名稱與使用者稱呼。</span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">問「你叫什麼？我叫什麼？」時，它答得出「角色與身分」分塊裡的名字和稱呼。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #287653;"></span>
-      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">能指出 A 區是 Prompt（角色、聲音、長度都在這裡描述），B 區是 Realtime 回合控制。</span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">講得出來：A 區是 Prompt（它是誰、什麼口氣、講多長都寫在這裡），B 區是「什麼時候算你講完了」。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #287653;"></span>
-      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">按過「套用」，且 my-dodo.json 的 <span style="padding: 2px 7px; border-radius: 4px; background: #d9edf7; color: #397d9f; font: 700 24px/1.5 Consolas,'Noto Sans TC',monospace;">progress.workshop_1_completed</span> 為 <span style="padding: 2px 7px; border-radius: 4px; background: #d9edf7; color: #397d9f; font: 700 24px/1.5 Consolas,'Noto Sans TC',monospace;">true</span>。</span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">按過「套用」，設定真的送進去了。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 14px; border-radius: 50%; background: #287653;"></span>
-      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">下載的 my-dodo.json 包含 profile.agent 與 profile.realtime，但<strong>不包含</strong> API Key。</span>
+      <span style="color: #15324a; font: 25px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">下載的 my-dodo.json 有這一堂的設定，但<strong>不包含</strong> API Key。</span>
     </li></ul>
     </div>
     <div style="display: flex; align-items: center; gap: 14px; padding-top: 16px; border-top: 1px solid #cfd9dc;">
       <span style="flex-shrink: 0; width: 9px; height: 9px; border-radius: 50%; background: #f1b879;"></span>
-      <span style="color: #4d6475; font: 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">官方依據：OpenAI Realtime 文件中的文字輸入、mint 時的 instructions、output_modalities、function calling、server_vad、semantic_vad、silence_duration_ms 與 interrupt_response。</span>
+      <span style="color: #4d6475; font: 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">依據 OpenAI Realtime 官方文件：文字輸入、連線時就送出 Prompt、工具呼叫，以及三種判斷「你講完了沒」的方式。</span>
     </div>
   </div>
 </div>
@@ -1067,36 +1067,36 @@
     </div>
     <div style="display: flex; flex-direction: column; gap: 13px;">
       <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">講師現場提醒</h1>
-      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">全班以「打字輸入／文字輸出」完成主線；輸入與輸出可獨立設定。</p>
+      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">全班用「打字輸入／文字輸出」跑主線；輸入和輸出可以分開選。</p>
     </div>
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
       <div style="display: flex; flex-direction: column; gap: 26px;"><div style="display: flex; gap: 32px; align-items: stretch;"><div style="flex: 1 1 0;"><ul style="display: flex; flex-direction: column; gap: 15px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #397d9f;"></span>
-      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">鍵盤按「送出」會在同一個 session 建立文字回合，但不會使用 VAD 或靜音門檻。</span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">按「送出」會在同一段對話裡多一個回合，但不會經過 VAD，也不會用到安靜門檻。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #397d9f;"></span>
-      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">A 區是模型 instructions，不設 token 上限；Prompt 不負責偵測使用者是否說完。</span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">A 區是 Prompt，不設字數上限；Prompt 不負責判斷學生講完了沒。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #397d9f;"></span>
-      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">instructions 在建立連線時就隨 SDP offer 送出，按「套用」才會再 session.update。</span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">Prompt 一連上線就送出去了，按「套用」才會再送一次更新。</span>
     </li></ul></div>
 <div style="flex: 1 1 0;"><ul style="display: flex; flex-direction: column; gap: 15px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #f1b879;"></span>
-      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">從語音輸入切成打字時，麥克風音軌會立即停止，不需等待儲存設定。</span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">從語音切回打字時，麥克風會立刻停，不用等按儲存。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #f1b879;"></span>
-      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">語音連線失敗時會保留作品；可將輸入改成打字、輸出改成文字。</span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">語音連不上不會弄丟作品；把輸入改成打字、輸出改成文字就好。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #f1b879;"></span>
-      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">查天氣或讀寫記憶前那一句「我幫您看一下」會標成 PREAMBLE。</span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">查天氣或讀寫記憶前那句「我幫您看一下」，畫面會標成 PREAMBLE。</span>
     </li></ul></div></div>
 <div style="display: flex; align-items: center; gap: 20px; padding: 26px 32px; border-radius: 4px 18px 18px 4px; background: #15324a;">
     <div style="flex-shrink: 0; width: 6px; align-self: stretch; border-radius: 3px; background: #f1b879;"></div>
-    <p style="margin: 0; color: #fffdf8; font: 700 28px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">收尾：下載 my-dodo.json，第二堂用同一份作品繼續升級。</p>
+    <p style="margin: 0; color: #fffdf8; font: 700 28px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">收尾：下載 my-dodo.json，第二堂用同一份作品接著升級。</p>
   </div></div>
     </div>
     

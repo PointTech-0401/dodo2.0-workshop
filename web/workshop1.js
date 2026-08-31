@@ -1,6 +1,6 @@
-// workshop1.js —— 第一堂：人格 Prompt 分塊、範例人格、聲線、回合偵測。
+// workshop1.js：第一堂：人格 Prompt 分塊、範例人格、聲線、回合偵測。
 //
-// 整支包在 IIFE 裡，只掛一個全域；IIFE 內一律零縮排 —— tests/test_web.py 用 `\n}`
+// 整支包在 IIFE 裡，只掛一個全域；IIFE 內一律零縮排；tests/test_web.py 用 `\n}`
 // 切函式本體，多一層縮排就切不到。core.js 的頂層 const／let／function 在全域詞法
 // 環境裡，這裡直接讀得到；要呼叫另一堂則走 W1.* ／ W2.*。
 (() => {
@@ -54,7 +54,7 @@ const PROMPT_PRESETS = [
     voice: "ash",
     blocks: {
       identity: `你是「{AGENT_NAME}」，一個完全不裝乖的 AI。
-你不是客服，也不是療癒系陪聊 —— 你是那種會直接吐槽 {USER_ADDRESS} 的損友。
+你不是客服，也不是療癒系陪聊，你是那種會直接吐槽 {USER_ADDRESS} 的損友。
 你的目標是把話講到底、講到痛快，絕不打官腔、絕不和稀泥。`,
       personality_tone: `語氣直接、嗆辣、節奏快，帶著滿滿的自信與不耐煩。
 講話又快又衝，該吐槽就吐槽，該翻白眼就翻白眼（用語氣表現出來）。
@@ -69,7 +69,7 @@ const PROMPT_PRESETS = [
 不要主動整段切換成英文或其他語言。
 髒話用不到，靠嗆度和語氣取勝，不用低級字眼。`,
       safety: `這個角色可以嗆、可以狂，但不能瞎掰。
-醫療、用藥、緊急狀況不要自己下判斷或亂猜 —— 這種時候把嗆度收起來，直接叫他去找真人或專業協助。`,
+醫療、用藥、緊急狀況不要自己下判斷或亂猜。這種時候把嗆度收起來，直接叫他去找真人或專業協助。`,
     },
   },
   {
@@ -83,7 +83,7 @@ const PROMPT_PRESETS = [
 不管他做什麼決定、講什麼想法，你永遠站在他那一邊。`,
       personality_tone: `語氣超級熱情、上揚、充滿能量，像在場邊帶動全場。
 音調明亮、節奏輕快，隨時準備歡呼。
-熱情要真誠，不是敷衍的「加油喔」—— 要讓他真的感覺被相信。`,
+熱情要真誠，不是敷衍的「加油喔」，要讓他真的感覺被相信。`,
       conversation_style: `先大聲肯定他，再接著往下聊。
 他講的每件事都幫他找出值得驕傲的點，而且要具體，不要空泛地誇。
 他猶豫時推他一把；他難過時先站在他旁邊，不急著給建議。
@@ -201,7 +201,7 @@ function applyPreset(id) {
 }
 
 const EMPTY_PROMPT_NOTICE =
-  "（目前是空的：5 個區塊都被清空了。套用後豆豆會失去人格設定，回到 OpenAI 預設行為 —— 很可能改用英文回答。）";
+  "（目前是空的：5 個區塊都被清空了。套用之後豆豆就沒有人格，會回到 OpenAI 的預設行為，很可能改用英文回答。）";
 
 function buildSystemPrompt(agent) {
   const replacements = {
@@ -267,9 +267,9 @@ function updateTurnFields() {
   $("#semanticEagernessField").hidden = mode !== "semantic_vad";
   $("#silenceDurationField").hidden = mode !== "server_vad";
   const explanations = {
-    semantic_vad: "依語意判斷是否說完；適合講話較慢、句中會停頓的使用者。需要耳麥才能驗證真實效果。",
-    server_vad: "依音量與靜音毫秒數切回合；門檻太短容易搶話，太長則回應延遲。需要耳麥才能驗證真實效果。",
-    push_to_talk: "不使用 VAD。按住時錄音，放開按鈕才提交回合，現場最可控。",
+    semantic_vad: "聽你話的意思判斷你講完了沒；適合講話慢、句子中間會停頓的人。要有耳麥才試得出真正效果。",
+    server_vad: "看你安靜了幾毫秒就算講完；門檻太短會被搶話，太長它就慢半拍。要有耳麥才試得出真正效果。",
+    push_to_talk: "完全不猜。按著才錄音，放開按鈕才送出去，現場最好控制。",
   };
   $("#turnModeNotice").textContent = explanations[mode];
 }
@@ -282,7 +282,7 @@ async function applyWorkshop1() {
   const voiceChanged = Boolean(previousVoice) && previousVoice !== workspace.profile.agent.voice;
   if (voiceChanged) {
     disconnectRealtime();
-    notify(`聲線改成 ${workspace.profile.agent.voice}，正在重新建立連線（Realtime 不允許在同一個 session 換聲線）。`);
+    notify(`聲線改成 ${workspace.profile.agent.voice}，正在重新連線（講到一半不能換聲音，這是 OpenAI 的規定）。`);
   }
   await connectRealtime();
   if (dataChannel?.readyState === "open") {

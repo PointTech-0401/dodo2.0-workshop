@@ -131,7 +131,7 @@ def _applies_today(weekdays: Any, weekday: int) -> bool:
 
 
 def build_schedule(elder_profile: dict[str, Any], weekday: int) -> Schedule:
-    """Quiet = 上床→起床; do-not-disturb = every routine the student ticked, for today.
+    """Quiet = 睡眠時段（就寢→起床）; do-not-disturb = every routine ticked, for today.
 
     `weekday` is ISO (Monday=1 … Sunday=7). Routines with an empty `weekdays`
     list apply every day. No quiet window until *both* times are filled in — an
@@ -141,7 +141,7 @@ def build_schedule(elder_profile: dict[str, Any], weekday: int) -> Schedule:
 
     wake = parse_hhmm(elder_profile.get("wake_time"))
     bed = parse_hhmm(elder_profile.get("bed_time"))
-    quiet = Window("上床", bed, wake) if wake is not None and bed is not None and bed != wake else None
+    quiet = Window("睡眠時段", bed, wake) if wake is not None and bed is not None and bed != wake else None
     dnd = []
     for routine in elder_profile.get("routines") or []:
         start, end = parse_hhmm(routine.get("start")), parse_hhmm(routine.get("end"))
@@ -173,7 +173,7 @@ def choose_event(scenario: dict[str, Any], policy: dict[str, Any], schedule: Sch
 
     minute = minutes_of_day(scenario["time"])
     if schedule.quiet and schedule.quiet.contains(minute):
-        return Decision(False, "quiet", "她還沒起床" if minute < schedule.wake else "她已經上床了")
+        return Decision(False, "quiet", "她還沒起床" if minute < schedule.wake else "她已經睡了")
     for window in schedule.dnd:
         if window.contains(minute):
             return Decision(False, "dnd", f"她在{window.label}")

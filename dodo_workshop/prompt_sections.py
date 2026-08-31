@@ -108,7 +108,7 @@ def compose_elder_section(elder: dict[str, Any], address: str) -> str:
         lines.append("她會的事（可以請教）：" + "、".join(expertise))
     wake, bed = str(elder.get("wake_time") or "").strip(), str(elder.get("bed_time") or "").strip()
     if wake or bed:
-        lines.append(f"作息：{wake or '？'} 起床、{bed or '？'} 上床")
+        lines.append(f"作息：{wake or '？'} 起床、{bed or '？'} 就寢")
     quiet_routines = [r for r in elder.get("routines") or [] if r.get("do_not_disturb") and r.get("start")]
     if quiet_routines:
         lines.append("不打擾時段：" + "、".join(_routine_text(r) for r in quiet_routines))
@@ -156,9 +156,9 @@ def compose_rules_section(policy: dict[str, Any], elder: dict[str, Any]) -> str:
         "主動訊息分三類：重要提醒（不受任何限制、不算額度）、健康關心（追問還沒好的身體狀況）、閒聊。",
         f"健康關心與閒聊：兩則之間至少間隔 {interval} 分鐘，每天最多 {limit} 則。",
         (
-            f"她上床（{bed}）到起床（{wake}）之間只送重要提醒。"
+            f"她的睡眠時段（{bed}–{wake}）只送重要提醒。"
             if wake and bed
-            else "建檔沒有填起床與上床時間，所以沒有安靜時段。"
+            else "建檔沒有填睡眠時段，所以沒有安靜時段。"
         ),
     ]
     if quiet_labels:

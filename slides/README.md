@@ -24,7 +24,7 @@ node slides/src/present.mjs slides/workshop-1 slides/workshop-1-listen-then-answ
 node slides/src/present.mjs slides/workshop-2 slides/workshop-2-remember-and-stay-quiet-slides.html "會記得、會主動，也知道何時閉嘴" green
 ```
 
-改內容請改 `src/deck1.mjs`／`deck2.mjs`，改架構圖與流程圖請改 `src/diagrams.mjs`，改共用版面請改 `src/kit.mjs` —— 直接改產出的 `.dc.html` 會在下次重新產生時被蓋掉。
+改內容請改 `src/deck1.mjs`／`deck2.mjs`，改架構圖與流程圖請改 `src/diagrams.mjs`，改共用版面請改 `src/kit.mjs`。直接改產出的 `.dc.html` 會在下次重新產生時被蓋掉。
 
 ## 檢查
 
@@ -35,4 +35,4 @@ node slides/src/check-diagrams.mjs   # 圖的幾何：文字撐破框、標籤�
 node slides/src/check-fit.mjs        # 圖表頁的總高度是否還在 900px 內
 ```
 
-兩個腳本都是解析產出的 SVG，不是讀原始座標 —— 這樣才驗得到真正上線的那一份。
+兩個腳本都是解析產出的 SVG，不是讀原始座標，這樣才驗得到真正上線的那一份。

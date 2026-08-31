@@ -73,12 +73,12 @@
       "title": "09 · 第二堂的 Prompt 層"
     },
     {
-      "file": "LabOneCards.dc.html",
+      "file": "LabIntake.dc.html",
       "x": 1760,
       "y": 2280,
       "w": 1600,
       "h": 900,
-      "title": "10 · 實作一：記憶分類"
+      "title": "10 · 實作一：幫她建檔"
     },
     {
       "file": "MemoryViewer.dc.html",
@@ -86,7 +86,7 @@
       "y": 2280,
       "w": 1600,
       "h": 900,
-      "title": "11 · 記憶檢視器"
+      "title": "11 · 記憶清單"
     },
     {
       "file": "RedTeam.dc.html",
@@ -97,12 +97,12 @@
       "title": "12 · 紅隊挑戰"
     },
     {
-      "file": "SixScenarios.dc.html",
+      "file": "ProactiveRules.dc.html",
       "x": 0,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "13 · 實作二之一"
+      "title": "13 · 實作二：主動規則"
     },
     {
       "file": "OneDay.dc.html",
@@ -110,15 +110,15 @@
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "14 · 實作二之二"
+      "title": "14 · 跑她的一天"
     },
     {
-      "file": "LiveTrigger.dc.html",
+      "file": "LiveTalk.dc.html",
       "x": 3520,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "15 · 實作二之三"
+      "title": "15 · 實作三：主動對話"
     },
     {
       "file": "KeyMatrix.dc.html",

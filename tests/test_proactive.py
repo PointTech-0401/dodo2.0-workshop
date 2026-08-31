@@ -43,7 +43,7 @@ def scenario(**overrides: Any) -> dict[str, Any]:
 def test_quiet_window_wraps_midnight_and_uses_minutes_not_hours() -> None:
     schedule = build_schedule(PROFILE, TUESDAY)
 
-    assert schedule.quiet == Window("上床", 21 * 60 + 30, 5 * 60)
+    assert schedule.quiet == Window("睡眠時段", 21 * 60 + 30, 5 * 60)
     for minute, expected in ((23 * 60, True), (4 * 60 + 59, True), (5 * 60, False), (21 * 60 + 29, False), (21 * 60 + 30, True)):
         assert schedule.quiet.contains(minute) is expected, minute
 
@@ -89,7 +89,7 @@ def test_rules_apply_in_order_and_name_what_blocked() -> None:
     early = choose_event(scenario(time="04:30"), DEFAULT, schedule)
     late = choose_event(scenario(time="22:00"), DEFAULT, schedule)
     assert (early.rule, early.reason) == ("quiet", "她還沒起床")
-    assert (late.rule, late.reason) == ("quiet", "她已經上床了")
+    assert (late.rule, late.reason) == ("quiet", "她已經睡了")
     nap = choose_event(scenario(time="13:00"), DEFAULT, schedule)
     assert (nap.rule, nap.reason) == ("dnd", "她在午睡")
     assert choose_event(scenario(minutes_since_last=10), DEFAULT, schedule).rule == "interval"

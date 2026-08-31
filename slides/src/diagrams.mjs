@@ -1,5 +1,5 @@
 // The four mechanism diagrams. Every module name, path and decision order here
-// is read off dodo_workshop/web.py, lesson2.py, profile.py and web/app.js.
+// is read off dodo_workshop/web.py, proactive.py, intake.py, profile.py and web/*.js.
 //
 // Grid: the two architecture diagrams are three columns (瀏覽器 · 後端 · 外部)
 // with 300px nodes and 175px gutters, so the bypass path can arc over the middle
@@ -25,18 +25,18 @@ export const w1Architecture = diagram({
 
     dnode({
       x: 40, y: 170, w: 300, h: 150, tone: 'sky', accent: C.blue,
-      kicker: '瀏覽器', title: 'web/app.js',
-      lines: ['index.html · styles.css', '分塊組裝 · WebRTC', '記憶工具'],
+      kicker: '瀏覽器', title: 'web/ 前端',
+      lines: ['core · workshop1 · workshop2', '組 Prompt · 連線', '記憶工具'],
     }),
     dnode({
       x: 515, y: 170, w: 300, h: 150, tone: 'white', accent: C.green, emph: true,
       kicker: '本機 PYTHON 後端', title: 'dodo_workshop/web.py',
-      lines: ['API Key 只留在這裡', 'profile.py 組 Prompt', 'lesson1／lesson2 判斷'],
+      lines: ['API Key 只留在這裡', 'profile.py 組 Prompt', 'lesson1.py 課堂判斷'],
     }),
     dnode({
       x: 515, y: 372, w: 220, h: 76, tone: 'white', accent: C.inkSoft,
       title: 'student/my-dodo.json', titleSize: 16,
-      lines: ['scenarios/*.json'],
+      lines: ['scenarios/ 的訪談稿'],
     }),
     dnode({
       x: 990, y: 170, w: 300, h: 150, tone: 'white', accent: C.apricot,
@@ -112,25 +112,25 @@ export const w2Architecture = diagram({
   w: 1400,
   h: 490,
   label: '專案架構圖：第二堂所有判斷都在本機完成，只有讓豆豆開口那一條線離開這台電腦',
-  caption: '記憶分類、6 個情境與「跑一整天」都由本機的 choose_event／simulate_day 判斷，不需要 API Key。只有讓豆豆真的開口才出網路（連線本身仍如第一堂由後端代理建立）。',
+  caption: '建檔、長條圖與「跑她的一天」全部在這台電腦上算完，不需要 API Key。只有讓豆豆真的開口那一條線才出網路（連線本身仍如第一堂由後端代理建立）。',
   children: [
     dzone({ x: 8, y: 138, w: 845, h: 330, label: '本機 · 不需要 API KEY', colour: C.green }),
     dzone({ x: 958, y: 138, w: 434, h: 330, label: '外部服務', fill: ZONE_COOL }),
 
     dnode({
       x: 40, y: 170, w: 300, h: 150, tone: 'sky', accent: C.blue,
-      kicker: '瀏覽器', title: 'web/app.js',
-      lines: ['記憶分類', '記憶檢視器', '主動觸發表單'],
+      kicker: '瀏覽器', title: 'web/workshop2.js',
+      lines: ['建檔六區', '記憶清單', '讓它開口的表單'],
     }),
     dnode({
       x: 515, y: 170, w: 300, h: 150, tone: 'white', accent: C.green, emph: true,
-      kicker: '本機 PYTHON 後端', title: 'lesson2.py',
-      lines: ['choose_event 說不說', 'simulate_day 跑一整天', 'profile.py 組 Prompt'],
+      kicker: '本機 PYTHON 後端', title: 'dodo_workshop/',
+      lines: ['proactive.py 說不說', 'intake.py 建檔', 'profile.py 組 Prompt'],
     }),
     dnode({
       x: 515, y: 372, w: 300, h: 76, tone: 'white', accent: C.inkSoft,
       title: 'scenarios/ · my-dodo.json', titleSize: 17,
-      lines: ['memory_cards · day_timeline'],
+      lines: ['秀蘭阿嬤的資料'],
     }),
     dnode({
       x: 990, y: 170, w: 300, h: 150, tone: 'white', accent: C.apricot,
@@ -139,11 +139,11 @@ export const w2Architecture = diagram({
     }),
 
     dflow('w2arch', [[350, 245], [505, 245]], { both: true }),
-    dlabelBlock(427, 214, ['① 事件與你的規則', 'proactive-decide']),
+    dlabelBlock(427, 214, ['① 事件與你的規則', '送去跑規則']),
     darc('w2arch', [190, 160], [1140, 160], 52),
-    dlabel(665, 62, '② 只有「開口」這一步出網路：response.instructions', { anchor: 'middle', colour: APRICOT_TEXT, weight: 700 }),
+    dlabel(665, 62, '② 只有「真的開口」這一步才出網路', { anchor: 'middle', colour: APRICOT_TEXT, weight: 700 }),
     dflow('w2arch', [[665, 330], [665, 362]]),
-    dlabel(683, 352, '讀取情境'),
+    dlabel(683, 352, '讀她的資料'),
   ].join('\n    '),
 });
 
@@ -153,35 +153,35 @@ export const w2Flow = diagram({
   id: 'w2flow',
   w: 1400,
   h: 500,
-  label: '系統流程圖：記憶要經過分層、X 類過濾與筆數上限才進 Prompt；主動訊息由 choose_event 決定說不說',
-  caption: '兩條路都由程式把關：記憶先分層、擋掉 X 類，再取各層最多 8 筆才進 Prompt；主動訊息則由 choose_event 決定說不說，模型只負責措辭。',
+  label: '系統流程圖：記憶要經過分層、擋掉絕不能記的一類與筆數上限才進 Prompt；主動訊息由程式決定說不說',
+  caption: '兩條路都由程式把關：記憶先分層、擋掉絕不能記的那一類，再取每層最多 16 筆才進 Prompt；要不要開口也是程式決定，模型只負責怎麼講。',
   children: [
     dlabel(0, 30, '記憶怎麼進 PROMPT', { colour: C.inkSoft, size: 14, weight: 800 }),
     dnode({ x: 8, y: 48, w: 286, h: 104, n: 1, accent: C.blue, title: '使用者說一句話', lines: ['「我對花生過敏」'] }),
-    dnode({ x: 374, y: 48, w: 286, h: 104, n: 2, accent: C.blue, title: '模型呼叫 update_memory', titleSize: 17, lines: ['帶 key · value · layer'] }),
-    dnode({ x: 740, y: 48, w: 286, h: 104, n: 3, accent: C.green, title: 'app.js 依 layer 分流', titleSize: 18, lines: ['A→facts B→events C→summaries'] }),
-    dnode({ x: 1106, y: 48, w: 286, h: 104, n: 4, accent: C.apricot, title: '組成 Prompt 段落', lines: ['各層最多 8 筆'] }),
+    dnode({ x: 374, y: 48, w: 286, h: 104, n: 2, accent: C.blue, title: '豆豆把它寫進記憶', titleSize: 17, lines: ['要指定放哪一層'] }),
+    dnode({ x: 740, y: 48, w: 286, h: 104, n: 3, accent: C.green, title: '照層別分流', titleSize: 18, lines: ['A 重要事實 B 近期 C 摘要'] }),
+    dnode({ x: 1106, y: 48, w: 286, h: 104, n: 4, accent: C.apricot, title: '組成 Prompt 段落', lines: ['每層最多 16 筆'] }),
     dnode({
       x: 740, y: 192, w: 286, h: 76, tone: 'white', accent: C.danger,
-      title: 'X 類直接拒絕', lines: ['密碼 · 金鑰 · 驗證碼'],
+      title: '這一類直接拒絕', lines: ['密碼 · 金鑰 · 驗證碼'],
     }),
     dflow('w2flow', [[302, 100], [366, 100]]),
     dflow('w2flow', [[668, 100], [732, 100]]),
     dflow('w2flow', [[1034, 100], [1098, 100]]),
     dflow('w2flow', [[883, 152], [883, 184]], { colour: 'danger' }),
-    dlabel(901, 174, '命中 X', { size: 14, colour: C.danger }),
+    dlabel(901, 174, '碰到就擋', { size: 14, colour: C.danger }),
 
     dlabel(0, 306, '主動要不要開口', { colour: C.inkSoft, size: 14, weight: 800 }),
-    dnode({ x: 8, y: 324, w: 286, h: 104, n: 1, accent: C.blue, title: '事件與你的規則', lines: ['安靜 · 冷卻 · 上限 · 優先權'] }),
-    dnode({ x: 374, y: 324, w: 286, h: 104, n: 2, accent: C.blue, title: '送到本機後端', lines: ['proactive-decide'] }),
-    dnode({ x: 740, y: 324, w: 286, h: 104, n: 3, accent: C.green, title: 'choose_event 依序判斷', titleSize: 18, lines: ['緊急→拒絕→安靜→冷卻→上限'] }),
+    dnode({ x: 8, y: 324, w: 286, h: 104, n: 1, accent: C.blue, title: '事件與你的規則', lines: ['安靜 · 不打擾 · 間隔 · 上限'] }),
+    dnode({ x: 374, y: 324, w: 286, h: 104, n: 2, accent: C.blue, title: '送去跑規則', lines: ['在這台電腦上判斷'] }),
+    dnode({ x: 740, y: 324, w: 286, h: 104, n: 3, accent: C.green, title: '七條規則依序判斷', titleSize: 18, lines: ['重要提醒直放，其餘依序過關'] }),
     dnode({
       x: 1106, y: 262, w: 286, h: 94, tone: 'white', accent: C.inkSoft,
       kicker: '不說', title: '留一行 TOOL 說明', lines: ['被哪一條規則擋下'],
     }),
     dnode({
       x: 1106, y: 396, w: 286, h: 94, tone: 'paper', accent: C.apricot,
-      kicker: '說', title: 'response.instructions', lines: ['豆豆開口'],
+      kicker: '說', title: '在對話裡先開口', lines: ['模型只管怎麼講'],
     }),
     dflow('w2flow', [[302, 376], [366, 376]]),
     dflow('w2flow', [[668, 376], [732, 376]]),

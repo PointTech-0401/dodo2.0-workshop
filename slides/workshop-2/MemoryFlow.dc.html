@@ -26,7 +26,7 @@
     </div>
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
       <figure style="margin: 0; display: flex; flex-direction: column; gap: 14px;">
-  <svg viewBox="0 0 1400 500" role="img" aria-label="系統流程圖：記憶要經過分層、X 類過濾與筆數上限才進 Prompt；主動訊息由 choose_event 決定說不說" style="display: block; width: 100%; height: auto; font-family: 'Noto Sans TC','Microsoft JhengHei UI',sans-serif;">
+  <svg viewBox="0 0 1400 500" role="img" aria-label="系統流程圖：記憶要經過分層、擋掉絕不能記的一類與筆數上限才進 Prompt；主動訊息由程式決定說不說" style="display: block; width: 100%; height: auto; font-family: 'Noto Sans TC','Microsoft JhengHei UI',sans-serif;">
     <defs>
       <marker id="w2flow-ink" viewBox="0 0 12 12" refX="10.6" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
         <path d="M 1.6 1.4 L 11 6 L 1.6 10.6 Z" fill="#3f5a70"></path>
@@ -55,16 +55,16 @@
     <circle cx="402" cy="78" r="15" fill="#397d9f"></circle>
     <text x="402" y="84" text-anchor="middle" fill="#fffdf8" font-size="15" font-weight="800">2</text>
     
-    <text x="428" y="85" fill="#15324a" font-size="17" font-weight="700">模型呼叫 update_memory</text>
-    <text x="396" y="120" fill="#4d6475" font-size="15.5">帶 key · value · layer</text>
+    <text x="428" y="85" fill="#15324a" font-size="17" font-weight="700">豆豆把它寫進記憶</text>
+    <text x="396" y="120" fill="#4d6475" font-size="15.5">要指定放哪一層</text>
   </g>
     <g>
     <rect x="740" y="48" width="286" height="104" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
     <circle cx="768" cy="78" r="15" fill="#287653"></circle>
     <text x="768" y="84" text-anchor="middle" fill="#fffdf8" font-size="15" font-weight="800">3</text>
     
-    <text x="794" y="85" fill="#15324a" font-size="18" font-weight="700">app.js 依 layer 分流</text>
-    <text x="762" y="120" fill="#4d6475" font-size="15.5">A→facts B→events C→summaries</text>
+    <text x="794" y="85" fill="#15324a" font-size="18" font-weight="700">照層別分流</text>
+    <text x="762" y="120" fill="#4d6475" font-size="15.5">A 重要事實 B 近期 C 摘要</text>
   </g>
     <g>
     <rect x="1106" y="48" width="286" height="104" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
@@ -72,20 +72,20 @@
     <text x="1134" y="84" text-anchor="middle" fill="#fffdf8" font-size="15" font-weight="800">4</text>
     
     <text x="1160" y="85" fill="#15324a" font-size="19" font-weight="700">組成 Prompt 段落</text>
-    <text x="1128" y="120" fill="#4d6475" font-size="15.5">各層最多 8 筆</text>
+    <text x="1128" y="120" fill="#4d6475" font-size="15.5">每層最多 16 筆</text>
   </g>
     <g>
     <rect x="740" y="192" width="286" height="76" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
     
     
-    <text x="762" y="228" fill="#15324a" font-size="19" font-weight="700">X 類直接拒絕</text>
+    <text x="762" y="228" fill="#15324a" font-size="19" font-weight="700">這一類直接拒絕</text>
     <text x="762" y="256" fill="#4d6475" font-size="15.5">密碼 · 金鑰 · 驗證碼</text>
   </g>
     <path d="M 302 100 L 366 100" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w2flow-ink)"></path>
     <path d="M 668 100 L 732 100" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w2flow-ink)"></path>
     <path d="M 1034 100 L 1098 100" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w2flow-ink)"></path>
     <path d="M 883 152 L 883 184" fill="none" stroke="#a84a42" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w2flow-danger)"></path>
-    <text x="901" y="174" text-anchor="start" fill="#a84a42" font-size="14" font-weight="600">命中 X</text>
+    <text x="901" y="174" text-anchor="start" fill="#a84a42" font-size="14" font-weight="600">碰到就擋</text>
     <text x="0" y="306" text-anchor="start" fill="#4d6475" font-size="14" font-weight="800">主動要不要開口</text>
     <g>
     <rect x="8" y="324" width="286" height="104" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
@@ -93,23 +93,23 @@
     <text x="36" y="360" text-anchor="middle" fill="#fffdf8" font-size="15" font-weight="800">1</text>
     
     <text x="62" y="361" fill="#15324a" font-size="19" font-weight="700">事件與你的規則</text>
-    <text x="30" y="396" fill="#4d6475" font-size="15.5">安靜 · 冷卻 · 上限 · 優先權</text>
+    <text x="30" y="396" fill="#4d6475" font-size="15.5">安靜 · 不打擾 · 間隔 · 上限</text>
   </g>
     <g>
     <rect x="374" y="324" width="286" height="104" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
     <circle cx="402" cy="354" r="15" fill="#397d9f"></circle>
     <text x="402" y="360" text-anchor="middle" fill="#fffdf8" font-size="15" font-weight="800">2</text>
     
-    <text x="428" y="361" fill="#15324a" font-size="19" font-weight="700">送到本機後端</text>
-    <text x="396" y="396" fill="#4d6475" font-size="15.5">proactive-decide</text>
+    <text x="428" y="361" fill="#15324a" font-size="19" font-weight="700">送去跑規則</text>
+    <text x="396" y="396" fill="#4d6475" font-size="15.5">在這台電腦上判斷</text>
   </g>
     <g>
     <rect x="740" y="324" width="286" height="104" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
     <circle cx="768" cy="354" r="15" fill="#287653"></circle>
     <text x="768" y="360" text-anchor="middle" fill="#fffdf8" font-size="15" font-weight="800">3</text>
     
-    <text x="794" y="361" fill="#15324a" font-size="18" font-weight="700">choose_event 依序判斷</text>
-    <text x="762" y="396" fill="#4d6475" font-size="15.5">緊急→拒絕→安靜→冷卻→上限</text>
+    <text x="794" y="361" fill="#15324a" font-size="18" font-weight="700">七條規則依序判斷</text>
+    <text x="762" y="396" fill="#4d6475" font-size="15.5">重要提醒直放，其餘依序過關</text>
   </g>
     <g>
     <rect x="1106" y="262" width="286" height="94" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
@@ -122,8 +122,8 @@
     <rect x="1106" y="396" width="286" height="94" rx="8" fill="#f7f2e8" stroke="#cfd9dc" stroke-width="1"></rect>
     
     <text x="1128" y="422" fill="#f1b879" font-size="13" font-weight="800" letter-spacing="1.6">說</text>
-    <text x="1128" y="448" fill="#15324a" font-size="19" font-weight="700">response.instructions</text>
-    <text x="1128" y="476" fill="#4d6475" font-size="15.5">豆豆開口</text>
+    <text x="1128" y="448" fill="#15324a" font-size="19" font-weight="700">在對話裡先開口</text>
+    <text x="1128" y="476" fill="#4d6475" font-size="15.5">模型只管怎麼講</text>
   </g>
     <path d="M 302 376 L 366 376" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w2flow-ink)"></path>
     <path d="M 668 376 L 732 376" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w2flow-ink)"></path>
@@ -131,7 +131,7 @@
     <path d="M 1066 376 L 1066 323 Q 1066 309 1080 309 L 1098 309" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w2flow-ink)"></path>
     <path d="M 1066 376 L 1066 429 Q 1066 443 1080 443 L 1098 443" fill="none" stroke="#c07f2c" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w2flow-apricot)"></path>
   </svg>
-  <figcaption style="color: #4d6475; font: 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">兩條路都由程式把關：記憶先分層、擋掉 X 類，再取各層最多 8 筆才進 Prompt；主動訊息則由 choose_event 決定說不說，模型只負責措辭。</figcaption>
+  <figcaption style="color: #4d6475; font: 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">兩條路都由程式把關：記憶先分層、擋掉絕不能記的那一類，再取每層最多 16 筆才進 Prompt；要不要開口也是程式決定，模型只負責怎麼講。</figcaption>
 </figure>
     </div>
     

@@ -445,16 +445,16 @@ ok("the band has one cell per half hour", cells().length === 48, `${cells().leng
 // An empty 建檔 must not inherit anyone's bedtime.
 $("#elderWake").value = ""; fire("#elderWake", "input");
 $("#elderBed").value = ""; fire("#elderBed", "input");
-ok("no 上床／起床 means no 安靜時段 at all", greyCells() === 0, `${greyCells()} grey`);
+ok("no 睡眠時段 means no 安靜時段 at all", greyCells() === 0, `${greyCells()} grey`);
 ok("...and the summary says so rather than showing 00:00–00:00",
-   $("#policySummary").textContent.includes("還沒填上床與起床時間"));
+   $("#policySummary").textContent.includes("還沒填睡眠時段"));
 
 $("#elderBed").value = "22:00"; fire("#elderBed", "input");
 $("#elderWake").value = "06:00"; fire("#elderWake", "input");
-ok("上床 22:00 → 起床 06:00 greys 8 hours", greyCells() === 16, `${greyCells()} half-hours`);
+ok("就寢 22:00 → 起床 06:00 greys 8 hours", greyCells() === 16, `${greyCells()} half-hours`);
 ok("the summary names the window it drew", $("#policySummary").textContent.includes("22:00–06:00"));
 $("#elderBed").value = "20:00"; fire("#elderBed", "input");
-ok("moving 上床 earlier widens the band", greyCells() === 20, `${greyCells()} half-hours`);
+ok("moving 就寢 earlier widens the band", greyCells() === 20, `${greyCells()} half-hours`);
 
 // A 不打擾 routine greys its own window on top of 安靜 — and half-hour cells are
 // why 13:00–14:30 lands where the decider puts it.
@@ -617,7 +617,7 @@ $("#proactiveSinceLast").value = "999"; fire("#proactiveSinceLast", "input");
 ok("...both ways", $("#sinceLastHint").textContent.includes("會通過"));
 ok("今日已發送 names the daily limit", $("#sentTodayHint").textContent.includes("每日上限"));
 ok("模擬現在時間 names her 作息, not a quiet-hours field",
-   /安靜|不打擾|上床與起床/.test($("#nowHint").textContent), $("#nowHint").textContent);
+   /安靜|不打擾|睡眠時段/.test($("#nowHint").textContent), $("#nowHint").textContent);
 
 // --- 主動規則 → 主動對話: rules on one tab, the place they run on the other --
 // The cut is where the risk changes: nothing on 主動規則 reaches the student, and
@@ -698,7 +698,7 @@ $("#scheduleTime").value = nowText;
 $("#addSchedule").click();
 await new Promise((r) => setTimeout(r, 600));
 ok("her 作息 can block a due 閒聊 outright",
-   /還沒起床|已經上床/.test($t.workspace.scheduled[0].reason), $t.workspace.scheduled[0].reason);
+   /還沒起床|已經睡了/.test($t.workspace.scheduled[0].reason), $t.workspace.scheduled[0].reason);
 
 // --- a supersede has to name what it discarded ----------------------------
 $t.workspace.memory = { facts: [], events: [], summaries: [] };

@@ -306,7 +306,7 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
    how much of the day is silenced, and which of the three limits actually bites. */
 .policy-preview { margin: 6px 0 4px; padding: 12px; border: 1px solid var(--line); border-radius: 4px 12px 12px 4px; background: var(--white); }
 .preview-label { margin: 0 0 8px; font-size: 11px !important; font-weight: 800; letter-spacing: .12em; color: var(--blue); }
-/* 48 格，一格半小時 —— 欄數必須跟著是 48。寫 24 的時候後半天會被擠到第二列，整張
+/* 48 格，一格半小時：欄數必須跟著是 48。寫 24 的時候後半天會被擠到第二列，整張
    圖看起來像兩條無關的帶子，下面 0–24 點的刻度也對不上。 */
 .quiet-band { display: grid; grid-template-columns: repeat(48, 1fr); gap: 1px; height: 26px; border-radius: 3px; overflow: hidden; }
 .band-hour { background: var(--mint); }
@@ -341,7 +341,7 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .rule-order { grid-area: order; color: var(--ink-soft); font: 700 12px/1 Consolas, monospace; font-variant-numeric: tabular-nums; }
 .rule-name { grid-area: name; font-weight: 700; line-height: 1.35; }
 /* 加一層 .rule-table 是為了贏過檔案後面的 `.lab-panel :where(span)` 14px !important
-   —— :where() 不計權重，單靠 .rule-why 會同分而輸在順序上，整列就全部同一個字級。 */
+   :where() 不計權重，單靠 .rule-why 會同分而輸在順序上，整列就全部同一個字級。 */
 .rule-table .rule-why { grid-area: why; color: var(--ink-soft); font-size: 12px !important; line-height: 1.55; }
 /* 同一個原因：句子裡的 <strong>／<b> 若不指定，會被那條 14px 拉回去，一句話變兩種大小。 */
 .rule-table .rule-why :where(strong, b, em) { font-size: inherit !important; }
@@ -393,7 +393,7 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .budget-card .budget-mode-note { margin: 10px 0 0; padding: 8px 10px; background: var(--sky); color: var(--ink-soft); font-size: 12px !important; line-height: 1.55; }
 .budget-card .budget-live { margin: 8px 0 0; color: var(--ink-soft); font-size: 12px !important; line-height: 1.55; }
 .budget-card .budget-live small { display: block; margin-top: 2px; font-size: 11px !important; line-height: 1.45; }
-/* 被改成假設之後才變色 —— 「這兩格現在說的不是系統的紀錄」要看得出來。 */
+/* 被改成假設之後才變色：「這兩格現在說的不是系統的紀錄」要看得出來。 */
 .budget-card.is-hypothetical { border-left-color: var(--apricot); }
 .budget-card.is-hypothetical .field-row input { background: #fdf4e6; }
 .budget-card .budget-resync { margin-top: 4px; padding: 4px 9px !important; font-size: 11px !important; }
@@ -533,7 +533,7 @@ legend { margin-bottom: 10px; font-weight: 800; }
 .day-gates.is-fixed { color: var(--ink); }
 .day-gates.is-fixed strong { color: var(--danger); }
 
-/* 漏掉的用藥／回診 —— the consequence of an incomplete 建檔, named per row. */
+/* 漏掉的用藥／回診: the consequence of an incomplete 建檔, named per row. */
 .day-missing { margin: 0 0 12px; }
 .day-missing-head { margin: 0 0 6px; line-height: 1.6; }
 .day-missing-none { margin: 0 0 6px; color: #287653; font-size: 12px; }

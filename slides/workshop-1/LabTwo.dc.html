@@ -21,38 +21,38 @@
       <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">14 / 16</span>
     </div>
     <div style="display: flex; flex-direction: column; gap: 13px;">
-      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">實作二：真正的 Realtime 回合控制</h1>
-      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">105–140 分。沒有耳麥也做得完，有耳麥則多一段真實語音驗證。</p>
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">實作二：真正的回合控制</h1>
+      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">105–140 分。沒有耳麥也做得完，有耳麥就多一段真的用講的。</p>
     </div>
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
       <div style="display: flex; flex-direction: column; gap: 22px;"><div style="display: flex; gap: 32px; align-items: stretch;"><div style="flex: 1 1 0;"><div style="display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #397d9f; border-radius: 0 0 4px 4px; background: #f7f2e8;">
     <span style="color: #397d9f; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">沒有耳麥</span>
     <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">改設定後按「套用」</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">用同一句話比較回答差異。客端不會測量真實音訊，所以只能觀察「套用後回答有什麼不同」。</p>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">用同一句話比回答的差別。畫面不會量真實的聲音，只能看「套用後回答有什麼不同」。</p>
     
   </div></div>
 <div style="flex: 1.35 1 0; display: flex; flex-direction: column; gap: 14px;">
-        <span style="color: #287653; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">有耳麥 · 切成語音後客端會自動重新連接</span>
+        <span style="color: #287653; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">有耳麥 · 切成語音後畫面會自動重新連線</span>
         <ol style="display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #287653; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">1</div>
-      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">句中停頓約半秒後繼續說。</span>
+      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">講到一半停半秒，再繼續講。</span>
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #287653; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">2</div>
-      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">用完整語句說完並等待 Dodo 回答。</span>
+      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">一句話講完，等它回答。</span>
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #287653; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">3</div>
-      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">Dodo 回答途中再次開口。</span>
+      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">它正在回答時你再開口。</span>
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #287653; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">4</div>
-      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">切成 Push-to-talk，確認只有放開按鈕後才提交回合。</span>
+      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">換成 Push-to-talk，確認只有放開按鈕才會送出去。</span>
     </li></ol>
       </div></div>
 <div style="display: flex; align-items: center; gap: 16px; padding: 20px 26px; border: 1px dashed #287653; border-radius: 4px 18px 18px 4px; background: #fffdf8;">
     <span style="flex-shrink: 0; color: #287653; font: 800 14px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">做完你會有</span>
-    <p style="margin: 0; color: #15324a; font: 700 24px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">一組你自己調過的回合設定，而且知道它在什麼情況下會搶話。</p>
+    <p style="margin: 0; color: #15324a; font: 700 24px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">一組你自己調過的設定，而且知道它什麼時候會搶話。</p>
   </div></div>
     </div>
     

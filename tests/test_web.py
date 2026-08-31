@@ -38,7 +38,8 @@ def test_shared_client_and_bootstrap_are_available() -> None:
     assert "Prompt 與 Realtime 是兩層" in page
     assert "API Key" in page
     assert "用分塊設計回答方式" in page
-    assert "完整 System Prompt" in page and "只能檢視" in page
+    # The preview is read-only; the copy says so in plain words rather than 「只能檢視」.
+    assert "完整 System Prompt" in page and "只能看，不能改" in page
     assert '<pre id="agentSystemPrompt"' in page
     assert '<textarea id="agentSystemPrompt"' not in page
     assert "可編輯的 Prompt 分塊" in page
@@ -936,7 +937,7 @@ def test_the_browser_keeps_no_schema_migration_of_its_own() -> None:
 
 
 def test_the_prompt_says_which_layer_a_preference_belongs_to() -> None:
-    """「我喜歡吃西瓜」landed in B, whose own example was「今天想吃什麼」 —— and B
+    """「我喜歡吃西瓜」landed in B, whose own example was「今天想吃什麼」, and B
     supersedes, so 芭樂／西瓜／鳳梨 were each eaten by the next fruit. Changing the
     quiz card fixed what the *student* reads; this is what the *model* reads."""
 

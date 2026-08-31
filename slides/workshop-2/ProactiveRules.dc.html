@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&amp;family=Noto+Serif+TC:wght@500;700;900&amp;display=swap">
+  <style>
+    body { margin: 0; background: #f7f2e8; }
+    a { color: #287653; } a:hover { color: #15324a; }
+  </style>
+</helmet>
+<div style="position: relative; width: 1600px; height: 900px; overflow: hidden; background: #fffdf8; font-family: 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; color: #15324a;">
+  <div style="position: absolute; left: 0; top: 0; width: 12px; height: 900px; background: #287653;"></div>
+  <div style="position: absolute; inset: 0; display: flex; flex-direction: column; gap: 30px; padding: 58px 88px 52px 108px;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 32px; padding-bottom: 18px; border-bottom: 1px solid #cfd9dc;">
+      <span style="color: #287653; font: 800 16px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .18em;">WORKSHOP 02 · 會記得、會主動，也知道何時閉嘴</span>
+      <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">13 / 17</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 13px;">
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">實作二：七條規則，但你只有兩個旋鈕</h1>
+      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">95–120 分。這一頁全部是模擬，豆豆一句話都不會說，所以可以一直調。</p>
+    </div>
+    <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
+      <div style="display: flex; gap: 32px; align-items: stretch;"><div style="flex: 0 0 660px;"><div style="border: 1px solid #15324a; border-radius: 4px 14px 14px 4px; background: #15324a; overflow: hidden;">
+    <div style="display: flex; align-items: center; gap: 12px; padding: 16px 20px;">
+      <span style="padding: 5px 8px; border: 1px solid #f1b879; border-radius: 3px; color: #f1b879; font: 800 14px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .08em;">程式檢查的順序</span>
+      <strong style="color: #fffdf8; font: 700 21px/1.3 'Noto Sans TC','Microsoft JhengHei UI',sans-serif;">由上往下，擋下就不說</strong>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px; padding: 18px 20px; border-top: 1px solid rgba(255, 253, 248, .2); background: #102638;">
+      <div style="color: #eef7f4; font: 20px/1.7 Consolas,'Noto Sans TC',monospace; white-space: pre-wrap;">1  重要提醒        → 一路直達</div>
+      <div style="color: #eef7f4; font: 20px/1.7 Consolas,'Noto Sans TC',monospace; white-space: pre-wrap;">2  她剛說不想聊    → 閉嘴</div>
+      <div style="color: #eef7f4; font: 20px/1.7 Consolas,'Noto Sans TC',monospace; white-space: pre-wrap;">3  安靜時段        → 閉嘴</div>
+      <div style="color: #eef7f4; font: 20px/1.7 Consolas,'Noto Sans TC',monospace; white-space: pre-wrap;">4  不打擾時段      → 閉嘴</div>
+      <div style="color: #eef7f4; font: 20px/1.7 Consolas,'Noto Sans TC',monospace; white-space: pre-wrap;">5  間隔不夠久      → 閉嘴</div>
+      <div style="color: #eef7f4; font: 20px/1.7 Consolas,'Noto Sans TC',monospace; white-space: pre-wrap;">6  今天已經講夠了  → 閉嘴</div>
+      <div style="color: #eef7f4; font: 20px/1.7 Consolas,'Noto Sans TC',monospace; white-space: pre-wrap;">7  每則最多兩句    → 交給模型</div>
+    </div>
+  </div></div>
+<div style="display: flex; flex-direction: column; gap: 18px;"><ul style="display: flex; flex-direction: column; gap: 14px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #287653;"></span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">只有第 5、6 條是你能填的數字。第 1 條寫死，第 7 條是唯一交給模型自己執行的。</span>
+    </li>
+<li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #287653;"></span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">安靜與不打擾<strong>不在這裡改</strong>：它們從建檔的睡眠時段和勾了「不打擾」的作息算出來，那兩列是灰的。</span>
+    </li>
+<li style="display: flex; gap: 16px; align-items: flex-start;">
+      <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #287653;"></span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">長條圖下面第二行會點名<strong>現在是哪一條在卡人</strong>：學生把間隔從 30 調到 10 卻毫無變化，多半是每日上限 4 則在卡。</span>
+    </li></ul>
+<div style="display: flex; align-items: center; gap: 20px; padding: 26px 32px; border-radius: 4px 18px 18px 4px; background: #d9edf7;">
+    <div style="flex-shrink: 0; width: 6px; align-self: stretch; border-radius: 3px; background: #f1b879;"></div>
+    <p style="margin: 0; color: #15324a; font: 700 28px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">這幾條不能只寫在 Prompt 裡拜託模型自己忍住。模型可以不聽 Prompt，但繞不過程式。</p>
+  </div></div></div>
+    </div>
+    
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,6 +1,6 @@
-// workshop2.js —— 第二堂：建檔、對話規範分塊、三層記憶、主動關心規則與待提醒排程。
+// workshop2.js：第二堂：建檔、對話規範分塊、三層記憶、主動關心規則與待提醒排程。
 //
-// 整支包在 IIFE 裡，只掛一個全域；IIFE 內一律零縮排 —— tests/test_web.py 用 `\n}`
+// 整支包在 IIFE 裡，只掛一個全域；IIFE 內一律零縮排；tests/test_web.py 用 `\n}`
 // 切函式本體，多一層縮排就切不到。core.js 的頂層 const／let／function 在全域詞法
 // 環境裡，這裡直接讀得到；要呼叫另一堂則走 W1.* ／ W2.*。
 (() => {
@@ -30,12 +30,12 @@ const MAX_MESSAGE_SENTENCES = 2;
 const DEFAULT_PROACTIVE_POLICY = { interval_minutes: 30, daily_limit: 4 };
 // What「再存一次同一個 key」means is different in each layer, and that difference
 // is the real behavioural payload of A/B/C:
-//   A 累加   —— 興趣：唱歌 and 興趣：跳舞 are both true, so both stay. Caregiver
+//   A 累加   ：興趣：唱歌 and 興趣：跳舞 are both true, so both stay. Caregiver
 //               facts are locked: the model may add beside them, never replace.
-//   B 取代   —— 近期事件 IS the latest state. 「膝蓋好多了」 replaces 「膝蓋痛」,
+//   B 取代   ：近期事件 IS the latest state. 「膝蓋好多了」 replaces 「膝蓋痛」,
 //               which is what stops the 健康關心 follow-up. Capped so stale days
 //               cannot pile up outside the prompt window.
-//   C 重寫   —— a summary is recomputed from scratch, never appended to.
+//   C 重寫   ：a summary is recomputed from scratch, never appended to.
 const MEMORY_MERGE_RULES = {
   A: { merge: "accumulate", label: "累加：同一個 key 可以並存多筆事實；護理員建的豆豆不能改", capacity: 0 },
   B: { merge: "supersede", label: `取代：同一個 key 只留最新一筆，整層最多 ${MEMORY_PREVIEW_LIMIT} 筆`, capacity: MEMORY_PREVIEW_LIMIT },
@@ -70,7 +70,7 @@ const RULE_PRESETS = [
     blocks: {
       memory_use: `記憶分三層，用 read_memory 讀、用 update_memory 寫，寫入時指定 layer：
 A 重要事實（layer=A）：過敏、慢性病、醫囑、緊急聯絡人、長期偏好。同一個 key 可以並存多筆。標［護理員］的你不能改也不能刪。
-B 近期事件（layer=B）：這幾天的身體與心情。同一件事新的取代舊的——她說好多了就用 mode="replace" 換掉。
+B 近期事件（layer=B）：這幾天的身體與心情。同一件事新的取代舊的：她說好多了就用 mode="replace" 換掉。
 C 跨日摘要：由系統整理，不要自己寫。
 不保存：密碼、卡號、帳號、驗證碼；第三人的健康；對任何人的評價。也不要在對話中複誦。
 寫記憶不要說出來打斷她。只有她問起、或那件事正好要用到時才提記憶，其他時候記住就好。`,
@@ -86,7 +86,7 @@ C 跨日摘要：由系統整理，不要自己寫。
     blocks: {
       memory_use: `記憶分三層，用 read_memory 讀、用 update_memory 寫，寫入時指定 layer：
 A 重要事實（layer=A）：過敏、慢性病、醫囑、緊急聯絡人、長期偏好。同一個 key 可以並存多筆。標［護理員］的是護理員建的，你不能改也不能刪；她要改，請她告訴護理員。
-B 近期事件（layer=B）：這幾天的身體狀況與心情。同一件事新的取代舊的——她說膝蓋好多了，就用 mode="replace" 換掉，並把她的原話一起寫進去。
+B 近期事件（layer=B）：這幾天的身體狀況與心情。同一件事新的取代舊的：她說膝蓋好多了，就用 mode="replace" 換掉，並把她的原話一起寫進去。
 C 跨日摘要：由系統整理，不要自己寫。
 不保存：密碼、卡號、帳號、驗證碼；第三人的健康；對任何人的評價。也不要在對話中複誦。
 身體狀況有變化就當場記下來，寫的時候用她自己的說法，不要改寫成醫學名詞。你不是醫護人員：不判斷、不推測原因，該找人的時候請她找護理員。`,
@@ -271,10 +271,10 @@ function renderIntakeHints() {
     ? `${quiet} 段不打擾時段會變成主動規則分頁帶狀圖上的灰色；只有重要提醒能穿過。`
     : "還沒有不打擾時段：現在她的一天裡，豆豆什麼時候都能開口。";
   $("#hintCare").textContent = meds
-    ? `${meds} 筆用藥會變成重要提醒 —— 不受間隔與上限限制，也不吃額度。`
+    ? `${meds} 筆用藥會變成重要提醒，不受間隔與上限限制，也不算今天的次數。`
     : "還沒有用藥：她的一天裡不會有任何重要提醒。";
   $("#hintSymptoms").textContent = symptoms
-    ? `${symptoms} 筆症狀會變成健康關心候選：豆豆會在一天裡挑時間追問「還好嗎」，她說好了就用 replace 換掉。`
+    ? `${symptoms} 筆症狀會變成健康關心的題材：豆豆會在一天裡挑時間問「還好嗎」，她說好了就換掉那一筆。`
     : "還沒有症狀：她的一天裡不會有健康關心。";
   $("#hintTaboos").textContent = `${taboos} 個禁區會進 Prompt 的「# 不主動提起」；${declined} 句決定不記，不會進任何地方。`;
 }
@@ -384,7 +384,7 @@ async function loadReferenceIntake() {
   writeIntake({ elder: data.elder_profile, facts: data.memory.facts, events: data.memory.events });
   resetReferenceIntakeButton();
   onIntakeChange();
-  notify("範例建檔已經填進表單，還沒生效——按「套用」才會送進 Prompt 與這一次的 session。");
+  notify("範例建檔只填進表單，還沒生效，要按「套用」才會送給豆豆。");
 }
 
 /** 「問豆豆這一區」: apply what is on screen, then ask one fixed question that
@@ -393,7 +393,7 @@ async function loadReferenceIntake() {
 async function askDodo(question) {
   await applyWorkshop2();
   if (dataChannel?.readyState !== "open") {
-    notify("還沒連上 Realtime（需要 API Key），建檔已經保存；連線後再按一次就能問。");
+    notify("還沒連上線（要有 API Key）。建檔已經存起來了，連上以後再按一次就能問。");
     return;
   }
   sendText(question);
@@ -512,7 +512,7 @@ function renderCompareResult(pending = "") {
     : compareTurns.length === 1
       ? '<p class="compare-note">現在換一組規範範例、或改其中一格，按「套用」，再按一次「問這一句」。</p>'
       : compareTurns.length === 2
-        ? '<p class="compare-note">兩份 System Prompt 的差別只有那四格——她的資料、記得的事、禁區完全一樣。再按一次會把「套用後」推成「套用前」，繼續比下去。</p>'
+        ? '<p class="compare-note">兩份 System Prompt 的差別只有那四格：她的資料、記得的事、禁區完全一樣。再按一次會把「套用後」推成「套用前」，繼續比下去。</p>'
         : "";
   $("#compareResult").innerHTML = rows + note;
 }
@@ -537,7 +537,7 @@ async function askCompare() {
     sendText(question);
     const answer = await awaitDodoReply();
     if (!answer) {
-      renderCompareResult("等不到回答——看一下聊天室發生什麼事，再按一次。");
+      renderCompareResult("等不到回答。看一下聊天室發生什麼事，再按一次。");
       return;
     }
     compareTurns = [...compareTurns, { question, answer }];
@@ -602,7 +602,7 @@ function collectWorkshop2() {
 }
 
 // =====================================================================
-// Prompt 組裝 —— mirrors prompt_sections.py. Change the fixture, not one side.
+// Prompt 組裝：mirrors prompt_sections.py. Change the fixture, not one side.
 // =====================================================================
 const clean = (value) => String(value ?? "").trim();
 
@@ -682,7 +682,7 @@ function composeElderSection(elder, address) {
   if (expertise.length) lines.push(`她會的事（可以請教）：${expertise.join("、")}`);
   const wake = clean(elder.wake_time);
   const bed = clean(elder.bed_time);
-  if (wake || bed) lines.push(`作息：${wake || "？"} 起床、${bed || "？"} 上床`);
+  if (wake || bed) lines.push(`作息：${wake || "？"} 起床、${bed || "？"} 就寢`);
   const quiet = (elder.routines || []).filter((routine) => routine.do_not_disturb && routine.start);
   if (quiet.length) lines.push(`不打擾時段：${quiet.map(routineText).join("、")}`);
   const medications = (elder.medications || []).filter((item) => item.time || item.name);
@@ -714,7 +714,7 @@ function composeRulesSection(policy, elder) {
   const lines = [
     "主動訊息分三類：重要提醒（不受任何限制、不算額度）、健康關心（追問還沒好的身體狀況）、閒聊。",
     `健康關心與閒聊：兩則之間至少間隔 ${interval} 分鐘，每天最多 ${limit} 則。`,
-    wake && bed ? `她上床（${bed}）到起床（${wake}）之間只送重要提醒。` : "建檔沒有填起床與上床時間，所以沒有安靜時段。",
+    wake && bed ? `她的睡眠時段（${bed}–${wake}）只送重要提醒。` : "建檔沒有填睡眠時段，所以沒有安靜時段。",
   ];
   if (quietLabels.length) lines.push(`不打擾時段（${quietLabels.join("、")}）只送重要提醒。`);
   lines.push(
@@ -946,7 +946,7 @@ function deleteMemoryEntry(layer, index) {
   renderMemoryViewer();
   rebuildWorkshop2Prompt();
   pushMemoryToSession();
-  notify(`已從 ${title} 刪除「${removed}」，並更新豆豆的記憶。人可以覆寫 AI 記得的事。`);
+  notify(`已從 ${title} 刪除「${removed}」，並更新豆豆的記憶。AI 記得的事，人隨時可以改掉。`);
 }
 
 /** After the model replaced or removed a caregiver-seeded symptom (「膝蓋好多了」),
@@ -1015,7 +1015,7 @@ function isoWeekday(date = new Date()) {
 }
 
 /** The browser's twin of `build_schedule` (spec §3.1, §7.1 #8): 安靜 is
- *  上床→起床, 不打擾 is every routine ticked 不打擾 that applies today.
+ *  睡眠時段（就寢→起床）, 不打擾 is every routine ticked 不打擾 that applies today.
  *
  *  It exists ONLY to draw the band and word the hints — every decision still
  *  goes through the server. That the two agree is not left to this comment:
@@ -1029,7 +1029,7 @@ function buildScheduleWindows(elder = {}, weekday = isoWeekday()) {
   const wake = parseHhmm(elder.wake_time);
   const bed = parseHhmm(elder.bed_time);
   const quiet = wake !== null && bed !== null && bed !== wake
-    ? { label: "上床", start: bed, end: wake }
+    ? { label: "睡眠時段", start: bed, end: wake }
     : null;
   const dnd = (elder.routines || []).flatMap((routine) => {
     const start = parseHhmm(routine?.start);
@@ -1067,7 +1067,7 @@ function minutesClosed(schedule) {
 }
 
 // =====================================================================
-// 「她剛說不想聊」 —— real state, not a what-if
+// 「她剛說不想聊」：real state, not a what-if
 // =====================================================================
 const DECLINE_MINUTES = 60;
 
@@ -1137,7 +1137,7 @@ function renderDeclineState() {
 /** Her day as a picture, drawn from 建檔 rather than typed here.
  *
  *  Grey is every minute the rules keep 豆豆 quiet. It is deliberately read-only:
- *  上床／起床 and 不打擾 are facts about her life, not settings, so the band sends
+ *  睡眠時段 and 不打擾 are facts about her life, not settings, so the band sends
  *  a click to the 建檔 作息 section instead of editing anything. */
 function renderPolicyPreview() {
   const schedule = scheduleNow();
@@ -1160,7 +1160,7 @@ function renderPolicyPreview() {
   const bands = [
     schedule.quiet
       ? `安靜 ${formatMinutes(schedule.quiet.start)}–${formatMinutes(schedule.quiet.end)}`
-      : "<b>還沒填上床與起床時間</b>（整天都能開口）",
+      : "<b>還沒填睡眠時段</b>（整天都能開口）",
     schedule.dnd.length
       ? `不打擾 ${schedule.dnd.map((window) => `${escapeHtml(window.label)} ${formatMinutes(window.start)}–${formatMinutes(window.end)}`).join("、")}`
       : "沒有不打擾時段",
@@ -1174,12 +1174,12 @@ function renderPolicyPreview() {
   renderBlockingRuleNow(schedule, policy, intervalCap);
 }
 
-/** 「現在哪條規則在卡人」 —— the same order as `choose_event`, evaluated against the
+/** 「現在哪條規則在卡人」：the same order as `choose_event`, evaluated against the
  *  real clock and the real accumulated spend for a 閒聊.
  *
  *  Display only: every actual decision goes to the server. What it answers is
  *  the question a student cannot otherwise ask without waiting — 「我現在按下去，
- *  會被哪一條擋住」 —— and why 重要提醒 would still get through. */
+ *  會被哪一條擋住」；and why 重要提醒 would still get through. */
 function renderBlockingRuleNow(schedule, policy, intervalCap) {
   const labels = bootstrapData?.rule_labels || {};
   const minute = new Date().getHours() * 60 + new Date().getMinutes();
@@ -1188,7 +1188,7 @@ function renderBlockingRuleNow(schedule, policy, intervalCap) {
   let blocking;
   if (isDeclinedNow()) blocking = labels.declined || "她剛說不想聊";
   else if (windowContains(schedule.quiet, minute)) {
-    blocking = `${labels.quiet || "安靜時段"}（${minute < schedule.wake ? "她還沒起床" : "她已經上床了"}）`;
+    blocking = `${labels.quiet || "安靜時段"}（${minute < schedule.wake ? "她還沒起床" : "她已經睡了"}）`;
   } else if (dnd) blocking = `${labels.dnd || "不打擾時段"}（她在${dnd.label}）`;
   else if (minutesSinceLastProactive() < policy.interval_minutes) {
     blocking = `${labels.interval || "間隔"}（距上一句才 ${minutesSinceLastProactive()} 分鐘）`;
@@ -1198,7 +1198,7 @@ function renderBlockingRuleNow(schedule, policy, intervalCap) {
   const tighter = intervalCap < policy.daily_limit
     ? `真正卡住一天的是<strong>間隔</strong>：每日上限 ${policy.daily_limit} 則用不完，最多只擠得出 ${intervalCap} 則。`
     : intervalCap > policy.daily_limit
-      ? `真正卡住一天的是<strong>每日上限</strong>：時間夠塞 ${intervalCap === Infinity ? "不限" : intervalCap} 則，額度只給 ${policy.daily_limit} 則。`
+      ? `真正卡住一天的是<strong>每日上限</strong>：時間夠塞 ${intervalCap === Infinity ? "不限" : intervalCap} 則，但一天只准講 ${policy.daily_limit} 則。`
       : `間隔與每日上限剛好一樣緊（都是 ${policy.daily_limit} 則）。`;
   $("#policyBinding").innerHTML = blocking
     ? `<strong>現在閒聊會被〈${blocking}〉擋下</strong>，但重要提醒照樣送得出去。${tighter}`
@@ -1222,14 +1222,14 @@ function renderTriggerHints() {
   } else {
     $("#nowHint").textContent = schedule.quiet
       ? `${now} 不在安靜或不打擾時段，這一關會通過。`
-      : `建檔還沒填上床與起床時間，所以沒有安靜時段 —— 這一關一律通過。`;
+      : `建檔還沒填睡眠時段，所以沒有安靜時段，這一關一律通過。`;
   }
 
   const sinceLast = Number($("#proactiveSinceLast").value) || 0;
   $("#sinceLastHint").textContent = `對上間隔 ${policy.interval_minutes} 分鐘：小於 ${policy.interval_minutes} 就會被擋下。現在填 ${sinceLast} → ${sinceLast < policy.interval_minutes ? "會被擋下" : "會通過"}。`;
 
   const sentToday = Number($("#proactiveSentToday").value) || 0;
-  $("#sentTodayHint").textContent = `對上每日上限 ${policy.daily_limit} 則：達到 ${policy.daily_limit} 就會被擋下。現在填 ${sentToday} → ${sentToday >= policy.daily_limit ? "會被擋下" : "會通過"}。重要提醒不吃額度，所以這一關對它無效。`;
+  $("#sentTodayHint").textContent = `對上每日上限 ${policy.daily_limit} 則：達到 ${policy.daily_limit} 就會被擋下。現在填 ${sentToday} → ${sentToday >= policy.daily_limit ? "會被擋下" : "會通過"}。重要提醒不算次數，所以這一關管不到它。`;
 }
 
 /** 健康關心 speaks about a symptom she actually has, so the content comes from
@@ -1246,7 +1246,7 @@ function suggestTriggerTopic() {
     .filter((entry) => entry?.tag === "symptom" && String(entry.value || "").trim())
     .at(-1);
   if (!symptom) {
-    hint.textContent = "建檔的「近期身體狀況」還沒有症狀，健康關心沒有題材。";
+    hint.textContent = "建檔的「近期身體狀況」還沒有症狀，健康關心就沒有東西可以問。";
     return;
   }
   const suggestion = `關心她的${symptom.key}（目前記錄：${symptom.value}）`;
@@ -1295,7 +1295,7 @@ function minutesSinceLastProactive() {
 // 按「把上面兩格改回真實數值」再跟回去。
 //
 // ⚠️ 這兩格**只餵手動觸發**：`fireScheduledItem()` 讀的是 `proactive_state`，不是欄位。
-// 跟隨機制的用途是讓「顯示」這個身分名副其實 —— 以前重新整理之後它們一律停在
+// 跟隨機制的用途是讓「顯示」這個身分名副其實：以前重新整理之後它們一律停在
 // HTML 的 999／0，就算 proactive_state 記著今天已經送了三則也一樣。
 let budgetFieldsFollowState = true;
 
@@ -1322,7 +1322,7 @@ function renderBudgetFollowState() {
 function resyncBudgetFields() {
   budgetFieldsFollowState = true;
   syncBudgetFields();
-  notify("上面兩格已經改回真實累積量。");
+  notify("上面兩格已經改回真實的數字。");
 }
 
 /** One place records the cost of an actual proactive message, so the manual
@@ -1358,7 +1358,7 @@ function renderScheduleList() {
   const now = new Date();
   $("#scheduleClock").textContent = `現在真實時間 ${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
   if (!items.length) {
-    $("#scheduleList").innerHTML = '<p class="schedule-empty">目前沒有待提醒項目。填好上面的事件類型與內容，選一個時間，按「加入待提醒」。</p>';
+    $("#scheduleList").innerHTML = '<p class="schedule-empty">現在沒有待提醒項目。上面選好類型和內容，挑一個時間，按「加入待提醒」。</p>';
     return;
   }
   $("#scheduleList").innerHTML = items.map((item) => {
@@ -1511,15 +1511,15 @@ function startScheduler() {
 // decides, so that became the switch and the headings went away.
 // =====================================================================
 const TRIGGER_MODE_NOTES = {
-  schedule: "用<strong>真實時鐘</strong>和真實累積量：時間到了，瀏覽器代替事件源推一次，跑的是同一個 <code>choose_event</code>。每一筆只觸發一次。",
-  manual: "現在時間與「她剛剛拒絕聊天」都是<strong>你假設的狀況</strong>，連同上面那兩格累積量，用來一次一次戳規則的邊界，例如「如果現在是凌晨三點呢」。不影響下面的待提醒清單。",
+  schedule: "看<strong>真實時鐘</strong>，也看她今天真的被找過幾次。時間一到，瀏覽器代替後台推一次事件，走同一套七條規則。每一筆只會發生一次。",
+  manual: "現在幾點、她有沒有剛說不想聊，全部是<strong>你假設的</strong>；加上面那兩格的數字，一次一次去戳規則的邊界，例如「如果現在是凌晨三點呢」。不影響下面的待提醒清單。",
 };
 
 // 上面那張累積量卡在兩種模式下的意義不一樣，講清楚是哪一種才不會有人在 ⏰ 模式下
 // 填了數字卻發現它不算數。
 const BUDGET_MODE_NOTES = {
-  schedule: "⏰ 排到真實時間：判斷讀的是 <code>proactive_state</code>，也就是下面這一行；上面兩格在這個模式下<strong>只是它的顯示</strong>，改了不影響判斷。",
-  manual: "🧪 假設狀態試打：判斷讀的就是<strong>上面兩格</strong>，你填什麼它就信什麼。",
+  schedule: "⏰ 排一個真的時間：規則看的是下面那一行真實紀錄。上面兩格在這個模式下<strong>只是顯示</strong>，改了不影響判斷。",
+  manual: "🧪 自己編一個狀況：規則看的就是<strong>上面兩格</strong>，你填什麼它就信什麼。",
 };
 
 function switchTriggerMode(mode) {
@@ -1572,7 +1572,7 @@ function renderDayBlockers(result) {
   const name = (rule) => labels[rule] || rule;
   const ranked = Object.entries(result.blocked_by || {}).sort((left, right) => right[1] - left[1]);
   if (!ranked.length) {
-    return `<p class="day-blockers">這一天沒有任何事件被擋下 —— ${result.steps.length} 件全說出去了。</p>`;
+    return `<p class="day-blockers">這一天沒有任何事件被擋下，${result.steps.length} 件全說出去了。</p>`;
   }
   const breakdown = ranked.map(([rule, count]) => `${name(rule)} <b>${count}</b> 次`).join("・");
   return `<p class="day-blockers">這一天擋掉最多的是〈<strong>${name(ranked[0][0])}</strong>〉：${breakdown}。</p>`;
@@ -1591,13 +1591,13 @@ function renderPredictEcho(result) {
     ["打擾", $("#predictNoise").value, result.noise],
   ].filter(([, guess]) => String(guess).trim() !== "");
   if (!rows.length) {
-    $("#dayPredictEcho").innerHTML = '<p class="predict-none">下次先猜一下再跑 —— 猜錯的地方就是你對規則的誤解。</p>';
+    $("#dayPredictEcho").innerHTML = '<p class="predict-none">下次先猜一下再按。猜錯的地方就是你理解錯的地方。</p>';
     return;
   }
   $("#dayPredictEcho").innerHTML = `<p class="predict-line">${rows.map(([label, guess, actual]) => {
     const off = Number(guess) - actual;
     const verdict = off === 0 ? "猜中了" : `差 ${Math.abs(off)}（${off > 0 ? "比你想的少" : "比你想的多"}）`;
-    return `${label}：你猜 <b>${escapeHtml(String(guess))}</b>，實際 <b>${actual}</b> —— ${off === 0 ? "<b>猜中了</b>" : verdict}`;
+    return `${label}：你猜 <b>${escapeHtml(String(guess))}</b>，實際 <b>${actual}</b>，${off === 0 ? "<b>猜中了</b>" : verdict}`;
   }).join("<br>")}</p>`;
 }
 
@@ -1611,7 +1611,7 @@ function renderDayMissing(result) {
     return;
   }
   $("#dayMissing").innerHTML = `
-    <p class="day-missing-head">你的建檔漏掉 <b>${missing.length}</b> 筆參考建檔有的提醒 —— 這一天她不會被提醒：</p>
+    <p class="day-missing-head">你的建檔漏掉 <b>${missing.length}</b> 筆參考建檔有的提醒，這一天她不會被提醒：</p>
     <ul class="day-missing-list">${missing.map((item) => `
       <li><time>${escapeHtml(item.time)}</time><span>${escapeHtml(item.topic)}</span><em>${escapeHtml(item.source || "")}</em></li>`).join("")}</ul>
     <p class="day-missing-note">回建檔 › 用藥與回診補上，再跑一次。</p>`;
@@ -1693,7 +1693,7 @@ function describeGates(schedule) {
 }
 
 // =====================================================================
-// 今日摘要 —— the one memory write nobody makes by hand
+// 今日摘要：the one memory write nobody makes by hand
 // =====================================================================
 
 /** Today's chat, as the summariser wants it. Read from the transcript rather
@@ -1715,7 +1715,7 @@ async function runTodaySummary() {
   const button = $("#runTodaySummary");
   const transcript = chatTranscript();
   if (!transcript.length) {
-    $("#todaySummary").textContent = "今天還沒有對話可以摘要 —— 先跟豆豆聊幾句。";
+    $("#todaySummary").textContent = "今天還沒有對話可以摘要。先跟豆豆聊幾句。";
     return;
   }
   button.disabled = true;
@@ -1758,7 +1758,7 @@ function proactiveTurnInstructions(event, time) {
     realtimeInstructions(),
     [
       "# 這一次主動開口",
-      `現在是 ${time}。你要「主動」開啟對話，不是回答問題 —— 對方還沒說話。`,
+      `現在是 ${time}。你要「主動」開啟對話，不是回答問題，對方還沒說話。`,
       `事件類型：${event.type}`,
       `事件內容：${event.topic || "（未填寫）"}`,
       // Fixed at 2 (spec §2.3): 每則句數 stopped being a field, so `policy` no
@@ -1917,7 +1917,7 @@ function init() {
   Object.values(ROW_KINDS).forEach(({ container }) => {
     ["input", "change"].forEach((event) => $(container).addEventListener(event, renderPolicyPreview));
   });
-  // Read-only on purpose: 上床／起床 and 不打擾 are facts about her life, so the
+  // Read-only on purpose: 睡眠時段 and 不打擾 are facts about her life, so the
   // band sends you to 建檔 rather than letting you edit them here.
   $$("[data-goto-intake]").forEach((element) => {
     const goto = () => {

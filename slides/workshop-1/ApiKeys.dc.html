@@ -22,29 +22,29 @@
     </div>
     <div style="display: flex; flex-direction: column; gap: 13px;">
       <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">開始前：連接真正的模型</h1>
-      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">未設定 Key 時聊天功能會明確停用；不會用固定句型假裝成模型回覆。</p>
+      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">沒填 Key 時聊天會直接停用，不會拿罐頭句子假裝自己是模型。</p>
     </div>
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
       <div style="display: flex; gap: 34px; align-items: stretch;"><div style="display: flex; flex-direction: column; gap: 18px;"><ul style="display: flex; flex-direction: column; gap: 18px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 13px; border-radius: 50%; background: #397d9f;"></span>
-      <span style="color: #15324a; font: 23px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">第一次啟動時，在畫面內分別輸入 OpenAI API Key 與 OpenWeatherMap API Key。</span>
+      <span style="color: #15324a; font: 23px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">第一次啟動時，畫面上會分別要你填 OpenAI 的 Key 和天氣的 Key。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 13px; border-radius: 50%; background: #397d9f;"></span>
-      <span style="color: #15324a; font: 23px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">每個 Key 旁邊只有「測試」按鈕；實際儲存一律由畫面最下方那一個按鈕完成 —— 沒測試過的 Key 會在儲存時自動先測一次。</span>
+      <span style="color: #15324a; font: 23px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">每個 Key 旁邊只有一顆「測試」；真正存下來靠畫面最下面那顆按鈕。沒測過的 Key 會在存之前自動測一次。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 13px; border-radius: 50%; background: #397d9f;"></span>
-      <span style="color: #15324a; font: 23px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">也可以由講師預先在 .env 設定 OPENAI_API_KEY 與 WEATHER_API_KEY。</span>
+      <span style="color: #15324a; font: 23px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">也可以由講師事先幫每台電腦設好。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 13px; border-radius: 50%; background: #397d9f;"></span>
-      <span style="color: #15324a; font: 23px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">天氣 Key 沒有設定時仍可進入 Workshop，但即時天氣工具會明確提示尚未設定。</span>
+      <span style="color: #15324a; font: 23px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">天氣 Key 沒填一樣可以上課，只是問天氣時它會明講「還沒設定」。</span>
     </li></ul></div>
 <div style="flex: 0 0 560px;"><div style="display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #287653; border-radius: 0 0 4px 4px; background: #d9edf7;">
     <span style="color: #287653; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">KEY 去了哪裡</span>
-    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">只送到本機 Python 後端</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">保存在該次程式的記憶體，不寫入 localStorage、my-dodo.json 或前端程式碼。關掉「API 設定」視窗（× 或 Esc）會丟棄尚未儲存的變更。</p>
+    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">只留在你自己這台電腦上</h3>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">跟著程式一起活著，程式一關就沒了。不會存進瀏覽器、不會寫進 my-dodo.json、也不會出現在網頁程式裡。關掉設定視窗（× 或 Esc）會丟掉還沒存的東西。</p>
     
   </div></div></div>
     </div>

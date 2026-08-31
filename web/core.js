@@ -1,4 +1,4 @@
-// core.js —— 不屬於任何一堂的東西：連線、聊天、狀態、套用快照、工具執行、匯入匯出。
+// core.js：不屬於任何一堂的東西：連線、聊天、狀態、套用快照、工具執行、匯入匯出。
 // 第一堂與第二堂住在 workshop1.js / workshop2.js，index.html 依序 defer 載入。
 //
 // 這個檔的頂層 const／let／function 都在全域詞法環境裡，兩堂都直接讀得到。反過來，
@@ -46,7 +46,7 @@ const REALTIME_TOOLS = [
   {
     type: "function",
     name: "update_memory",
-    description: "保存或更新長者主動提供的非敏感個人資訊。同一個 key 再存新內容時，A 層預設會「並存」，不會蓋掉舊的（例如興趣可以同時有唱歌和跳舞）；只有新內容真的取代舊內容時才傳 mode=\"replace\"。護理員建檔寫的 A 層事實你不能改也不能刪（例如醫囑「少甜少油」）——她要求時就說這是護理員建的，請她告訴護理員。她自己說的近況不受此限：B 層症狀本來就該被最新狀態取代，聽到「膝蓋好多了」就用同一個 key 傳 mode=\"replace\" 換掉舊那筆，追問才會停。不得保存密碼、API Key、金融帳號或驗證碼，也不要保存第三人的健康狀況或對家人的情緒性評價（X 類一律不保存）。",
+    description: "保存或更新長者主動提供的非敏感個人資訊。同一個 key 再存新內容時，A 層預設會「並存」，不會蓋掉舊的（例如興趣可以同時有唱歌和跳舞）；只有新內容真的取代舊內容時才傳 mode=\"replace\"。護理員建檔寫的 A 層事實你不能改也不能刪（例如醫囑「少甜少油」）。她要求時就說這是護理員建的，請她告訴護理員。她自己說的近況不受此限：B 層症狀本來就該被最新狀態取代，聽到「膝蓋好多了」就用同一個 key 傳 mode=\"replace\" 換掉舊那筆，追問才會停。不得保存密碼、API Key、金融帳號或驗證碼，也不要保存第三人的健康狀況或對家人的情緒性評價（X 類一律不保存）。",
     parameters: {
       type: "object",
       properties: {
@@ -60,7 +60,7 @@ const REALTIME_TOOLS = [
         layer: {
           type: "string",
           enum: ["A", "B", "C"],
-          description: "記憶層級：A 重要事實 —— 長期、需真人確認，包含喜歡或不喜歡的食物、音樂、活動等長期偏好，A 層同一個 key 會並存多筆。B 近期事件 —— 幾天內就會改變的當下狀態，例如昨晚沒睡好、今天中午想吃什麼；B 層同一個 key 只留最新一筆，舊的會被丟掉，所以會累積的偏好千萬不要放 B。C 跨日摘要 —— 多次對話整理出的趨勢。不確定時用 A。",
+          description: "記憶層級：A 重要事實：長期、需真人確認，包含喜歡或不喜歡的食物、音樂、活動等長期偏好，A 層同一個 key 會並存多筆。B 近期事件：幾天內就會改變的當下狀態，例如昨晚沒睡好、今天中午想吃什麼；B 層同一個 key 只留最新一筆，舊的會被丟掉，所以會累積的偏好千萬不要放 B。C 跨日摘要：多次對話整理出的趨勢。不確定時用 A。",
         },
         // Without this the only way to record a second 興趣 was to overwrite the
         // first one, which is how「我喜歡唱歌」got erased by「我喜歡跳舞」.
@@ -151,7 +151,7 @@ function revertGroup(groupName) {
   W2.renderPolicyPreview();
   W2.renderTriggerHints();
   refreshApplyState();
-  notify("已取消未套用的變更，欄位回到上次套用的內容。");
+  notify("已取消還沒套用的變更，欄位回到上次按「套用」時的樣子。");
 }
 
 /** Move one slice of a tab's applied baseline, leaving the rest of it alone.
@@ -491,7 +491,7 @@ function switchStage(stage) {
   $("#workshop2Panel").hidden = isFirst;
   $$(".stage-button").forEach((button) => button.classList.toggle("is-active", Number(button.dataset.stage) === Number(stage)));
   $("#conversationTitle").textContent = isFirst ? "讓 Dodo 聽完，再回答" : "再讓它記得你，適時主動關心";
-  // 第二堂的標題長一倍，預設字級一定會折行。`.is-long` 讓它縮到剛好一行 —— 用
+  // 第二堂的標題長一倍，預設字級一定會折行。`.is-long` 讓它縮到剛好一行。用
   // container query 而不是 vw，因為聊天區的寬度是拖曳出來的，不是視窗寬度。
   $("#conversationTitle").classList.toggle("is-long", !isFirst);
   // The transcript belongs to Workshop 2's 建檔; leaving the stage with it open
@@ -523,18 +523,18 @@ function refreshApiUi() {
   if (!testedApiKey) {
     $("#apiKeyStatus").textContent = apiConfigured
       ? `✓ API 已連接（${source === "environment" ? ".env" : "本次程式"}），模型：${modelText}`
-      : "尚未設定。Key 只保存在這次本機程式的記憶體中。";
+      : "還沒填。Key 只留在這台電腦上，程式一關就沒了。";
   }
   $("#apiKeyStatus").classList.toggle("is-ready", apiConfigured);
   if (!testedWeatherApiKey) {
     $("#weatherApiKeyStatus").textContent = weatherConfigured
       ? `✓ 天氣 API 已連接（${weatherSource === "environment" ? ".env" : "本次程式"}）`
-      : "若要使用即時天氣查詢，請輸入 Workshop 1.0 使用的天氣 API Key。";
+      : "要讓豆豆查得到天氣，填第一版用的那把天氣 API Key。";
   }
   $("#weatherApiKeyStatus").classList.toggle("is-ready", weatherConfigured);
   $("#weatherToolStatus").textContent = weatherConfigured
     ? "天氣 API Key 已設定，可直接詢問即時天氣。"
-    : "請從右上角「系統設定」輸入天氣 API Key；工具定義仍會保留供課堂觀察。";
+    : "請按右上角「系統設定」填天氣 API Key。工具還是會留著，讓你看得到它長什麼樣子。";
   $("#modelStatus").textContent = apiConfigured
     ? `Realtime · ${bootstrapData.realtime_model} · 自動連線`
     : "尚未連接 Realtime";
@@ -708,12 +708,12 @@ function updateVoiceCheck() {
   if (activeModeChanged && (microphoneTrack || peerConnection)) {
     disconnectRealtime();
     const note = !voiceInput && setup.inputMode === "voice"
-      ? "已立即停止麥克風；儲存後改用打字輸入"
-      : "輸出入方式已變更；儲存後會自動重新連線";
+      ? "麥克風已經停了；存檔後就改成打字"
+      : "輸入輸出方式改了；存檔後會自動重新連線";
     setState("listening", note);
   }
   $("#voiceCheck").hidden = !voiceInput;
-  $("#deviceCheckMessage").textContent = "語音輸入會使用麥克風；切回打字時會立即停止收音。";
+  $("#deviceCheckMessage").textContent = "用講的會開麥克風；切回打字會馬上停止收音。";
 }
 
 async function checkMicrophone() {
@@ -874,7 +874,7 @@ function finalizeVoiceDraft() {
   voiceDraft = "";
 }
 
-/** 「新聊天」 —— throw away this conversation, keep everything else.
+/** 「新聊天」: throw away this conversation, keep everything else.
  *
  *  Emptying #messages is only half of it: the Realtime conversation lives on the
  *  session, so a cleared screen still leaves 豆豆 remembering what was just said.
@@ -894,7 +894,7 @@ async function startNewChat() {
   document.getElementById("userVoiceDraft")?.removeAttribute("id");
   startResponseTracking();
   $("#messages").innerHTML = "";
-  addMessage("system", "新的對話開始了。豆豆的記憶、建檔與主動設定都還在——只有這一段對話從頭來過。");
+  addMessage("system", "新的對話開始了。豆豆的記憶、建檔與主動設定都還在，只有這一段對話從頭來過。");
   if (!apiConfigured) {
     setState("listening", "請先完成系統設定");
     return;

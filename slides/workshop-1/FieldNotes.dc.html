@@ -22,36 +22,36 @@
     </div>
     <div style="display: flex; flex-direction: column; gap: 13px;">
       <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">講師現場提醒</h1>
-      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">全班以「打字輸入／文字輸出」完成主線；輸入與輸出可獨立設定。</p>
+      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">全班用「打字輸入／文字輸出」跑主線；輸入和輸出可以分開選。</p>
     </div>
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
       <div style="display: flex; flex-direction: column; gap: 26px;"><div style="display: flex; gap: 32px; align-items: stretch;"><div style="flex: 1 1 0;"><ul style="display: flex; flex-direction: column; gap: 15px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #397d9f;"></span>
-      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">鍵盤按「送出」會在同一個 session 建立文字回合，但不會使用 VAD 或靜音門檻。</span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">按「送出」會在同一段對話裡多一個回合，但不會經過 VAD，也不會用到安靜門檻。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #397d9f;"></span>
-      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">A 區是模型 instructions，不設 token 上限；Prompt 不負責偵測使用者是否說完。</span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">A 區是 Prompt，不設字數上限；Prompt 不負責判斷學生講完了沒。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #397d9f;"></span>
-      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">instructions 在建立連線時就隨 SDP offer 送出，按「套用」才會再 session.update。</span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">Prompt 一連上線就送出去了，按「套用」才會再送一次更新。</span>
     </li></ul></div>
 <div style="flex: 1 1 0;"><ul style="display: flex; flex-direction: column; gap: 15px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #f1b879;"></span>
-      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">從語音輸入切成打字時，麥克風音軌會立即停止，不需等待儲存設定。</span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">從語音切回打字時，麥克風會立刻停，不用等按儲存。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #f1b879;"></span>
-      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">語音連線失敗時會保留作品；可將輸入改成打字、輸出改成文字。</span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">語音連不上不會弄丟作品；把輸入改成打字、輸出改成文字就好。</span>
     </li>
 <li style="display: flex; gap: 16px; align-items: flex-start;">
       <span style="flex-shrink: 0; width: 11px; height: 11px; margin-top: 12px; border-radius: 50%; background: #f1b879;"></span>
-      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">查天氣或讀寫記憶前那一句「我幫您看一下」會標成 PREAMBLE。</span>
+      <span style="color: #15324a; font: 21px/1.68 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">查天氣或讀寫記憶前那句「我幫您看一下」，畫面會標成 PREAMBLE。</span>
     </li></ul></div></div>
 <div style="display: flex; align-items: center; gap: 20px; padding: 26px 32px; border-radius: 4px 18px 18px 4px; background: #15324a;">
     <div style="flex-shrink: 0; width: 6px; align-self: stretch; border-radius: 3px; background: #f1b879;"></div>
-    <p style="margin: 0; color: #fffdf8; font: 700 28px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">收尾：下載 my-dodo.json，第二堂用同一份作品繼續升級。</p>
+    <p style="margin: 0; color: #fffdf8; font: 700 28px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">收尾：下載 my-dodo.json，第二堂用同一份作品接著升級。</p>
   </div></div>
     </div>
     

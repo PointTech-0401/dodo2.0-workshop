@@ -4,7 +4,7 @@ Everything downstream (the shared 星期二 timeline, the completeness list, the
 「參考有、你沒有」 reminder diff) derives from it, so these tests pin the planted
 items to the transcript rather than trusting that the two files drift together.
 
-分工：這裡只管**答案卷本身**——形狀合不合規格、內容追不追得回訪談稿。
+分工：這裡只管**答案卷本身**：形狀合不合規格、內容追不追得回訪談稿。
 用這份資料跑出來的行為（她的一天、兩個分數、掃描前緣）歸 test_proactive.py。
 """
 
@@ -114,8 +114,8 @@ def test_every_seeded_memory_item_matches_the_layer_it_sits_in() -> None:
 def test_planted_items_are_actually_in_the_transcript() -> None:
     """錨點只能挑逐字出現的詞。
 
-    答案卷有整理過的欄位——`name` 是「邱秀蘭」但訪談稿只講「秀蘭阿嬤」、
-    `background` 寫「客家人」、禁區寫「臥床」而阿嬤說的是「中風躺了六年」——
+    答案卷有整理過的欄位：`name` 是「邱秀蘭」但訪談稿只講「秀蘭阿嬤」、
+    `background` 寫「客家人」、禁區寫「臥床」而阿嬤說的是「中風躺了六年」：
     所以這串是手工維護的橋，不能改成從答案卷自動長出來。
     """
 
@@ -147,7 +147,7 @@ def test_planted_items_are_actually_in_the_transcript() -> None:
 def test_the_ambiguous_sweet_is_only_a_discussion_item() -> None:
     """偷吃糖、「不要跟護理師講」刻意沒有標準答案：不記、也不算「決定不記」。
 
-    比對整句而不是「糖」一個字——血糖藥、少甜都是合法內容，不該誤報。
+    比對整句而不是「糖」一個字：血糖藥、少甜都是合法內容，不該誤報。
     """
 
     assert REFERENCE["discussion"]

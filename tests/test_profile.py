@@ -192,7 +192,7 @@ def test_the_elder_section_is_generated_from_the_care_file() -> None:
     assert "# 長者資料\n稱呼：秀蘭阿嬤" in prompt
     assert "姓名：邱秀蘭（房號 305）" in prompt
     assert "她會的事（可以請教）：煮麵" in prompt
-    assert "作息：05:00 起床、21:30 上床" in prompt
+    assert "作息：05:00 起床、21:30 就寢" in prompt
     assert "不打擾時段：早餐 06:30–07:00、午餐 11:00–11:30、午睡 12:30–14:00、歌唱班 15:00–16:00（週二、四）" in prompt
     assert "用藥：07:00 血壓藥、血糖藥（早餐後，配溫水）；21:00 安眠藥半顆" in prompt
     assert "回診／復健：每週三 09:30 復健" in prompt and "2026-09-04 09:00 回診 新陳代謝科" in prompt
@@ -221,7 +221,7 @@ def test_the_program_rules_are_derived_from_the_same_care_file() -> None:
     prompt = reference_prompt()
 
     assert "兩則之間至少間隔 30 分鐘，每天最多 4 則" in prompt
-    assert "她上床（21:30）到起床（05:00）之間只送重要提醒" in prompt
+    assert "她的睡眠時段（21:30–05:00）只送重要提醒" in prompt
     assert "不打擾時段（早餐、午餐、午睡、歌唱班、晚餐、八點檔）只送重要提醒" in prompt
     assert "每則主動訊息最多 2 句" in prompt
 
@@ -231,7 +231,7 @@ def test_an_empty_care_file_still_yields_every_generated_section() -> None:
 
     assert "# 長者資料\n稱呼：王奶奶\n居住城市：未提供" in prompt  # falls back to Workshop 1's 稱呼
     assert "# 不主動提起\n（建檔沒有填。" in prompt
-    assert "建檔沒有填起床與上床時間，所以沒有安靜時段" in prompt
+    assert "建檔沒有填睡眠時段，所以沒有安靜時段" in prompt
     assert "電話" not in prompt.split("# 長者資料")[1].split("# 目前記得的事")[0]
 
 
