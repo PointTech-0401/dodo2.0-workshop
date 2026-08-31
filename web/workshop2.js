@@ -456,6 +456,10 @@ function loadFields() {
   // The two knobs are the whole of proactive_policy now.
   $("#cooldown").value = proactive.interval_minutes;
   $("#dailyLimit").value = proactive.daily_limit;
+  // 累積量那兩格是 proactive_state 的顯示，不是常數：F5 之後它們以前一律停在
+  // HTML 的 999／0，就算今天真的已經送了三則。
+  budgetFieldsFollowState = true;
+  syncBudgetFields();
   renderDeclineState();
   scheduleIntakeCheck();
 }
@@ -1286,15 +1290,51 @@ function minutesSinceLastProactive() {
   return Math.max(0, Math.floor((Date.now() - new Date(state.last_spoken_at).getTime()) / 60000));
 }
 
+// 累積量那兩格有兩個身分：平常是 `proactive_state` 的顯示，被改過之後才是 🧪 的假設。
+// 預設「跟著真實紀錄」，學生一動手就停止跟隨（否則每 5 秒的 tick 會把他打的字洗掉），
+// 按「把上面兩格改回真實數值」再跟回去。
+//
+// ⚠️ 這兩格**只餵手動觸發**：`fireScheduledItem()` 讀的是 `proactive_state`，不是欄位。
+// 跟隨機制的用途是讓「顯示」這個身分名副其實 —— 以前重新整理之後它們一律停在
+// HTML 的 999／0，就算 proactive_state 記著今天已經送了三則也一樣。
+let budgetFieldsFollowState = true;
+
+/** Write the real accumulated numbers into the two fields, while they are still
+ *  following. Assigning `.value` fires no input event, so this never counts as
+ *  the student editing them. */
+function syncBudgetFields() {
+  if (budgetFieldsFollowState) {
+    $("#proactiveSinceLast").value = minutesSinceLastProactive();
+    $("#proactiveSentToday").value = proactiveState().sent_today;
+    renderTriggerHints();
+  }
+  renderBudgetFollowState();
+}
+
+function renderBudgetFollowState() {
+  $("#budgetFollowNote").textContent = budgetFieldsFollowState
+    ? "上面兩格正跟著這一行走。"
+    : "上面兩格已經改成你的假設，不再跟著這一行。";
+  $("#resyncBudget").hidden = budgetFieldsFollowState;
+  $("#budgetCard").classList.toggle("is-hypothetical", !budgetFieldsFollowState);
+}
+
+function resyncBudgetFields() {
+  budgetFieldsFollowState = true;
+  syncBudgetFields();
+  notify("上面兩格已經改回真實累積量。");
+}
+
 /** One place records the cost of an actual proactive message, so the manual
- *  button and the scheduler can never disagree about the budget. The what-if
- *  fields are written too: after 豆豆 really speaks, 距上次 genuinely is 0. */
+ *  button and the scheduler can never disagree about the budget. After 豆豆 really
+ *  speaks the two fields snap back to reality and resume following: a hypothesis
+ *  that survived a real send would be a lie about what just happened. */
 function recordProactiveSpoken() {
   const state = proactiveState();
   state.last_spoken_at = new Date().toISOString();
   state.sent_today += 1;
-  $("#proactiveSinceLast").value = 0;
-  $("#proactiveSentToday").value = state.sent_today;
+  budgetFieldsFollowState = true;
+  syncBudgetFields();
   saveProject();
   renderTriggerHints();
   renderProactiveLiveState();
@@ -1432,6 +1472,9 @@ async function fireScheduledItem(item) {
 async function tickScheduler() {
   renderScheduleList();
   renderProactiveLiveState();
+  // 距上次 grows with the clock, so a field that claims to show it has to be
+  // redrawn here too — but only while it is still following.
+  syncBudgetFields();
   // A decline expires by itself, and so does the band's 現在 marker. Decisions
   // read isDeclinedNow() fresh so they were always right, but nothing redrew the
   // display — leaving the button claiming she still refuses long after she
@@ -1469,7 +1512,14 @@ function startScheduler() {
 // =====================================================================
 const TRIGGER_MODE_NOTES = {
   schedule: "用<strong>真實時鐘</strong>和真實累積量：時間到了，瀏覽器代替事件源推一次，跑的是同一個 <code>choose_event</code>。每一筆只觸發一次。",
-  manual: "下面四個欄位都是<strong>你假設的狀況</strong>，用來一次一次戳規則的邊界，例如「如果現在是凌晨三點呢」。不影響下面的待提醒清單。",
+  manual: "現在時間與「她剛剛拒絕聊天」都是<strong>你假設的狀況</strong>，連同上面那兩格累積量，用來一次一次戳規則的邊界，例如「如果現在是凌晨三點呢」。不影響下面的待提醒清單。",
+};
+
+// 上面那張累積量卡在兩種模式下的意義不一樣，講清楚是哪一種才不會有人在 ⏰ 模式下
+// 填了數字卻發現它不算數。
+const BUDGET_MODE_NOTES = {
+  schedule: "⏰ 排到真實時間：判斷讀的是 <code>proactive_state</code>，也就是下面這一行；上面兩格在這個模式下<strong>只是它的顯示</strong>，改了不影響判斷。",
+  manual: "🧪 假設狀態試打：判斷讀的就是<strong>上面兩格</strong>，你填什麼它就信什麼。",
 };
 
 function switchTriggerMode(mode) {
@@ -1481,6 +1531,8 @@ function switchTriggerMode(mode) {
     document.getElementById(button.getAttribute("aria-controls")).hidden = !isActive;
   });
   $("#triggerModeNote").innerHTML = TRIGGER_MODE_NOTES[target];
+  $("#budgetModeNote").innerHTML = BUDGET_MODE_NOTES[target];
+  renderBudgetFollowState();
 }
 
 // Kept so a re-run can say what got better and what got worse. A student who
@@ -1888,6 +1940,16 @@ function init() {
   });
   // The manual trigger's own fields are half of every comparison in the hints.
   bindFieldEvents(["#proactiveNow", "#proactiveSinceLast", "#proactiveSentToday"], renderTriggerHints);
+  // Typing in either budget field turns it from a readout into a hypothesis.
+  // Only a real `input`/`change` from the student counts — syncBudgetFields()
+  // assigns `.value` directly, which fires neither.
+  ["#proactiveSinceLast", "#proactiveSentToday"].forEach((selector) => {
+    ["input", "change"].forEach((event) => $(selector).addEventListener(event, () => {
+      budgetFieldsFollowState = false;
+      renderBudgetFollowState();
+    }));
+  });
+  $("#resyncBudget").addEventListener("click", resyncBudgetFields);
 
   $("#saveWorkshop2").addEventListener("click", applyWorkshop2);
   $("#runDaySimulation").addEventListener("click", runDaySimulation);
@@ -1937,6 +1999,7 @@ globalThis.W2 = {
   renderPolicyPreview,
   renderTriggerHints,
   renderProactiveLiveState,
+  syncBudgetFields,
   renderScheduleList,
   switchTriggerMode,
   startScheduler,

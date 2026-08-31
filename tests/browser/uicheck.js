@@ -63,6 +63,8 @@ globalThis.__t = {
   // The last /api/proactive-simulate response, so a test can compare the
   // schedule the server used against the one the band drew.
   lastDayRun: () => W2.lastDayRun,
+  // 新聊天 and addMessage are core top-level bindings, reachable only from in here.
+  startNewChat, addMessage,
   get workspace() { return workspace; },
 };
 // eval() never fires DOMContentLoaded, so start the app by hand — fire and
@@ -832,6 +834,54 @@ ok("...and says so when the B layer has no symptom",
 $("#proactiveEventType").value = "chat";
 fire("#proactiveEventType", "change");
 ok("閒聊 gets no symptom hint at all", $("#topicHint").textContent === "");
+
+// --- 累積量那兩格: a readout first, a hypothesis only once it is typed in ---
+// The bug this pins: the fields used to sit at their HTML defaults (999 / 0)
+// after every reload, while `proactive_state` knew perfectly well that 豆豆 had
+// already spoken three times today. They are labelled 目前的累積量, so they have
+// to start out saying what the state says.
+// `day` has to be today's key, or proactiveState()'s midnight rollover zeroes
+// sent_today before the fields ever see it.
+const nowForBudget = new Date();
+const pad = (n) => String(n).padStart(2, "0");
+$t.workspace.proactive_state = {
+  last_spoken_at: new Date(Date.now() - 7 * 60000).toISOString(),
+  sent_today: 3,
+  day: `${nowForBudget.getFullYear()}-${pad(nowForBudget.getMonth() + 1)}-${pad(nowForBudget.getDate())}`,
+  declined_until: null,
+};
+W2.loadFields();
+ok("累積量 seeds itself from proactive_state, not from the HTML default",
+   $("#proactiveSentToday").value === "3" && $("#proactiveSinceLast").value === "7",
+   `${$("#proactiveSinceLast").value} / ${$("#proactiveSentToday").value}`);
+ok("...and says it is following the real record",
+   $("#budgetFollowNote").textContent.includes("跟著") && $("#resyncBudget").hidden);
+// Typing turns them into 🧪's what-if, and the tick must stop overwriting them.
+$("#proactiveSentToday").value = "0"; fire("#proactiveSentToday", "input");
+ok("typing in one makes them a hypothesis",
+   !$("#resyncBudget").hidden && $("#budgetCard").classList.contains("is-hypothetical"));
+W2.syncBudgetFields();
+ok("...which a later sync must not overwrite", $("#proactiveSentToday").value === "0");
+$("#resyncBudget").click();
+ok("回到真實數值 puts the state back", $("#proactiveSentToday").value === "3");
+ok("...and drops the hypothesis marker",
+   $("#resyncBudget").hidden && !$("#budgetCard").classList.contains("is-hypothetical"));
+// The two fields feed the manual trigger only; the scheduler reads the state.
+ok("only the 🧪 trigger reads the fields",
+   /minutes_since_last: Number\(\$\("#proactiveSinceLast"\)\.value\)/.test(script)
+   && /minutes_since_last: minutesSinceLastProactive\(\)/.test(script));
+
+// --- 新聊天: drop this conversation, keep the memory ----------------------
+$t.addMessage("user", "阿嬤說了一句話");
+$t.addMessage("assistant", "豆豆回了一句");
+$t.workspace.memory.facts = [{ key: "喜歡的歌", value: "望春風", source: "caregiver" }];
+const beforeFacts = JSON.stringify($t.workspace.memory.facts);
+await $t.startNewChat();
+ok("新聊天 empties the transcript",
+   document.querySelectorAll("#messages .message.user, #messages .message.assistant").length === 0);
+ok("...and says what survived", $("#messages").textContent.includes("記憶"));
+ok("...but never touches the memory", JSON.stringify($t.workspace.memory.facts) === beforeFacts);
+ok("...nor the day's proactive budget", $t.workspace.proactive_state.sent_today === 3);
 
 // --- the header block stays put while the fields scroll -------------------
 ok("both panels have a sticky header", document.querySelectorAll(".lab-sticky").length === 2);

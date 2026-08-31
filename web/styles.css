@@ -50,11 +50,27 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .state-list .is-current span { background: var(--blue); box-shadow: 0 0 0 4px rgba(57,125,159,.16); }
 .connection-note { margin: 0; font-size: 12px; line-height: 1.6; color: var(--ink-soft); }
 
-.conversation-panel { position: relative; min-width: 0; display: flex; flex-direction: column; padding: 38px 42px 28px; background: var(--white); }
-.panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+/* container-type 讓 h1.is-long 能照「聊天區實際寬度」縮放。拖曳分隔線會改變這個
+   寬度，vw 追不到，cqi 追得到。 */
+.conversation-panel { container-type: inline-size; position: relative; min-width: 0; display: flex; flex-direction: column; padding: 38px 42px 28px; background: var(--white); }
+/* wrap 是給拖到最窄的那一格用的：13 個字的標題不折行，就一定有一個寬度容不下
+   「標題＋按鈕」同一行。到那個寬度按鈕自己掉下去（`margin-left:auto` 讓它留在右邊），
+   標題才不必縮到看不清楚。 */
+.panel-heading { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 20px; }
+/* `min(100%, max-content)`：放得下就至少和不折行的標題一樣寬（按鈕留在同一行的右邊）；
+   放不下就整整一行，按鈕自己掉到下一行、靠 `margin-left:auto` 仍然靠右。上限是 100%
+   而不是 max-content，所以它永遠撐不寬聊天區本身，分隔線的拖曳範圍不受影響。 */
+.panel-heading > div { min-width: min(100%, max-content); }
+.new-chat-button { flex: 0 0 auto; margin-top: 4px; margin-left: auto; white-space: nowrap; }
 .eyebrow { color: var(--blue); }
 h1, h2, h3, p { overflow-wrap: anywhere; }
 h1 { max-width: 660px; margin: 0; font-family: Georgia, "Microsoft JhengHei UI", serif; font-size: clamp(29px, 4vw, 53px); line-height: 1.08; letter-spacing: -.03em; }
+/* 第二堂標題 13 個字，不折行，字級照聊天區實際寬度縮。212px ＝「＋ 新聊天」按鈕
+   （約 102px）＋ flex gap（20px）＋ 90px 餘裕；下限 21px 是聊天區縮到 grid 允許的
+   最小寬度（360px）時，一行仍放得下的字級。
+   別動 `overflow-wrap: anywhere`：改成 normal 會讓標題的 min-content 撐住 grid 的
+   `minmax(360px, 1fr)`，整條分隔線就拖不動了。 */
+h1.is-long { max-width: none; white-space: nowrap; font-size: clamp(21px, calc((100cqi - 212px) / 13), 53px); }
 .model-status { margin: 12px 0 0; color: var(--ink-soft); font-size: 12px; }
 h2 { margin: 0 0 24px; font-size: 27px; line-height: 1.25; }
 h3 { margin: 0 0 8px; font-size: 18px; }
@@ -290,32 +306,56 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
    how much of the day is silenced, and which of the three limits actually bites. */
 .policy-preview { margin: 6px 0 4px; padding: 12px; border: 1px solid var(--line); border-radius: 4px 12px 12px 4px; background: var(--white); }
 .preview-label { margin: 0 0 8px; font-size: 11px !important; font-weight: 800; letter-spacing: .12em; color: var(--blue); }
-.quiet-band { display: grid; grid-template-columns: repeat(24, 1fr); gap: 1px; height: 26px; border-radius: 3px; overflow: hidden; }
+/* 48 格，一格半小時 —— 欄數必須跟著是 48。寫 24 的時候後半天會被擠到第二列，整張
+   圖看起來像兩條無關的帶子，下面 0–24 點的刻度也對不上。 */
+.quiet-band { display: grid; grid-template-columns: repeat(48, 1fr); gap: 1px; height: 26px; border-radius: 3px; overflow: hidden; }
 .band-hour { background: var(--mint); }
 .band-hour.is-quiet { background: #c9d4de; }
 .band-hour.is-now { box-shadow: inset 0 -4px 0 var(--blue); }
 .band-scale { display: flex; justify-content: space-between; margin-top: 3px; color: var(--ink-soft); font-size: 10px !important; font-variant-numeric: tabular-nums; }
+/* 帶狀圖的三種顏色本來只在一句 small 裡帶過，圖例把它們攤開。.policy-preview 這一層
+   是為了贏過檔案後面 `.lab-panel :where(li…)` 的 14px。 */
+.policy-preview .band-legend { display: grid; gap: 4px; margin: 9px 0 0; padding: 0; list-style: none; }
+.policy-preview .band-legend li { display: flex; align-items: center; gap: 7px; color: var(--ink-soft); font-size: 11px !important; line-height: 1.45; }
+.policy-preview .band-swatch { flex: 0 0 auto; width: 16px; height: 11px; border-radius: 2px; background: var(--mint); }
+.policy-preview .band-swatch.is-quiet { background: #c9d4de; }
+.policy-preview .band-swatch.is-now { box-shadow: inset 0 -4px 0 var(--blue); }
 .policy-summary { margin: 10px 0 0; color: var(--ink-soft); line-height: 1.7; }
 .policy-summary b { color: var(--ink); font-size: 15px !important; }
 .policy-binding { margin: 6px 0 0; padding: 9px 11px; background: var(--sky); line-height: 1.6; }
 
 /* 主動規則 as a table instead of five loose number fields: every row carries the
-   reason it exists, and the order is `choose_event`'s own judging order. */
+   reason it exists, and the order is `choose_event`'s own judging order.
+   Two lines per row — 規則名／設定 on top, 「拿掉它會發生什麼」 underneath at full
+   width. The old four-column grid squeezed the name into 74px and the reason
+   into whatever was left of a 430px panel, which is what made it read as noise. */
 .rule-table { display: grid; gap: 1px; margin: 4px 0 18px; border: 1px solid var(--line); border-radius: 4px; background: var(--line); overflow: hidden; }
-.rule-row { display: grid; grid-template-columns: 20px 74px minmax(0, 1fr) minmax(84px, 132px); gap: 3px 8px; align-items: center; padding: 8px 10px; background: var(--white); }
-.rule-row.is-head { background: var(--paper); color: var(--ink-soft); font-size: 11px !important; font-weight: 800; letter-spacing: .06em; }
+.rule-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) minmax(92px, 148px);
+  grid-template-areas: "order name set" ". why why";
+  gap: 6px 10px; align-items: center; padding: 11px 12px; background: var(--white);
+}
+.rule-row.is-head { grid-template-areas: "order name set"; background: var(--paper); color: var(--ink-soft); font-size: 11px !important; font-weight: 800; letter-spacing: .06em; padding: 7px 12px; }
 .rule-row.is-head span { font-size: 11px !important; }
-.rule-order { color: var(--ink-soft); font: 700 12px/1 Consolas, monospace; font-variant-numeric: tabular-nums; }
-.rule-name { font-weight: 700; line-height: 1.35; }
-.rule-why { color: var(--ink-soft); font-size: 12px !important; line-height: 1.5; }
+.rule-order { grid-area: order; color: var(--ink-soft); font: 700 12px/1 Consolas, monospace; font-variant-numeric: tabular-nums; }
+.rule-name { grid-area: name; font-weight: 700; line-height: 1.35; }
+/* 加一層 .rule-table 是為了贏過檔案後面的 `.lab-panel :where(span)` 14px !important
+   —— :where() 不計權重，單靠 .rule-why 會同分而輸在順序上，整列就全部同一個字級。 */
+.rule-table .rule-why { grid-area: why; color: var(--ink-soft); font-size: 12px !important; line-height: 1.55; }
+/* 同一個原因：句子裡的 <strong>／<b> 若不指定，會被那條 14px 拉回去，一句話變兩種大小。 */
+.rule-table .rule-why :where(strong, b, em) { font-size: inherit !important; }
 .rule-why code { color: var(--blue); font-size: 11px !important; }
-.rule-set { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
-.rule-set input { width: 100%; min-width: 0; padding: 6px 4px !important; text-align: center; font-variant-numeric: tabular-nums; }
+.rule-set { grid-area: set; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px; }
+.rule-set input { width: 62px; min-width: 0; padding: 6px 4px !important; text-align: center; font-variant-numeric: tabular-nums; }
 .rule-set .rule-dash, .rule-set .rule-unit { flex: 0 0 auto; color: var(--ink-soft); font-size: 12px !important; }
+/* 她剛說不想聊: the expiry line belongs under its button, not beside it. */
+.rule-set .decline-state, .rule-set .link-to-intake { flex: 1 0 100%; text-align: right; }
 /* The two hardwired rules have no field — saying so is the point. */
 .rule-row.is-fixed { background: #fbf7ef; }
 .rule-row.is-fixed .rule-set em { padding: 3px 6px; border: 1px solid var(--line); border-radius: 3px; color: var(--ink-soft); font-size: 11px !important; font-style: normal; white-space: nowrap; }
-.rule-row.is-model { border-left: 3px solid var(--mint); padding-left: 7px; }
+.rule-row.is-derived .rule-set em { font-size: 11px !important; font-style: normal; text-align: right; }
+.rule-row.is-model { border-left: 3px solid var(--mint); padding-left: 9px; }
 
 /* Long explanations that used to be four stacked paragraphs of 說明. */
 .why-details { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 4px; background: var(--white); }
@@ -348,6 +388,20 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 /* One event block feeding both modes, and a switch named after the only thing
    that really separates them: which clock decides. */
 .event-card, .compare-card { margin-bottom: 14px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--white); }
+/* 累積量卡：兩種觸發方式共用的兩個數字。⏰ 模式下它們不參與判斷，就淡出來說清楚。 */
+.budget-card { border-left: 3px solid var(--blue); }
+.budget-card .budget-mode-note { margin: 10px 0 0; padding: 8px 10px; background: var(--sky); color: var(--ink-soft); font-size: 12px !important; line-height: 1.55; }
+.budget-card .budget-live { margin: 8px 0 0; color: var(--ink-soft); font-size: 12px !important; line-height: 1.55; }
+.budget-card .budget-live small { display: block; margin-top: 2px; font-size: 11px !important; line-height: 1.45; }
+/* 被改成假設之後才變色 —— 「這兩格現在說的不是系統的紀錄」要看得出來。 */
+.budget-card.is-hypothetical { border-left-color: var(--apricot); }
+.budget-card.is-hypothetical .field-row input { background: #fdf4e6; }
+.budget-card .budget-resync { margin-top: 4px; padding: 4px 9px !important; font-size: 11px !important; }
+/* 「假設她剛剛拒絕聊天」 gets its own line under 模擬現在時間, three points larger:
+   it is the one input in this tab people miss. The extra selector beats the
+   blanket `.lab-panel :where(label)` 14px further down the file. */
+.trigger-mode .declined-toggle { margin: 2px 0 14px; font-size: 17px !important; font-weight: 700; }
+.trigger-mode .declined-toggle input { margin-top: 4px !important; width: 17px !important; height: 17px; }
 /* 問句 takes the room; the button sits beside it rather than under it. */
 .compare-card .field-row { grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
 .compare-card label { margin-bottom: 0 !important; }
@@ -454,6 +508,9 @@ legend { margin-bottom: 10px; font-weight: 800; }
 .quiet-band.is-derived { cursor: pointer; }
 .quiet-band.is-derived:hover { outline: 2px solid var(--apricot); outline-offset: 2px; }
 .preview-label small { display: block; margin-top: 2px; color: var(--ink-soft); font-size: 10px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+/* 沒有這一條，說明句裡的 <strong> 會被 `.lab-panel :where(strong)` 拉回 14px。 */
+.preview-label small :where(strong, b) { font-size: inherit !important; font-weight: 700; }
+.budget-card .budget-mode-note :where(strong, b) { font-size: inherit !important; }
 
 /* 「她剛說不想聊」 writes state with an expiry, so the button has to say when it
    wears off — otherwise it reads as a permanent mute. */

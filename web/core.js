@@ -491,6 +491,9 @@ function switchStage(stage) {
   $("#workshop2Panel").hidden = isFirst;
   $$(".stage-button").forEach((button) => button.classList.toggle("is-active", Number(button.dataset.stage) === Number(stage)));
   $("#conversationTitle").textContent = isFirst ? "讓 Dodo 聽完，再回答" : "再讓它記得你，適時主動關心";
+  // 第二堂的標題長一倍，預設字級一定會折行。`.is-long` 讓它縮到剛好一行 —— 用
+  // container query 而不是 vw，因為聊天區的寬度是拖曳出來的，不是視窗寬度。
+  $("#conversationTitle").classList.toggle("is-long", !isFirst);
   // The transcript belongs to Workshop 2's 建檔; leaving the stage with it open
   // would hide the chat behind a panel with no visible way back.
   if (isFirst) W2.hideInterview();
@@ -869,6 +872,34 @@ function interruptResponse() {
 function finalizeVoiceDraft() {
   document.getElementById("voiceDraft")?.removeAttribute("id");
   voiceDraft = "";
+}
+
+/** 「新聊天」 —— throw away this conversation, keep everything else.
+ *
+ *  Emptying #messages is only half of it: the Realtime conversation lives on the
+ *  session, so a cleared screen still leaves 豆豆 remembering what was just said.
+ *  Tearing the peer connection down and dialling again is the only way this API
+ *  gives us a genuinely empty conversation.
+ *
+ *  Deliberately NOT reset: the three memory layers, 建檔, the two proactive
+ *  numbers, `proactive_state` and the 待提醒 list. 「開一段新對話，她照樣記得你」 is
+ *  exactly what Workshop 2 is about — and 每日上限 is a day's budget, not a
+ *  conversation's. This is also why it is not just a page reload: F5 rebuilds the
+ *  whole workspace, this only drops the transcript. */
+async function startNewChat() {
+  if (isDodoSpeaking()) interruptResponse();
+  disconnectRealtime();
+  finalizeVoiceDraft();
+  userVoiceDraft = "";
+  document.getElementById("userVoiceDraft")?.removeAttribute("id");
+  startResponseTracking();
+  $("#messages").innerHTML = "";
+  addMessage("system", "新的對話開始了。豆豆的記憶、建檔與主動設定都還在——只有這一段對話從頭來過。");
+  if (!apiConfigured) {
+    setState("listening", "請先完成系統設定");
+    return;
+  }
+  await connectRealtime();
 }
 
 function realtimeInstructions() {
@@ -1445,6 +1476,14 @@ function bindEvents() {
   $("#revertWorkshop2").addEventListener("click", () => revertGroup("workshop2"));
   $("#chatOnly").addEventListener("change", () => {
     $("#messages").classList.toggle("is-chat-only", $("#chatOnly").checked);
+  });
+  $("#newChat").addEventListener("click", async () => {
+    $("#newChat").disabled = true;
+    try {
+      await startNewChat();
+    } finally {
+      $("#newChat").disabled = false;
+    }
   });
   $$(".stage-button").forEach((button) => button.addEventListener("click", () => switchStage(button.dataset.stage)));
 
