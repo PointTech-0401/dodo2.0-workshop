@@ -15,7 +15,7 @@ from dodo_workshop.proactive import reminder_events
 COMPLETENESS_LABELS: dict[str, str] = {
     "medications": "用藥",
     "routines": "作息",
-    "symptoms": "近期身體狀況",
+    "symptoms": "症狀",
     "interests": "興趣與偏好",
     "taboos": "只能她自己提",
     "declined_notes": "決定不記",

@@ -182,7 +182,7 @@ add('LabIntake.dc.html', '實作一：幫她建檔', (n, t) => slide({
         <span style="color: ${A}; font: 800 15px/1 ${SANS}; letter-spacing: .16em;">六區，每一區都寫著它會存到哪裡</span>
         ${steps([
           '基本資料 · 作息 · 用藥與回診',
-          '興趣與偏好 · 近期身體狀況',
+          '興趣與偏好 · 近期狀況與念頭',
           '只能她自己提 ／ 決定不記',
           '每一區右上角一顆「問豆豆這一區」',
         ], { accent: A, size: 22, gap: 12 })}

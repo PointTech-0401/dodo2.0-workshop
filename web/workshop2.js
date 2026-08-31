@@ -274,7 +274,7 @@ function renderIntakeHints() {
     ? `${meds} 筆用藥會變成重要提醒，不受間隔與上限限制，也不算今天的次數。`
     : "還沒有用藥：她的一天裡不會有任何重要提醒。";
   $("#hintSymptoms").textContent = symptoms
-    ? `${symptoms} 筆症狀會變成健康關心的題材：豆豆會在一天裡挑時間問「還好嗎」，她說好了就換掉那一筆。`
+    ? `${symptoms} 筆症狀會變成健康關心的題材：豆豆會在一天裡挑時間問「還好嗎」，她說好了就換掉那一筆。標「短期念頭」的不會被拿去問，它們是閒聊的材料。`
     : "還沒有症狀：她的一天裡不會有健康關心。";
   $("#hintTaboos").textContent = `${taboos} 個禁區會進 Prompt 的「# 不主動提起」；${declined} 句決定不記，不會進任何地方。`;
 }
@@ -350,6 +350,25 @@ function resetReferenceIntakeButton() {
   referenceIntakeArmed = false;
   $("#loadReferenceIntake").textContent = LOAD_REFERENCE_LABEL;
   $("#loadReferenceIntake").classList.remove("is-armed");
+  document.removeEventListener("pointerdown", disarmReferenceIntake, true);
+  document.removeEventListener("focusin", disarmReferenceIntake, true);
+}
+
+/** 武裝狀態不該活得比學生的注意力久：按了一次「會蓋掉你填的」，然後跑去點別的
+ *  地方，那句警告就已經沒人在讀了 —— 下一次按下去會直接覆蓋，而他根本不記得自己
+ *  同意過什麼。所以只要焦點或指標離開這顆按鈕，就收回武裝。 */
+function disarmReferenceIntake(event) {
+  if (event.target?.closest?.("#loadReferenceIntake")) return;
+  resetReferenceIntakeButton();
+}
+
+function armReferenceIntake() {
+  referenceIntakeArmed = true;
+  $("#loadReferenceIntake").textContent = "會蓋掉你填的，再按一次";
+  $("#loadReferenceIntake").classList.add("is-armed");
+  // Capture phase: a field that stops propagation must not keep it armed.
+  document.addEventListener("pointerdown", disarmReferenceIntake, true);
+  document.addEventListener("focusin", disarmReferenceIntake, true);
 }
 
 function intakeHasContent() {
@@ -367,9 +386,7 @@ function intakeHasContent() {
  *  and 取消變更 still undoes it. Nothing is written to `workspace` from here. */
 async function loadReferenceIntake() {
   if (intakeHasContent() && !referenceIntakeArmed) {
-    referenceIntakeArmed = true;
-    $("#loadReferenceIntake").textContent = "會蓋掉你填的，再按一次";
-    $("#loadReferenceIntake").classList.add("is-armed");
+    armReferenceIntake();
     return;
   }
   let data;
@@ -1246,7 +1263,7 @@ function suggestTriggerTopic() {
     .filter((entry) => entry?.tag === "symptom" && String(entry.value || "").trim())
     .at(-1);
   if (!symptom) {
-    hint.textContent = "建檔的「近期身體狀況」還沒有症狀，健康關心就沒有東西可以問。";
+    hint.textContent = "建檔的「近期狀況與念頭」還沒有症狀，健康關心就沒有東西可以問。";
     return;
   }
   const suggestion = `關心她的${symptom.key}（目前記錄：${symptom.value}）`;
@@ -1749,7 +1766,7 @@ async function runTodaySummary() {
 // speaks in general; this is the reminder for *this* turn, and it mirrors them.
 const PROACTIVE_TURN_NOTES = {
   reminder: "這是重要提醒：一句講清楚時間與該做的事，不解釋、不催。",
-  health: "先問她現在的感覺，不要斷定。她說好了就不要追問，並把那一筆換掉。",
+  health: "問的就是「事件內容」那件事，不要換成別的、也不要問成「你現在怎麼樣」。先問她的感覺，不要幫她斷定；她說好了就不要追問，並把那一筆換掉。",
   chat: "從她的興趣或她會的事起頭，可以請教她。不要製造壓力，也不要連續追問。",
 };
 
@@ -1760,7 +1777,7 @@ function proactiveTurnInstructions(event, time) {
       "# 這一次主動開口",
       `現在是 ${time}。你要「主動」開啟對話，不是回答問題，對方還沒說話。`,
       `事件類型：${event.type}`,
-      `事件內容：${event.topic || "（未填寫）"}`,
+      `事件內容（這一句就是要講的題目，照它講）：${event.topic || "（未填寫）"}`,
       // Fixed at 2 (spec §2.3): 每則句數 stopped being a field, so `policy` no
       // longer carries it — reading it from there would print `undefined`.
       `最多 ${MAX_MESSAGE_SENTENCES} 句，直接說出口，不要說明你為什麼現在開口。`,

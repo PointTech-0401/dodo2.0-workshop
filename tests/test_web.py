@@ -496,7 +496,7 @@ def test_three_persona_presets_each_have_all_blocks_and_a_distinct_voice() -> No
     assert "function applyPreset(id)" in script
     for preset_id in ("gentle", "neural", "cheer"):
         assert f'id: "{preset_id}"' in script
-    for voice in ('voice: "sage"', 'voice: "ash"', 'voice: "coral"'):
+    for voice in ('voice: "sage"', 'voice: "verse"', 'voice: "coral"'):
         assert voice in script
     # Presets replace the blocks + voice but keep the student's own name/稱呼.
     apply_preset = script.split("function applyPreset(id) {")[1].split("\n}")[0]

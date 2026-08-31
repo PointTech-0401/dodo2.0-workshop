@@ -219,7 +219,7 @@
 
           <section class="intake-section" data-intake="basics">
             <header>
-              <div><h4>1. 基本資料</h4><small>會存到 Prompt 的「# 長者資料」｜ 真的 dodo 裡由護理員填 ｜ 訪談稿 §1、§3、§5</small></div>
+              <div><h4>1. 基本資料</h4><small>會存到 Prompt 的「# 長者資料」｜ 真的 dodo 裡由護理員填 ｜ 訪談稿 §3、§4、§5，語言看檔頭</small></div>
               <button type="button" class="ask-dodo" data-ask="你知道我住哪裡、要怎麼叫我嗎？">問豆豆這一區</button>
             </header>
             <div class="field-grid">
@@ -277,17 +277,17 @@
 
           <section class="intake-section" data-intake="symptoms">
             <header>
-              <div><h4>5. 近期身體狀況</h4><small>會存到 B 層近期狀況（會過期，新的一筆會把舊的換掉）｜ 訪談稿 §2</small></div>
+              <div><h4>5. 近期狀況與念頭</h4><small>會存到 B 層近期狀況（會過期，新的一筆會把舊的換掉）｜ 每一列自己選「症狀」或「短期念頭」，只有症狀會變成健康關心 ｜ 訪談稿 §1、§2</small></div>
               <button type="button" class="ask-dodo" data-ask="我最近哪裡不舒服？">問豆豆這一區</button>
             </header>
-            <div id="symptomRows" class="row-list" aria-label="近期身體狀況"></div>
+            <div id="symptomRows" class="row-list" aria-label="近期狀況與念頭"></div>
             <button type="button" class="secondary-button add-row" data-add="symptom">＋ 加一筆</button>
             <p id="hintSymptoms" class="intake-hint" aria-live="polite"></p>
           </section>
 
           <section class="intake-section" data-intake="taboos">
             <header>
-              <div><h4>6. 只能她自己提，以及決定不記</h4><small>會存到 Prompt 的「# 不主動提起」／ 哪裡都不存 ｜ 訪談稿 §2、§4、§5</small></div>
+              <div><h4>6. 只能她自己提，以及決定不記</h4><small>會存到 Prompt 的「# 不主動提起」／ 哪裡都不存 ｜ 禁區看訪談稿 §1、§4；不記看 §5</small></div>
               <button type="button" class="ask-dodo" data-ask="你會主動問我先生的事嗎？">問豆豆這一區</button>
             </header>
             <p class="row-label">只能她自己先講（豆豆心裡知道，但絕不先開口問）</p>
@@ -343,7 +343,7 @@
           </div>
           <ul class="generated-sections" aria-label="自動填好的段落，以及它們是從哪裡來的">
             <li><code># 長者資料</code><span>← 建檔 › 基本資料、作息、用藥與回診、緊急聯絡人（電話不進）</span></li>
-            <li><code># 目前記得的事（三層記憶）</code><span>← 建檔 › 興趣與偏好、近期身體狀況，以及豆豆自己記的</span></li>
+            <li><code># 目前記得的事（三層記憶）</code><span>← 建檔 › 興趣與偏好、近期狀況與念頭，以及豆豆自己記的</span></li>
             <li><code># 不主動提起</code><span>← 建檔 › 只能她自己提</span></li>
             <li><code># 主動訊息的程式規則</code><span>← 主動規則分頁的兩個數字＋建檔 › 作息</span></li>
           </ul>
@@ -452,7 +452,7 @@
           <details class="why-details">
             <summary>這一天是哪來的？誰決定她星期二要發生什麼？</summary>
             <div>
-              <p><strong>你決定的。這一天不是寫好的劇本，是從你填的建檔長出來的</strong>：用藥和回診 → <b>重要提醒</b>；近期身體狀況 → <b>健康關心</b>（一天最多問三次）；興趣和「她會的事」 → <b>閒聊</b>的話題。改建檔，這一天就跟著變。</p>
+              <p><strong>你決定的。這一天不是寫好的劇本，是從你填的建檔長出來的</strong>：用藥和回診 → <b>重要提醒</b>；近期狀況裡標「症狀」的那幾筆 → <b>健康關心</b>（一天最多問三次）；興趣和「她會的事」 → <b>閒聊</b>的話題。改建檔，這一天就跟著變。</p>
               <p>唯一固定的是<strong>時刻表</strong>：閒聊十三個時段、健康關心三個時段。全班跑同一天，數字才比得起來。選星期二是因為<b>那天有歌唱班，復健（三）和回診（五）都不在</b>，三種事剛好都出現。</p>
             </div>
           </details>
