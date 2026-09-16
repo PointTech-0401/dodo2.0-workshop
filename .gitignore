@@ -50,3 +50,6 @@ Desktop.ini
 # Seeded design-canvas payloads (bundled editor, ~2.5MB each; regenerate with seed-canvas)
 slides/workshop-1-listen-then-answer.html
 slides/workshop-2-remember-and-stay-quiet.html
+
+# Printed decks (a few MB each; regenerate with the Chrome command in slides/README.md)
+slides/export/

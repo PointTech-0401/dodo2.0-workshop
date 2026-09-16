@@ -26,6 +26,27 @@ node slides/src/present.mjs slides/workshop-2 slides/workshop-2-remember-and-sta
 
 改內容請改 `src/deck1.mjs`／`deck2.mjs`，改架構圖與流程圖請改 `src/diagrams.mjs`，改共用版面請改 `src/kit.mjs`。直接改產出的 `.dc.html` 會在下次重新產生時被蓋掉。
 
+## 匯出 PDF（要搬進 Canva 或印講義時用）
+
+放映版的列印樣式把紙張定成 1600×900、一張投影片一頁，所以用無視窗的 Chrome 直接印就好：
+
+```powershell
+$chrome = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+$out = "D:\Project\dodo2.0-workshop\slides\export"
+New-Item -ItemType Directory -Force $out | Out-Null
+& $chrome --headless --no-pdf-header-footer --virtual-time-budget=15000 `
+  --print-to-pdf="$out\workshop-1-listen-then-answer.pdf" `
+  "file:///D:/Project/dodo2.0-workshop/slides/workshop-1-listen-then-answer-slides.html" | Out-Null
+```
+
+第二場把兩個檔名都換成 `workshop-2-remember-and-stay-quiet` 即可。三個細節都不能省：
+
+- `New-Item` 先開好資料夾。`export/` 沒進版本控制，新拉的專案裡不存在，而 Chrome 印到不存在的路徑會安靜地什麼都不做。
+- 結尾的 `| Out-Null` 讓 PowerShell 等 Chrome 印完（一份約 30 秒）。沒有它指令會馬上返回，看起來像失敗。
+- `--virtual-time-budget` 是等 Google Fonts 下載完的緩衝，拿掉的話字會退回系統字體。
+
+匯進 Canva 之後那份設計就跟這個資料夾沒關係了：在 Canva 改的內容不會回到 `src/`，重新產生也不會保留 Canva 的修改。挑一邊當正本。
+
 ## 檢查
 
 `.dc.html` 是固定 900px 高的框，超出的內容會被裁掉且不會有任何警告，所以改完請跑這兩個檢查：

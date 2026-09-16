@@ -297,11 +297,16 @@ const html = `<title>${deckName}</title>
     .where span, .hint { display: none; }
   }
 
+  /* Printing is how the deck leaves this repo (PDF -> Canva / handout), so the
+     paper is the artboard itself: one 1600x900 page per slide, no margin. */
+  @page { size: 1600px 900px; margin: 0; }
+
   @media print {
     body { overflow: visible; background: #fff; }
     .rail, .bar, .hint, .overview { display: none !important; }
-    .stage { position: static; display: block; }
+    .stage { position: static; display: block; overflow: visible; }
     .slide { position: static; opacity: 1; visibility: visible; break-after: page; }
+    .slide:last-child { break-after: auto; }
     .board { transform: none; box-shadow: none; }
   }
 </style>
