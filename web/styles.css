@@ -101,6 +101,12 @@ h3 { margin: 0 0 8px; font-size: 18px; }
    it still reads as speech, but visibly not the reply. */
 .message.assistant.is-preamble p { background: transparent; border: 1px dashed var(--mint); }
 .message.assistant.is-preamble .speaker { color: #287653; }
+/* 旁白 is an output item the model itself tagged as commentary: it said what it
+   was about to do instead of doing it, with no tool call anywhere in sight. Same
+   dashed shape as a preamble so both read as「不是答案」, in the warning colour
+   because unlike the preamble nobody asked for this one. */
+.message.assistant.is-narration p { background: transparent; border: 1px dashed var(--apricot); }
+.message.assistant.is-narration .speaker { color: #9a6413; }
 .composer { display: flex; align-items: flex-end; gap: 10px; border-top: 1px solid var(--line); padding-top: 18px; }
 .composer textarea, .lab-section input, .lab-section textarea, .lab-section select { width: 100%; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); padding: 11px 12px; }
 .composer textarea { flex: 1 1 auto; width: 100%; min-height: 48px; max-height: 128px; resize: vertical; overflow-wrap: anywhere; white-space: pre-wrap; line-height: 1.5; }

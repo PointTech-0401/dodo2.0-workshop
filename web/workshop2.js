@@ -577,7 +577,10 @@ async function askCompare() {
  *    not the answer: it shares a response with the `read_memory` call, and the
  *    answer arrives in the next response. core stamps those `is-preamble` inside
  *    the `response.done` handler, before it awaits the tool, so they are already
- *    marked by the time this loop could mistake one for the reply.
+ *    marked by the time this loop could mistake one for the reply. A **旁白**
+ *    bubble is not the answer either: the model tagged that item `commentary`
+ *    and core labels it rather than hiding it, before or at `response.done`,
+ *    so the same exclusion catches it.
  *  - `responseActive` is still true while a reply streams, so a pause between
  *    deltas longer than settleMs cannot end the wait early. */
 async function awaitDodoReply(timeoutMs = 40000, settleMs = 1200) {
@@ -587,8 +590,11 @@ async function awaitDodoReply(timeoutMs = 40000, settleMs = 1200) {
   let lastChange = Date.now();
   while (Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, 200));
-    const fresh = $$("#messages .message.assistant")
-      .filter((bubble) => !existing.has(bubble) && !bubble.classList.contains("is-preamble"));
+    const fresh = $$("#messages .message.assistant").filter((bubble) => (
+      !existing.has(bubble)
+      && !bubble.classList.contains("is-preamble")
+      && !bubble.classList.contains("is-narration")
+    ));
     const text = fresh.length ? fresh[fresh.length - 1].querySelector("p")?.textContent.trim() || "" : "";
     if (text !== seen) { seen = text; lastChange = Date.now(); continue; }
     if (seen && !responseActive && Date.now() - lastChange >= settleMs) return seen;

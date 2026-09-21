@@ -190,6 +190,14 @@ Realtime session 會註冊 1.0 的 `get_weather`、`read_memory`、`update_memor
 
 模型在呼叫工具前可以先說一句「我幫您查一下臺北的天氣」，這句就是 preamble。Realtime API 沒有 preamble 這種 item type，它的判斷方式是結構性的：**同一個 response 裡同時有 message item 與 function_call item，那個 message 就是 preamble**；工具查完之後的正式回答，是我們送回 `function_call_output` 後建立的下一個 response。客端因此把這種泡泡標成 `DODO · PREAMBLE（工具前的開場）`並改用虛線框，標籤本身就是說明，不再另外送一列 `SYSTEM` 洗版。預設「對話方式」分塊也要求豆豆查資料前先說一句，否則學生不一定看得到。
 
+### 旁白會被標出來，不會被藏起來
+
+豆豆有時沒要查任何東西，卻先把心裡的盤算講出來（「我想一下怎麼陪你聊這個」）。`gpt-realtime` 可以在自己產生的 output item 上標 `phase`，`commentary` 就是這種話。客端因此把那顆泡泡標成 `DODO · 旁白（模型把心裡話講出來了）`並改用杏色虛線框。
+
+**只認模型自己標的，不比對字串。** 用關鍵字猜會把豆豆正常講故事時的「我想想」一起抓進來，所以沒有標 `phase` 的 item 一律不動，這跟正式 dodo 的判斷一致。差別在處置：正式 dodo 在送進播放之前就把 `commentary` 丟掉，長者聽不到；這裡留在畫面上並標示，因為學生要看得到才知道 Prompt 在壓什麼。同一個 response 裡有 function_call 時，那一輪仍然歸 `PREAMBLE`，第一堂是用那個標籤教的。
+
+第二堂的「同一句話，前後對照」在挑真正的答案時，會跳過 `PREAMBLE` 與旁白這兩種泡泡，兩者都不是回答。
+
 ## Workshop 2：一位長者，一整天
 
 第二堂給學生一份訪談稿和一個人。分頁就是課堂順序：**建檔 → 對話規範 → 主動規則 → 主動對話**。

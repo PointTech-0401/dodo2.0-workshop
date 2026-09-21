@@ -422,22 +422,32 @@ function addMessage(role, text, id = null) {
 // only be made once the function_call shows up: the text streams first.
 let activeResponseBubbles = [];
 let activeResponseIsPreamble = false;
+// Output items the model tagged `commentary` in THIS response. See 旁白 below.
+const narrationItemIds = new Set();
 
 function startResponseTracking() {
   activeResponseBubbles = [];
   activeResponseIsPreamble = false;
+  narrationItemIds.clear();
 }
 
 /** Remember a bubble so it can be re-labelled if this response turns out to
- *  contain a tool call. A response may hold several message items. */
-function trackResponseBubble(bubble) {
+ *  contain a tool call, or if the item it came from was tagged commentary.
+ *  A response may hold several message items, so the item id is what ties a
+ *  bubble back to its own item; without it a tag arriving later finds nothing. */
+function trackResponseBubble(bubble, itemId) {
   if (!bubble) return;
+  if (itemId) bubble.dataset.itemId = itemId;
   if (!activeResponseBubbles.includes(bubble)) activeResponseBubbles.push(bubble);
   if (activeResponseIsPreamble) markPreamble(bubble);
+  else if (narrationItemIds.has(bubble.dataset.itemId)) markNarration(bubble);
 }
 
 function markPreamble(bubble) {
   if (!bubble || bubble.classList.contains("is-preamble")) return;
+  // A response that turns out to carry a tool call keeps the taught label,
+  // even when the model already tagged that same item as commentary.
+  bubble.classList.remove("is-narration");
   bubble.classList.add("is-preamble");
   bubble.querySelector(".speaker").textContent = "DODO · PREAMBLE（工具前的開場）";
 }
@@ -454,6 +464,40 @@ function markResponseAsPreamble() {
 
 function responseHasFunctionCall(response) {
   return (response?.output || []).some((item) => item.type === "function_call");
+}
+
+// --- 旁白 -----------------------------------------------------------------
+// A preamble is the tool-shaped case: 豆豆 saying what it is about to look up.
+// The wider habit is 旁白, thinking out loud with no tool involved at all
+// (「我想一下怎麼陪你聊」). gpt-realtime can tag an output item with a phase, and
+// `commentary` is that tag, so nothing here reads the wording: a regex over the
+// text would also flag 豆豆 legitimately telling a story, which is why 正式 dodo
+// trusts only the tag and leaves an untagged item alone. What differs is the
+// verdict. 正式 dodo drops commentary before it is ever spoken; the workshop
+// keeps it on screen and labels it, because seeing one is the point.
+function markNarration(bubble) {
+  if (!bubble || bubble.classList.contains("is-preamble")) return;
+  if (bubble.classList.contains("is-narration")) return;
+  bubble.classList.add("is-narration");
+  bubble.querySelector(".speaker").textContent = "DODO · 旁白（模型把心裡話講出來了）";
+}
+
+/** The tag arrives either with the item, before any of its text has streamed,
+ *  or only in the finished response, after the bubble is already on screen.
+ *  Remembering the id covers the first; re-labelling what is already tracked
+ *  covers the second. */
+function noteNarrationItem(itemId) {
+  if (!itemId) return;
+  narrationItemIds.add(itemId);
+  activeResponseBubbles.filter((bubble) => bubble.dataset.itemId === itemId).forEach(markNarration);
+}
+
+function markNarrationFromResponse(response) {
+  // 工具前的開場已經有自己的標籤，讓給 PREAMBLE。
+  if (responseHasFunctionCall(response)) return;
+  (response?.output || [])
+    .filter((item) => item.phase === "commentary")
+    .forEach((item) => noteNarrationItem(item.id));
 }
 
 /** Put the whole workspace back on screen. Each lesson writes its own fields;
@@ -1120,6 +1164,11 @@ async function handleRealtimeEvent(event) {
   if (event.type === "response.output_item.added" && event.item?.type === "function_call") {
     markResponseAsPreamble();
   }
+  // Same shape, different reason: the phase tag may only be on the finished
+  // response, so mark here AND sweep response.output at response.done.
+  if (event.type === "response.output_item.added" && event.item?.phase === "commentary") {
+    noteNarrationItem(event.item.id);
+  }
   if (["response.created", "response.output_item.added"].includes(event.type)) {
     // VAD fires responses we never asked for (create_response: true), so track
     // those too or a typed barge-in would not know there is anything to cancel.
@@ -1129,28 +1178,29 @@ async function handleRealtimeEvent(event) {
   if (["response.output_audio_transcript.delta", "response.audio_transcript.delta"].includes(event.type)) {
     voiceDraft += event.delta || "";
     setState("speaking", "Dodo 正在用耳機回應");
-    trackResponseBubble(addMessage("assistant", voiceDraft, "voiceDraft"));
+    trackResponseBubble(addMessage("assistant", voiceDraft, "voiceDraft"), event.item_id);
   }
   if (["response.output_audio_transcript.done", "response.audio_transcript.done"].includes(event.type)) {
     const finalText = event.transcript || voiceDraft;
-    if (finalText) trackResponseBubble(addMessage("assistant", finalText, "voiceDraft"));
+    if (finalText) trackResponseBubble(addMessage("assistant", finalText, "voiceDraft"), event.item_id);
     document.getElementById("voiceDraft")?.removeAttribute("id");
     voiceDraft = "";
   }
   if (event.type === "response.output_text.delta") {
     voiceDraft += event.delta || "";
     setState("speaking", "Dodo 正在顯示文字回答");
-    trackResponseBubble(addMessage("assistant", voiceDraft, "voiceDraft"));
+    trackResponseBubble(addMessage("assistant", voiceDraft, "voiceDraft"), event.item_id);
   }
   if (event.type === "response.output_text.done") {
     const finalText = event.text || voiceDraft;
-    if (finalText) trackResponseBubble(addMessage("assistant", finalText, "voiceDraft"));
+    if (finalText) trackResponseBubble(addMessage("assistant", finalText, "voiceDraft"), event.item_id);
     document.getElementById("voiceDraft")?.removeAttribute("id");
     voiceDraft = "";
   }
   if (event.type === "response.done") {
     responseActive = false;
     if (responseHasFunctionCall(event.response)) markResponseAsPreamble();
+    markNarrationFromResponse(event.response);
     const calls = (event.response?.output || []).filter((item) => item.type === "function_call");
     if (calls.length) {
       setState("thinking", "Dodo 正在使用天氣工具");

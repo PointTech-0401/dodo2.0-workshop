@@ -618,7 +618,7 @@ def test_preamble_is_separated_from_the_answer_in_the_transcript() -> None:
 
     assert "function markPreamble(bubble)" in script
     assert "function markResponseAsPreamble()" in script
-    assert "function trackResponseBubble(bubble)" in script
+    assert "function trackResponseBubble(bubble, itemId)" in script
     # Reset per response, so a preamble label never leaks into the next answer.
     assert 'if (event.type === "response.created") startResponseTracking();' in script
     # Marked when the function_call item shows up...
@@ -631,6 +631,38 @@ def test_preamble_is_separated_from_the_answer_in_the_transcript() -> None:
     assert script.count('trackResponseBubble(addMessage("assistant"') == 4
     # The default prompt asks for a preamble, or students would never see one.
     assert "這句開場叫 preamble" in script
+
+
+def test_narration_is_labelled_rather_than_hidden_in_the_transcript() -> None:
+    """旁白 is an output item the model itself tagged `commentary`: it narrated what
+    it was about to do instead of doing it, with no tool call in the response. 正式
+    dodo drops those before they are spoken; the workshop labels them on screen."""
+
+    script = client_script()
+    styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
+
+    assert "function markNarration(bubble)" in script
+    assert "function markNarrationFromResponse(response)" in script
+    # Reset per response, so a label never leaks into the next answer.
+    assert "narrationItemIds.clear();" in script
+    # Tagged when the item shows up...
+    assert 'event.type === "response.output_item.added" && event.item?.phase === "commentary"' in script
+    # ...and swept at response.done, because the tag may only be on the response.
+    assert "markNarrationFromResponse(event.response);" in script
+    assert '.filter((item) => item.phase === "commentary")' in script
+    # Only the model's own tag counts. A regex over the wording would also flag
+    # 豆豆 legitimately telling a story, which is why 正式 dodo refuses to guess.
+    assert "旁白（模型把心裡話講出來了）" in script
+    assert ".message.assistant.is-narration p" in styles
+    # 工具前的開場 keeps the label 第一堂 teaches by name, and a tool call arriving
+    # late clears a narration label that was already stamped on the same bubble.
+    assert "if (responseHasFunctionCall(response)) return;" in script
+    assert 'bubble.classList.remove("is-narration");' in script
+    # Every streamed bubble carries its item id, or a late tag cannot find it.
+    assert script.count("), event.item_id);") == 4
+    assert "if (itemId) bubble.dataset.itemId = itemId;" in script
+    # 前後對照 picks the real answer, so a 旁白 bubble has to be excluded there too.
+    assert '&& !bubble.classList.contains("is-narration")' in script
 
 
 def test_workshop2_has_its_own_viewable_editable_prompt_layer() -> None:

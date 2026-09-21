@@ -11,6 +11,7 @@ uv run python app.py serve --no-browser --port 8123   # 另開一個終端機
 bun add happy-dom
 DODO_PORT=8123 bun run tests/browser/uicheck.js       # 分頁切換、套用按鈕的髒資料判定、聊天室降噪
 DODO_PORT=8123 bun run tests/browser/legacycheck.js   # 舊專案裡的 max_output_tokens 不會回到下載檔
+DODO_PORT=8123 bun run tests/browser/narrationcheck.js # 旁白與工具前開場的標籤有沒有貼在對的泡泡上
 ```
 
 兩個腳本都以 exit code 表示結果（0 = 全過）。用不到就整個 `tests/browser/` 刪掉，
