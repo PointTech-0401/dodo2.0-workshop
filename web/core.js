@@ -207,8 +207,14 @@ let workspace;
 let setup;
 let apiConfigured = false;
 let testedApiKey = "";
+// True while the line under a key is showing something that key's own 測試 or
+// 儲存 put there: 正在測試…, the ✓, or the reason it failed. The two keys now run
+// side by side and refreshApiUi() rewrites both lines, so without this the key
+// that finishes first wipes whatever the other one is still saying.
+let apiKeyStatusOwned = false;
 let weatherConfigured = false;
 let testedWeatherApiKey = "";
+let weatherApiKeyStatusOwned = false;
 let microphoneReady = false;
 let peerConnection;
 let dataChannel;
@@ -564,18 +570,20 @@ function refreshApiUi() {
   const weatherSource = bootstrapData.weather_key_source;
   const weatherText = weatherConfigured ? "天氣工具：已就緒" : "天氣工具：需設定 API Key";
   const modelText = `${bootstrapData.realtime_model} / voice: ${bootstrapData.realtime_voice} / ${weatherText}`;
-  if (!testedApiKey) {
+  // The baseline text comes back only once that key's own flow has let go of
+  // its line, or saving one key would erase what the other one is saying.
+  if (!apiKeyStatusOwned) {
     $("#apiKeyStatus").textContent = apiConfigured
       ? `✓ API 已連接（${source === "environment" ? ".env" : "本次程式"}），模型：${modelText}`
       : "還沒填。Key 只留在這台電腦上，程式一關就沒了。";
+    $("#apiKeyStatus").classList.toggle("is-ready", apiConfigured);
   }
-  $("#apiKeyStatus").classList.toggle("is-ready", apiConfigured);
-  if (!testedWeatherApiKey) {
+  if (!weatherApiKeyStatusOwned) {
     $("#weatherApiKeyStatus").textContent = weatherConfigured
       ? `✓ 天氣 API 已連接（${weatherSource === "environment" ? ".env" : "本次程式"}）`
       : "要讓豆豆查得到天氣，填第一版用的那把天氣 API Key。";
+    $("#weatherApiKeyStatus").classList.toggle("is-ready", weatherConfigured);
   }
-  $("#weatherApiKeyStatus").classList.toggle("is-ready", weatherConfigured);
   $("#weatherToolStatus").textContent = weatherConfigured
     ? "天氣 API Key 已設定，可直接詢問即時天氣。"
     : "請按右上角「系統設定」填天氣 API Key。工具還是會留著，讓你看得到它長什麼樣子。";
@@ -587,6 +595,7 @@ function refreshApiUi() {
 async function testApiKey() {
   const apiKey = $("#apiKeyInput").value.trim();
   testedApiKey = "";
+  apiKeyStatusOwned = true;
   $("#apiKeyStatus").classList.remove("is-ready");
   if (!apiKey) {
     $("#apiKeyStatus").textContent = "請先輸入 OpenAI API Key。";
@@ -621,6 +630,11 @@ async function commitApiKey() {
   const apiKey = $("#apiKeyInput").value.trim();
   if (!apiKey) return true;
   if (apiKey !== testedApiKey && !(await testApiKey())) return false;
+  // 存到一半就不算「測過等著存」了，成功失敗都得重測，所以先清掉。清在這裡，學生
+  // 在存的途中又去改 Key 時，下面那個打字的監聽才不會把「正在儲存…」擦掉。
+  testedApiKey = "";
+  apiKeyStatusOwned = true;
+  $("#apiKeyStatus").classList.remove("is-ready");
   $("#apiKeyStatus").textContent = "正在儲存 API Key…";
   try {
     const response = await fetch("/api/settings/api-key", {
@@ -630,7 +644,6 @@ async function commitApiKey() {
     });
     const result = await response.json();
     if (!response.ok) {
-      testedApiKey = "";
       $("#apiKeyStatus").textContent = result.detail || "API Key 儲存失敗。";
       return false;
     }
@@ -639,9 +652,12 @@ async function commitApiKey() {
     bootstrapData.api_key_source = result.source;
     bootstrapData.realtime_model = result.realtime_model;
     bootstrapData.realtime_voice = result.realtime_voice;
-    bootstrapData.weather_configured = result.weather_configured;
+    // Never downgrade: the weather key may have been saved by the request
+    // running alongside this one, and this reply was computed before that.
+    bootstrapData.weather_configured = result.weather_configured || bootstrapData.weather_configured;
     weatherConfigured = result.weather_configured || weatherConfigured;
-    testedApiKey = "";
+    // Hand the line back first, or the redraw would skip this very line.
+    apiKeyStatusOwned = false;
     refreshApiUi();
     return true;
   } catch {
@@ -653,6 +669,7 @@ async function commitApiKey() {
 async function testWeatherApiKey() {
   const apiKey = $("#weatherApiKeyInput").value.trim();
   testedWeatherApiKey = "";
+  weatherApiKeyStatusOwned = true;
   $("#weatherApiKeyStatus").classList.remove("is-ready");
   if (!apiKey) {
     $("#weatherApiKeyStatus").textContent = "請先輸入天氣 API Key。";
@@ -684,6 +701,9 @@ async function commitWeatherApiKey() {
   const apiKey = $("#weatherApiKeyInput").value.trim();
   if (!apiKey) return true;
   if (apiKey !== testedWeatherApiKey && !(await testWeatherApiKey())) return false;
+  testedWeatherApiKey = "";
+  weatherApiKeyStatusOwned = true;
+  $("#weatherApiKeyStatus").classList.remove("is-ready");
   $("#weatherApiKeyStatus").textContent = "正在儲存天氣 API Key…";
   try {
     const response = await fetch("/api/settings/weather-api-key", {
@@ -693,19 +713,30 @@ async function commitWeatherApiKey() {
     });
     const result = await response.json();
     if (!response.ok) {
-      testedWeatherApiKey = "";
       $("#weatherApiKeyStatus").textContent = result.detail || "天氣 API Key 儲存失敗。";
       return false;
     }
     weatherConfigured = true;
     bootstrapData.weather_configured = true;
     bootstrapData.weather_key_source = result.source;
-    testedWeatherApiKey = "";
+    weatherApiKeyStatusOwned = false;
     refreshApiUi();
     return true;
   } catch {
     $("#weatherApiKeyStatus").textContent = "無法連接本機服務，請確認 Workshop 程式仍在執行。";
     return false;
+  }
+}
+
+/** Disables only the button that was pressed, so the other key's 測試 stays
+ *  live and the two round trips overlap instead of queueing. */
+async function runKeyTest(buttonSelector, test) {
+  const button = $(buttonSelector);
+  button.disabled = true;
+  try {
+    return await test();
+  } finally {
+    button.disabled = false;
   }
 }
 
@@ -735,6 +766,8 @@ function closeOnboarding() {
   if (!canCloseOnboarding()) return;
   testedApiKey = "";
   testedWeatherApiKey = "";
+  apiKeyStatusOwned = false;
+  weatherApiKeyStatusOwned = false;
   $("#onboardingError").textContent = "";
   $("#onboarding").hidden = true;
   // Undo any mode radio the student flipped but did not save.
@@ -777,18 +810,20 @@ async function finishOnboarding() {
   // Commit both keys before anything else: the Realtime mint below needs the
   // OpenAI key server-side, so save-then-connect is load-bearing. On failure the
   // sheet stays open with the per-field reason already rendered.
-  $("#finishOnboarding").disabled = true;
+  const busyButtons = ["#finishOnboarding", "#testApiKey", "#testWeatherApiKey"].map($);
+  busyButtons.forEach((button) => { button.disabled = true; });
   try {
-    if (!(await commitApiKey())) {
-      $("#onboardingError").textContent = "OpenAI API Key 沒有儲存成功，請看上方訊息。";
-      return;
-    }
-    if (!(await commitWeatherApiKey())) {
-      $("#onboardingError").textContent = "天氣 API Key 沒有儲存成功，請看上方訊息。";
+    // Both keys go at once. They are two independent round trips, and running
+    // them back to back also meant a bad OpenAI key stopped the weather key from
+    // ever being tried, so its own problem stayed hidden until the next 儲存.
+    const [apiSaved, weatherSaved] = await Promise.all([commitApiKey(), commitWeatherApiKey()]);
+    if (!apiSaved || !weatherSaved) {
+      const failed = [!apiSaved && "OpenAI API Key", !weatherSaved && "天氣 API Key"].filter(Boolean);
+      $("#onboardingError").textContent = `${failed.join("、")} 沒有儲存成功，請看上方訊息。`;
       return;
     }
   } finally {
-    $("#finishOnboarding").disabled = false;
+    busyButtons.forEach((button) => { button.disabled = false; });
   }
   if (!apiConfigured) {
     $("#onboardingError").textContent = "請先輸入並測試 OpenAI API Key。";
@@ -1499,17 +1534,21 @@ const bindFieldEvents = (selectors, handler) => selectors.forEach((selector) => 
 function bindEvents() {
   $$('input[name="inputMode"], input[name="outputMode"]').forEach((input) => input.addEventListener("change", updateVoiceCheck));
   $("#checkMicrophone").addEventListener("click", checkMicrophone);
-  $("#testApiKey").addEventListener("click", testApiKey);
-  $("#testWeatherApiKey").addEventListener("click", testWeatherApiKey);
+  $("#testApiKey").addEventListener("click", () => runKeyTest("#testApiKey", testApiKey));
+  $("#testWeatherApiKey").addEventListener("click", () => runKeyTest("#testWeatherApiKey", testWeatherApiKey));
+  // 測試通過之後又改了 Key，畫面上那個 ✓ 就不再成立，把這一行退回原本的內容。
+  // 沒測過就不動它: 打第一個字時「還沒填…」還是對的。
   $("#apiKeyInput").addEventListener("input", () => {
+    if (!testedApiKey) return;
     testedApiKey = "";
-    $("#apiKeyStatus").classList.remove("is-ready");
-    $("#apiKeyStatus").textContent = "Key 已變更，儲存前會自動再測試一次。";
+    apiKeyStatusOwned = false;
+    refreshApiUi();
   });
   $("#weatherApiKeyInput").addEventListener("input", () => {
+    if (!testedWeatherApiKey) return;
     testedWeatherApiKey = "";
-    $("#weatherApiKeyStatus").classList.remove("is-ready");
-    $("#weatherApiKeyStatus").textContent = "Key 已變更，儲存前會自動再測試一次。";
+    weatherApiKeyStatusOwned = false;
+    refreshApiUi();
   });
   $("#finishOnboarding").addEventListener("click", finishOnboarding);
   $("#closeOnboarding").addEventListener("click", closeOnboarding);

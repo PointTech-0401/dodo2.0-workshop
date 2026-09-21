@@ -248,8 +248,15 @@ def test_api_settings_sheet_closes_and_saves_from_one_button() -> None:
     # 測試 only validates and reports a boolean; the bottom button commits both.
     assert "async function commitApiKey()" in script
     assert "async function commitWeatherApiKey()" in script
-    assert "await commitApiKey()" in script
-    assert "await commitWeatherApiKey()" in script
+    # 兩把 Key 一起測、一起存：兩趟互不相干的來回沒有理由排隊，而且串著跑時
+    # OpenAI 失敗會讓天氣 Key 根本沒被試過。
+    assert "await Promise.all([commitApiKey(), commitWeatherApiKey()])" in script
+    assert "await commitApiKey()" not in script
+    assert "await commitWeatherApiKey()" not in script
+    # 一起跑就會互相踩：refreshApiUi 兩行都重寫，先跑完的那把會把另一把的
+    # 「正在測試…」或失敗理由蓋掉，所以那一行被自己的流程佔著時不准重寫。
+    assert "if (!apiKeyStatusOwned) {" in script
+    assert "if (!weatherApiKeyStatusOwned) {" in script
     # An untested key is tested on the way through, so 測試 is never mandatory.
     assert "if (apiKey !== testedApiKey && !(await testApiKey())) return false;" in script
     # Closing discards a tested-but-uncommitted key.

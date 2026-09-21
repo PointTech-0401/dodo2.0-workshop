@@ -121,7 +121,7 @@ uv sync --extra dev
 Copy-Item .env.example .env
 ```
 
-可直接在首次啟動畫面分別輸入 OpenAI API Key 與 OpenWeatherMap API Key；每個 Key 只有「測試」按鈕，儲存統一交給最下方的按鈕（未測試的 Key 會在儲存時自動先測試）。完成初次設定後，「系統設定」視窗可用右上角「×」或 Esc 關閉。Key 只保存到這次 Python 程式的記憶體，重啟後需重新輸入。講師也可以預先在 `.env` 填入：
+可直接在首次啟動畫面分別輸入 OpenAI API Key 與 OpenWeatherMap API Key；每個 Key 只有「測試」按鈕，儲存統一交給最下方的按鈕（未測試的 Key 會在儲存時自動先測試）。兩把 Key 是一起測、一起存的，不會等完一把才跑另一把，所以一把壞掉時另一把的問題也會同時看到。測試通過之後又改了 Key，那一行會退回原本的內容。完成初次設定後，「系統設定」視窗可用右上角「×」或 Esc 關閉。Key 只保存到這次 Python 程式的記憶體，重啟後需重新輸入。講師也可以預先在 `.env` 填入：
 
 ```text
 OPENAI_API_KEY=你的金鑰
