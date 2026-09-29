@@ -31,7 +31,7 @@ export const w1Architecture = diagram({
     dnode({
       x: 515, y: 170, w: 300, h: 150, tone: 'white', accent: C.green, emph: true,
       kicker: '本機 PYTHON 後端', title: 'dodo_workshop/web.py',
-      lines: ['API Key 只留在這裡', 'profile.py 組 Prompt', 'lesson1.py 課堂判斷'],
+      lines: ['API Key 只留在這裡', 'profile.py 組 Prompt', 'weather.py 代查天氣'],
     }),
     dnode({
       x: 515, y: 372, w: 220, h: 76, tone: 'white', accent: C.inkSoft,
@@ -72,7 +72,7 @@ export const w1Flow = diagram({
   caption: 'instructions 在第 ① 步就隨 offer 送出，所以第一句話已經是豆豆。需要工具時，preamble 和 function_call 在同一個 response 裡，正式回答要等下一個。',
   children: [
     dlabel(0, 30, '連線 · 只發生一次', { colour: C.inkSoft, size: 14, weight: 800 }),
-    dnode({ x: 8, y: 48, w: 286, h: 112, n: 1, accent: C.blue, title: '開啟畫面', lines: ['app.js 建立 WebRTC offer'] }),
+    dnode({ x: 8, y: 48, w: 286, h: 112, n: 1, accent: C.blue, title: '開啟畫面', lines: ['core.js 建立 WebRTC offer'] }),
     dnode({ x: 374, y: 48, w: 286, h: 112, n: 2, accent: C.blue, title: '送到本機後端', lines: ['offer 與 instructions 同行'] }),
     dnode({ x: 740, y: 48, w: 286, h: 112, n: 3, accent: C.green, title: '後端補上 API Key', lines: ['轉送 /v1/realtime/calls'] }),
     dnode({ x: 1106, y: 48, w: 286, h: 112, n: 4, accent: C.apricot, title: '連線建立', lines: ['第一句話就已經是豆豆'] }),
