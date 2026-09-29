@@ -883,10 +883,31 @@ ok("...and says what survived", $("#messages").textContent.includes("記憶"));
 ok("...but never touches the memory", JSON.stringify($t.workspace.memory.facts) === beforeFacts);
 ok("...nor the day's proactive budget", $t.workspace.proactive_state.sent_today === 3);
 
+// --- a reminder that really gets spoken does not spend the daily budget ---
+// The simulation never counted reminders (proactive.py: they are a separate
+// system); the live path used to add one for every message, so the 21:45 重要提醒
+// demo quietly pushed 今日已發送 up and could use up 每日上限 mid-lesson.
+const spokenBefore = $t.workspace.proactive_state.last_spoken_at;
+W2.recordProactiveSpoken("reminder");
+ok("a spoken 重要提醒 leaves 今日已發送 alone", $t.workspace.proactive_state.sent_today === 3,
+   String($t.workspace.proactive_state.sent_today));
+ok("...but still resets the interval clock", $t.workspace.proactive_state.last_spoken_at !== spokenBefore);
+W2.recordProactiveSpoken("chat");
+ok("a spoken 閒聊 counts toward 今日已發送", $t.workspace.proactive_state.sent_today === 4,
+   String($t.workspace.proactive_state.sent_today));
+
 // --- the header block stays put while the fields scroll -------------------
 ok("both panels have a sticky header", document.querySelectorAll(".lab-sticky").length === 2);
 ok("the tab bar is inside it", document.querySelectorAll(".lab-sticky .tab-bar").length === 2);
 ok("the intro paragraphs are gone", document.querySelectorAll(".layer-intro").length === 0);
+
+// --- 問豆豆 must not answer behind the 訪談稿 --------------------------------
+// The overlay covers the chat, and 建檔 is filled with it open, so the answer
+// used to land where nobody could see it and the button looked dead. Last in
+// the file because 問豆豆 applies the whole form.
+$("#showInterview").click();
+document.querySelector("[data-ask]").click();
+ok("問豆豆這一區 closes the 訪談稿 so the answer is visible", !shown("interviewOverlay"));
 
 console.log(failures.length ? `\n${failures.length} FAILURE(S): ${failures.join(" | ")}` : "\nALL CHECKS PASSED");
 process.exit(failures.length ? 1 : 0);

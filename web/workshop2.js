@@ -406,8 +406,10 @@ async function loadReferenceIntake() {
 
 /** 「問豆豆這一區」: apply what is on screen, then ask one fixed question that
  *  only the just-filled section can answer. Six small feedback loops instead of
- *  one 35-minute form. */
+ *  one 35-minute form. The 訪談稿 covers the chat, so it closes first; otherwise
+ *  the answer arrives behind it and the button looks dead. */
 async function askDodo(question) {
+  hideInterview();
   await applyWorkshop2();
   if (dataChannel?.readyState !== "open") {
     notify("還沒連上線（要有 API Key）。建檔已經存起來了，連上以後再按一次就能問。");
@@ -457,7 +459,7 @@ function renderProactiveEventOptions() {
   const types = bootstrapData?.event_types || {};
   const selected = $("#proactiveEventType").value;
   $("#proactiveEventType").innerHTML = Object.entries(types)
-    .map(([type, label]) => `<option value="${type}">${escapeHtml(`${type} ${label}`)}</option>`)
+    .map(([type, label]) => `<option value="${type}">${escapeHtml(label)}</option>`)
     .join("");
   if (selected && types[selected]) $("#proactiveEventType").value = selected;
 }
@@ -1351,11 +1353,14 @@ function resyncBudgetFields() {
 /** One place records the cost of an actual proactive message, so the manual
  *  button and the scheduler can never disagree about the budget. After 豆豆 really
  *  speaks the two fields snap back to reality and resume following: a hypothesis
- *  that survived a real send would be a lie about what just happened. */
-function recordProactiveSpoken() {
+ *  that survived a real send would be a lie about what just happened.
+ *
+ *  A 重要提醒 moves the interval clock (she was just spoken to) but never spends
+ *  the daily budget, exactly as simulate_day() treats it. */
+function recordProactiveSpoken(type) {
   const state = proactiveState();
   state.last_spoken_at = new Date().toISOString();
-  state.sent_today += 1;
+  if (type !== "reminder") state.sent_today += 1;
   budgetFieldsFollowState = true;
   syncBudgetFields();
   saveProject();
@@ -1836,8 +1841,9 @@ async function speakProactive(event, time) {
   setState("thinking", "豆豆正在主動開口");
   sendProactiveResponse(proactiveTurnInstructions(event, time));
   // The rules only mean something if speaking feeds them: the next attempt now
-  // runs into the cooldown and the daily budget, exactly as it would live.
-  recordProactiveSpoken();
+  // runs into the cooldown and (unless it was a 重要提醒) the daily budget,
+  // exactly as it would live.
+  recordProactiveSpoken(event.type);
   return "spoken";
 }
 
@@ -2041,6 +2047,7 @@ globalThis.W2 = {
   intakeFromFields,
   buildScheduleWindows,
   windowContains,
+  recordProactiveSpoken,
   // The schedule a real run used, so uicheck can compare it against the one
   // buildScheduleWindows drew instead of trusting a comment that they agree.
   get lastDayRun() { return lastDayRun; },

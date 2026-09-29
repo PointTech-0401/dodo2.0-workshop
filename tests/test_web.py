@@ -881,7 +881,9 @@ def test_proactive_can_actually_speak_first() -> None:
     speak = script.split("async function speakProactive(event, time) {")[1].split("\n}\n")[0]
     assert "if (isDodoSpeaking())" in speak
     assert "sendProactiveResponse(proactiveTurnInstructions(" in speak
-    assert "recordProactiveSpoken();" in speak
+    # The type travels with it: a spoken 重要提醒 moves the interval clock but
+    # does not spend 每日上限 (uicheck.js drives both cases).
+    assert "recordProactiveSpoken(event.type);" in speak
     trigger = script.split("async function triggerProactive() {")[1].split("\n}\n")[0]
     assert "await speakProactive(event, time)" in trigger
     # The dead endpoint nothing ever called is gone.
@@ -1128,8 +1130,8 @@ def test_scheduled_reminders_fire_on_the_real_clock() -> None:
     assert "function deleteSchedule(id)" in script
     assert 'event.target.closest("[data-schedule-id]")' in script
     # Real spend survives F5, or 每日上限 quietly refunds itself.
-    assert "function recordProactiveSpoken()" in script
-    assert "state.sent_today += 1;" in script
+    assert "function recordProactiveSpoken(type)" in script
+    assert 'if (type !== "reminder") state.sent_today += 1;' in script
     assert 'if (state.day !== todayKey())' in script
 
 
