@@ -21,56 +21,52 @@
       <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">12 / 17</span>
     </div>
     <div style="display: flex; flex-direction: column; gap: 13px;">
-      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">實作一：Prompt 只改變「它怎麼回答」</h1>
-      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">用「打字輸入／文字輸出」就做得完，不需要耳麥。</p>
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">實作一：調整 Prompt</h1>
+      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">使用「打字輸入／文字輸出」，不需要耳麥。</p>
     </div>
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
-      <div style="display: flex; flex-direction: column; gap: 22px;"><div style="display: flex; gap: 32px; align-items: stretch;"><ol style="display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 18px; align-items: center;">
+      <div style="display: flex; gap: 32px; align-items: stretch;"><ol style="display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #397d9f; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">1</div>
-      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">確定標題下方顯示「Realtime 已連線」。</span>
+      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">確認標題下方顯示「Realtime 已連線」。</span>
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #397d9f; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">2</div>
-      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">先問「你叫什麼？我叫什麼？」，確認名字和稱呼生效了。</span>
+      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">問「你叫什麼？我叫什麼？」，確認名字與稱呼。</span>
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #397d9f; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">3</div>
-      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">用預設 Prompt 輸入：「我今天第一次自己搭公車去醫院，有點緊張。」</span>
+      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">輸入：「我今天第一次自己搭公車去醫院，有點緊張。」</span>
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #397d9f; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">4</div>
-      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">改「角色與身分」或「對話方式」，看下面的完整 Prompt 跟著變。</span>
+      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">修改「角色與身分」或「對話方式」，下方完整 Prompt 會同步更新。</span>
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #397d9f; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">5</div>
-      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">按「套用」，再輸入<strong>完全相同</strong>的句子。</span>
+      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">按「套用」，輸入<strong>同一句話</strong>。</span>
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #397d9f; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">6</div>
-      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">比較內容、語調與長度。</span>
+      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">比較內容、語氣與長度。</span>
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #397d9f; font: 800 18px/1 Consolas,'Noto Sans TC',monospace;">7</div>
-      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">在「對話方式」改長度規則，再比一次。</span>
+      <span style="color: #15324a; font: 22px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">在「對話方式」修改長度規則，再比較一次。</span>
     </li></ol>
 <div style="flex: 0 0 500px; display: flex; flex-direction: column; gap: 16px;">
-        <div style="display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #f1b879; border-radius: 0 0 4px 4px; background: #f7f2e8;">
-    <span style="color: #f1b879; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">可以先試</span>
-    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">快速套用範例人格</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">溫柔陪伴／神經模式／啦啦隊長會換掉 5 個分塊和聲線，但你取的名字和稱呼會留著。</p>
+      <div style="display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #f1b879; border-radius: 0 0 4px 4px; background: #f7f2e8;">
+    <span style="color: #f1b879; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">範例人格</span>
+    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">快速套用</h3>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">溫柔陪伴／神經模式／啦啦隊長：替換 5 個分塊與聲線，名字與稱呼保留。</p>
     
   </div>
-        <div style="display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #a84a42; border-radius: 0 0 4px 4px; background: #f7f2e8;">
-    <span style="color: #a84a42; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">常見誤解</span>
-    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">兩個容易搞錯的地方</h3>
-    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">完整 System Prompt 只能看不能改，要改就回上面的分塊；打字回答的快慢也跟 VAD 無關。</p>
+      <div style="display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #a84a42; border-radius: 0 0 4px 4px; background: #f7f2e8;">
+    <span style="color: #a84a42; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">注意</span>
+    <h3 style="margin: 0; color: #15324a; font: 700 30px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">兩個常見誤解</h3>
+    <p style="margin: 0; color: #4d6475; font: 21px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">完整 System Prompt 只能檢視，要修改請回到分塊；打字回答的快慢與 VAD 無關。</p>
     
   </div>
-      </div></div>
-<div style="display: flex; align-items: center; gap: 16px; padding: 20px 26px; border: 1px dashed #287653; border-radius: 4px 18px 18px 4px; background: #fffdf8;">
-    <span style="flex-shrink: 0; color: #287653; font: 800 14px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">做完你會有</span>
-    <p style="margin: 0; color: #15324a; font: 700 24px/1.5 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">一個講話方式完全由你決定的豆豆，而且你說得出它為什麼變了。</p>
-  </div></div>
+    </div></div>
     </div>
     
   </div>

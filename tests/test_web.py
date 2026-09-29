@@ -1339,7 +1339,7 @@ def test_simulated_day_can_run_against_dodos_fixed_gates() -> None:
     assert by_time["07:30"]["rule"] == "quiet" and by_time["07:00"]["spoke"]
     # And the 12:45 chat wakes her from a nap the fixed gates know nothing about.
     assert by_time["12:45"]["spoke"]
-    assert fixed["schedule"]["quiet"]["label"].startswith("正式 dodo")
+    assert fixed["schedule"]["quiet"]["label"].startswith("固定勿擾")
     assert hers["schedule"]["dnd"][0]["label"] == "早餐"
     assert fixed["gates"] == "dodo_fixed" and hers["gates"] == "reference"
 

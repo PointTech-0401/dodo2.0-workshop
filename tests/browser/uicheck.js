@@ -582,7 +582,7 @@ $("#dayGatesFixed").checked = true; fire("#dayGatesFixed", "change");
 $("#runDaySimulation").click();
 await new Promise((r) => setTimeout(r, 900));
 ok("對照 mode runs the production gates instead",
-   daySummary().includes("正式 dodo 的固定時段") && daySummary().includes("22:00–08:00"),
+   daySummary().includes("固定時段") && daySummary().includes("22:00–08:00"),
    daySummary().slice(0, 200));
 ok("...and it is the fixed schedule the server returned",
    $t.lastDayRun().gates === "dodo_fixed" && $t.lastDayRun().schedule.dnd.length === 2);

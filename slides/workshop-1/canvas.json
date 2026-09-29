@@ -14,7 +14,7 @@
       "y": 0,
       "w": 1600,
       "h": 900,
-      "title": "02 · 學習成果"
+      "title": "02 · 學習目標"
     },
     {
       "file": "Timetable.dc.html",
@@ -22,7 +22,7 @@
       "y": 0,
       "w": 1600,
       "h": 900,
-      "title": "03 · 時間表"
+      "title": "03 · 課程流程"
     },
     {
       "file": "Install.dc.html",
@@ -30,7 +30,7 @@
       "y": 0,
       "w": 1600,
       "h": 900,
-      "title": "04 · 安裝 4 步"
+      "title": "04 · 安裝"
     },
     {
       "file": "ApiKeys.dc.html",
@@ -38,7 +38,7 @@
       "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "05 · 連接真正模型"
+      "title": "05 · API Key 與連線"
     },
     {
       "file": "ThreeLayers.dc.html",
@@ -70,7 +70,7 @@
       "y": 2280,
       "w": 1600,
       "h": 900,
-      "title": "09 · 長度為什麼交給 Prompt"
+      "title": "09 · 回答長度"
     },
     {
       "file": "WhenInstructions.dc.html",
@@ -78,7 +78,7 @@
       "y": 2280,
       "w": 1600,
       "h": 900,
-      "title": "10 · instructions 何時送出"
+      "title": "10 · Prompt 送出時機"
     },
     {
       "file": "TurnModes.dc.html",
@@ -86,7 +86,7 @@
       "y": 2280,
       "w": 1600,
       "h": 900,
-      "title": "11 · 三種回合方式"
+      "title": "11 · 三種回合判斷"
     },
     {
       "file": "LabOne.dc.html",
@@ -110,7 +110,7 @@
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "14 · preamble"
+      "title": "14 · 工具前開場"
     },
     {
       "file": "LabTwo.dc.html",
@@ -126,7 +126,7 @@
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "16 · Prompt 是拜託"
+      "title": "16 · Prompt 的限制"
     },
     {
       "file": "DoneCriteria.dc.html",

@@ -18,7 +18,7 @@ export const w1Architecture = diagram({
   w: 1400,
   h: 490,
   label: '專案架構圖：瀏覽器與本機 Python 後端在同一台電腦，建立連線經後端代理，之後的音訊與文字由瀏覽器直連 OpenAI',
-  caption: '只要記一件事：API Key 只在你電腦的黑色視窗（本機後端）裡，網頁拿不到。建立連線那一次經後端代理，之後的音訊與文字由瀏覽器直連 OpenAI。',
+  caption: 'API Key 只存在本機後端（黑色視窗），網頁讀不到。建立連線時經後端代理，之後的音訊與文字由瀏覽器直接連到 OpenAI。',
   children: [
     dzone({ x: 8, y: 138, w: 845, h: 330, label: '這台電腦' }),
     dzone({ x: 958, y: 138, w: 434, h: 330, label: '外部服務', fill: ZONE_COOL }),
@@ -154,7 +154,7 @@ export const w2Flow = diagram({
   w: 1400,
   h: 500,
   label: '系統流程圖：記憶要經過分層、關鍵字檢查與筆數上限才進 Prompt；主動訊息由程式決定說不說',
-  caption: '兩條路都由程式把關：記憶先分層，含密碼、金鑰這類字的直接擋下，再取每層最多 16 筆才進 Prompt；要不要開口也是程式決定，模型只負責怎麼講。',
+  caption: '記憶依層別寫入，含密碼、金鑰等字的會被拒絕，每層最多 16 筆送進 Prompt。是否主動開口由程式判斷，模型只負責措辭。',
   children: [
     dlabel(0, 30, '記憶怎麼進 PROMPT', { colour: C.inkSoft, size: 14, weight: 800 }),
     dnode({ x: 8, y: 48, w: 286, h: 104, n: 1, accent: C.blue, title: '使用者說一句話', lines: ['「我對花生過敏」'] }),

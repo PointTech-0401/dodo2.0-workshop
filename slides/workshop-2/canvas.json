@@ -14,7 +14,7 @@
       "y": 0,
       "w": 1600,
       "h": 900,
-      "title": "02 · 學習成果"
+      "title": "02 · 學習目標"
     },
     {
       "file": "Timetable.dc.html",
@@ -22,7 +22,7 @@
       "y": 0,
       "w": 1600,
       "h": 900,
-      "title": "03 · 時間表"
+      "title": "03 · 課程流程"
     },
     {
       "file": "Opening.dc.html",
@@ -30,7 +30,7 @@
       "y": 0,
       "w": 1600,
       "h": 900,
-      "title": "04 · 開場四步"
+      "title": "04 · 開場設定"
     },
     {
       "file": "WhoWrites.dc.html",
@@ -38,7 +38,7 @@
       "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "05 · 誰能寫"
+      "title": "05 · 誰能寫入記憶"
     },
     {
       "file": "HerWords.dc.html",
@@ -46,7 +46,7 @@
       "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "06 · 先聽她說三句話"
+      "title": "06 · 訪談稿"
     },
     {
       "file": "LabIntake.dc.html",
@@ -54,7 +54,7 @@
       "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "07 · 實作一：幫她建檔"
+      "title": "07 · 實作一：建檔"
     },
     {
       "file": "RedTeam.dc.html",
@@ -62,7 +62,7 @@
       "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "08 · 紅隊挑戰"
+      "title": "08 · 紅隊測試"
     },
     {
       "file": "MemoryLayers.dc.html",
@@ -94,7 +94,7 @@
       "y": 2280,
       "w": 1600,
       "h": 900,
-      "title": "12 · 第二堂的 Prompt 層"
+      "title": "12 · 對話規範"
     },
     {
       "file": "ProactiveRules.dc.html",
@@ -118,7 +118,7 @@
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "15 · 四組跑完"
+      "title": "15 · 模擬結果"
     },
     {
       "file": "NoPerfectScore.dc.html",
@@ -126,7 +126,7 @@
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "16 · 沒有滿分是刻意的"
+      "title": "16 · 取捨"
     },
     {
       "file": "LiveTalk.dc.html",
@@ -142,7 +142,7 @@
       "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "18 · 五題兩難"
+      "title": "18 · 倫理問題"
     },
     {
       "file": "ThreeIdeas.dc.html",
@@ -150,7 +150,7 @@
       "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "19 · 三個核心觀念"
+      "title": "19 · 重點回顧"
     },
     {
       "file": "Close.dc.html",
@@ -166,7 +166,7 @@
       "y": 5700,
       "w": 1600,
       "h": 900,
-      "title": "21 · 哪些步驟要連上模型"
+      "title": "21 · 需要 API Key 的步驟"
     },
     {
       "file": "MemoryFlow.dc.html",

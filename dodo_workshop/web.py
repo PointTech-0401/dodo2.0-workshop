@@ -56,7 +56,7 @@ HHMM = re.compile(r"^([01]?\d|2[0-3]):[0-5]\d$")
 # do-not-disturb window that only medication crosses, and meal windows. The
 # comparison toggle runs the student's rules against this instead of her 作息.
 DODO_FIXED_SCHEDULE = Schedule(
-    quiet=Window("正式 dodo 勿擾 22:00–08:00", 22 * 60, 8 * 60),
+    quiet=Window("固定勿擾 22:00–08:00", 22 * 60, 8 * 60),
     dnd=(Window("用餐 11:00–12:00", 11 * 60, 12 * 60), Window("用餐 17:00–18:00", 17 * 60, 18 * 60)),
     wake=8 * 60,
 )

@@ -1677,7 +1677,7 @@ async function runDaySimulation() {
         <span class="${result.missed_health ? "is-worse" : "is-better"}">漏掉的健康關心 <b>${result.missed_health}</b>／${result.health_total}</span>
         <span class="${result.noise > 2 ? "is-worse" : ""}">打擾 <b>${result.noise}</b>／${result.chat_total}</span>
       </div>
-      <p class="day-gates ${fixed ? "is-fixed" : ""}">閘門：<strong>${fixed ? "正式 dodo 的固定時段" : "她建檔的作息"}</strong>${describeGates(result.schedule)}</p>
+      <p class="day-gates ${fixed ? "is-fixed" : ""}">閘門：<strong>${fixed ? "固定時段" : "她建檔的作息"}</strong>${describeGates(result.schedule)}</p>
       ${renderDayBlockers(result)}
       ${renderDayDelta(result)}
       <p class="day-hint">兩個數字會互相拉扯：規則放寬，打擾變多；規則收緊，重要的事會被漏掉。沒有滿分答案。</p>`;
@@ -1984,7 +1984,7 @@ function init() {
   $("#runDaySimulation").addEventListener("click", runDaySimulation);
   $("#dayGatesFixed").addEventListener("change", () => {
     notify($("#dayGatesFixed").checked
-      ? "對照模式：這一次會用正式 dodo 寫死的 22:00–08:00＋用餐時段，而不是她的作息。"
+      ? "對照模式：這一次改用固定的 22:00–08:00＋用餐時段，而不是她的作息。"
       : "回到她建檔的作息當閘門。");
   });
   $("#runTodaySummary").addEventListener("click", runTodaySummary);

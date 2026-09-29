@@ -219,7 +219,7 @@
 
           <section class="intake-section" data-intake="basics">
             <header>
-              <div><h4>1. 基本資料</h4><small>會存到 Prompt 的「# 長者資料」｜ 真的 dodo 裡由護理員填 ｜ 訪談稿 §3、§4、§5，語言看檔頭</small></div>
+              <div><h4>1. 基本資料</h4><small>會存到 Prompt 的「# 長者資料」｜ 由護理員填 ｜ 訪談稿 §3、§4、§5，語言看檔頭</small></div>
               <button type="button" class="ask-dodo" data-ask="你知道我住哪裡、要怎麼叫我嗎？">問豆豆這一區</button>
             </header>
             <div class="field-grid">
@@ -250,7 +250,7 @@
 
           <section class="intake-section" data-intake="care">
             <header>
-              <div><h4>3. 用藥與回診</h4><small>會變成重要提醒 ｜ 真的 dodo 裡護理員填，AI 只能看不能改 ｜ 訪談稿 §1、§2</small></div>
+              <div><h4>3. 用藥與回診</h4><small>會變成重要提醒 ｜ 由護理員填，AI 只能看不能改 ｜ 訪談稿 §1、§2</small></div>
               <button type="button" class="ask-dodo" data-ask="我幾點要吃藥？下次回診是什麼時候？">問豆豆這一區</button>
             </header>
             <div id="medicationRows" class="row-list" aria-label="用藥"></div>
@@ -471,7 +471,7 @@
           </div>
           <div class="lab-actions">
             <button id="runDaySimulation" class="primary-button">跑她的一天</button>
-            <label class="toggle-row"><input id="dayGatesFixed" type="checkbox">改用正式 dodo 那一組寫死的時段跑（22:00–08:00 加上用餐時間）</label>
+            <label class="toggle-row"><input id="dayGatesFixed" type="checkbox">改用固定時段跑（22:00–08:00 加上用餐時間）</label>
           </div>
           <details id="dayOutcome" class="result-panel" hidden>
             <summary><span id="dayScore" class="single-result"></span><em>收合／展開</em></summary>
@@ -600,7 +600,7 @@
       <fieldset>
         <legend>選擇輸出方式</legend>
         <label class="choice"><input type="radio" name="outputMode" value="text" checked><span><strong>文字</strong><small>答案直接印在畫面上，不會出聲</small></span></label>
-        <label class="choice"><input type="radio" name="outputMode" value="voice"><span><strong>語音</strong><small>Dodo 用跟正式產品一樣的聲音回答</small></span></label>
+        <label class="choice"><input type="radio" name="outputMode" value="voice"><span><strong>語音</strong><small>Dodo 用語音回答</small></span></label>
       </fieldset>
       <div id="voiceCheck" class="device-check" hidden>
         <p id="deviceCheckMessage">請按「允許」讓瀏覽器使用麥克風。</p>

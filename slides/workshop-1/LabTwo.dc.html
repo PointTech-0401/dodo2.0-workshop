@@ -21,40 +21,40 @@
       <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">15 / 17</span>
     </div>
     <div style="display: flex; flex-direction: column; gap: 13px;">
-      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">實作二：戴上耳機，用講的試回合控制</h1>
-      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">「系統設定」把輸入和輸出都選語音，先按「檢查麥克風」再儲存。每一步大家一起講 30 秒，再安靜 30 秒看結果；沒有耳麥就看前面的投影。</p>
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">實作二：回合控制</h1>
+      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 23px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">「系統設定」把輸入與輸出都改成語音，按「檢查麥克風」後儲存。每一步講 30 秒，再安靜 30 秒觀察結果。</p>
     </div>
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
       <div style="display: grid; grid-template-columns: 56px 360px 1fr 330px; column-gap: 28px; align-items: start;">
     <div style="padding: 0 0 8px; color: #397d9f; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .14em; text-align: left;">步</div>
     <div style="padding: 0 0 8px; color: #397d9f; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .14em; text-align: left;">B 區設定（改完按「套用」）</div>
     <div style="padding: 0 0 8px; color: #397d9f; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .14em; text-align: left;">要講的話</div>
-    <div style="padding: 0 0 8px; color: #397d9f; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .14em; text-align: left;">看什麼</div>
+    <div style="padding: 0 0 8px; color: #397d9f; font: 800 15px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .14em; text-align: left;">觀察</div>
     <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #15324a; font: 700 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">1</div>
     <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">Semantic VAD，等待傾向 low（預設）</div>
     <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">「我今天早上去……（停一秒）……市場買了一把青菜。」</div>
-    <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">它等你講完才回答</div>
+    <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">講完才回答</div>
     <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #15324a; font: 700 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">2</div>
     <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">Server VAD，安靜 800 毫秒</div>
-    <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">同一句，同一個地方停一秒</div>
-    <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">你一停，它就搶著回答</div>
+    <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">同一句，在同一個地方停一秒</div>
+    <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">停頓時就開始回答</div>
     <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #15324a; font: 700 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">3</div>
     <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">維持 Server VAD</div>
-    <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">「講一個你最喜歡的故事給我聽。」它講到一半時說「等一下」</div>
-    <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">它停下來：是回合偵測中斷它</div>
+    <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">「講一個你最喜歡的故事給我聽。」回答到一半時說「等一下」</div>
+    <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">回答中斷</div>
     <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #15324a; font: 700 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">4</div>
     <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">取消勾選「你一開口，就讓 Dodo 停下它正在講的話」</div>
     <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">同第 3 步</div>
-    <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">它不停，把話講完</div>
+    <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">回答不中斷</div>
     <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #15324a; font: 700 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">5</div>
     <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">Push-to-talk</div>
-    <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">按著畫面上的按鈕講，講完放開</div>
-    <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">放開才送出，鄰座再吵也不會觸發它</div>
+    <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">按住畫面上的按鈕講，講完放開</div>
+    <div style="padding: 11px 0; border-top: 1px solid #cfd9dc; color: #4d6475; font: 400 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-align: left; text-wrap: pretty;">放開才送出，不受旁邊聲音影響</div>
   </div>
     </div>
     <div style="display: flex; align-items: center; gap: 14px; padding-top: 16px; border-top: 1px solid #cfd9dc;">
       <span style="flex-shrink: 0; width: 9px; height: 9px; border-radius: 50%; background: #f1b879;"></span>
-      <span style="color: #4d6475; font: 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">豆豆在你沒講話時自己開始回答，是鄰座的聲音被當成你在講話：這就是 Push-to-talk 存在的理由。</span>
+      <span style="color: #4d6475; font: 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">沒有講話卻開始回答，通常是麥克風收到旁邊的聲音；這種環境適合 Push-to-talk。</span>
     </div>
   </div>
 </div>

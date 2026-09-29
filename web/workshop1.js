@@ -24,7 +24,7 @@ const DEFAULT_PROMPT_BLOCKS = {
 // Labels are hints, not guarantees — the point of the lesson is that students
 // listen and judge for themselves. OpenAI recommends marin/cedar for quality.
 const REALTIME_VOICES = [
-  ["sage", "sage — 溫和穩定（正式 dodo 使用）"],
+  ["sage", "sage — 溫和穩定（預設）"],
   ["marin", "marin — 自然、官方推薦"],
   ["cedar", "cedar — 自然、官方推薦"],
   ["alloy", "alloy — 中性平穩"],
