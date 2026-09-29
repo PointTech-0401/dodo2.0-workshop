@@ -9,124 +9,132 @@
       "title": "01 · 封面"
     },
     {
-      "file": "ThreeLayers.dc.html",
+      "file": "Outcomes.dc.html",
       "x": 1760,
       "y": 0,
       "w": 1600,
       "h": 900,
-      "title": "02 · 三個層次"
+      "title": "02 · 學習成果"
+    },
+    {
+      "file": "Timetable.dc.html",
+      "x": 3520,
+      "y": 0,
+      "w": 1600,
+      "h": 900,
+      "title": "03 · 時間表"
+    },
+    {
+      "file": "Install.dc.html",
+      "x": 5280,
+      "y": 0,
+      "w": 1600,
+      "h": 900,
+      "title": "04 · 安裝 4 步"
+    },
+    {
+      "file": "ApiKeys.dc.html",
+      "x": 0,
+      "y": 1140,
+      "w": 1600,
+      "h": 900,
+      "title": "05 · 連接真正模型"
+    },
+    {
+      "file": "ThreeLayers.dc.html",
+      "x": 1760,
+      "y": 1140,
+      "w": 1600,
+      "h": 900,
+      "title": "06 · 三個層次"
     },
     {
       "file": "ProjectMap.dc.html",
       "x": 3520,
-      "y": 0,
+      "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "03 · 專案架構"
+      "title": "07 · 專案架構"
     },
     {
       "file": "TurnFlow.dc.html",
       "x": 5280,
-      "y": 0,
-      "w": 1600,
-      "h": 900,
-      "title": "04 · 系統流程"
-    },
-    {
-      "file": "Outcomes.dc.html",
-      "x": 0,
       "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "05 · 學習成果"
-    },
-    {
-      "file": "Timetable.dc.html",
-      "x": 1760,
-      "y": 1140,
-      "w": 1600,
-      "h": 900,
-      "title": "06 · 時間表"
+      "title": "08 · 系統流程"
     },
     {
       "file": "OutputLength.dc.html",
-      "x": 3520,
-      "y": 1140,
+      "x": 0,
+      "y": 2280,
       "w": 1600,
       "h": 900,
-      "title": "07 · 長度為什麼交給 Prompt"
+      "title": "09 · 長度為什麼交給 Prompt"
     },
     {
       "file": "WhenInstructions.dc.html",
-      "x": 5280,
-      "y": 1140,
+      "x": 1760,
+      "y": 2280,
       "w": 1600,
       "h": 900,
-      "title": "08 · instructions 何時送出"
+      "title": "10 · instructions 何時送出"
     },
     {
       "file": "TurnModes.dc.html",
-      "x": 0,
+      "x": 3520,
       "y": 2280,
       "w": 1600,
       "h": 900,
-      "title": "09 · 三種回合方式"
-    },
-    {
-      "file": "ApiKeys.dc.html",
-      "x": 1760,
-      "y": 2280,
-      "w": 1600,
-      "h": 900,
-      "title": "10 · 連接真正模型"
+      "title": "11 · 三種回合方式"
     },
     {
       "file": "LabOne.dc.html",
-      "x": 3520,
-      "y": 2280,
-      "w": 1600,
-      "h": 900,
-      "title": "11 · 實作一"
-    },
-    {
-      "file": "VoiceVsPrompt.dc.html",
       "x": 5280,
       "y": 2280,
       "w": 1600,
       "h": 900,
-      "title": "12 · 聲線與 Prompt"
+      "title": "12 · 實作一"
     },
     {
-      "file": "Preamble.dc.html",
+      "file": "VoiceVsPrompt.dc.html",
       "x": 0,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "13 · preamble"
+      "title": "13 · 聲線與 Prompt"
     },
     {
-      "file": "LabTwo.dc.html",
+      "file": "Preamble.dc.html",
       "x": 1760,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "14 · 實作二"
+      "title": "14 · preamble"
     },
     {
-      "file": "DoneCriteria.dc.html",
+      "file": "LabTwo.dc.html",
       "x": 3520,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "15 · 完成標準"
+      "title": "15 · 實作二"
     },
     {
-      "file": "FieldNotes.dc.html",
+      "file": "PromptRequest.dc.html",
       "x": 5280,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "16 · 講師現場提醒"
+      "title": "16 · Prompt 是拜託"
+    },
+    {
+      "file": "DoneCriteria.dc.html",
+      "x": 0,
+      "y": 4560,
+      "w": 1600,
+      "h": 900,
+      "title": "17 · 完成標準"
     }
   ],
   "launch": {

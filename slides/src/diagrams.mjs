@@ -18,7 +18,7 @@ export const w1Architecture = diagram({
   w: 1400,
   h: 490,
   label: '專案架構圖：瀏覽器與本機 Python 後端在同一台電腦，建立連線經後端代理，之後的音訊與文字由瀏覽器直連 OpenAI',
-  caption: 'API Key 只留在本機後端。建立連線那一次經後端代理，之後的音訊與文字由瀏覽器直連 OpenAI，不再經過後端。',
+  caption: '只要記一件事：API Key 只在你電腦的黑色視窗（本機後端）裡，網頁拿不到。建立連線那一次經後端代理，之後的音訊與文字由瀏覽器直連 OpenAI。',
   children: [
     dzone({ x: 8, y: 138, w: 845, h: 330, label: '這台電腦' }),
     dzone({ x: 958, y: 138, w: 434, h: 330, label: '外部服務', fill: ZONE_COOL }),
@@ -111,8 +111,8 @@ export const w2Architecture = diagram({
   id: 'w2arch',
   w: 1400,
   h: 490,
-  label: '專案架構圖：第二堂所有判斷都在本機完成，只有讓豆豆開口那一條線離開這台電腦',
-  caption: '建檔、長條圖與「跑她的一天」全部在這台電腦上算完，不需要 API Key。只有讓豆豆真的開口那一條線才出網路（連線本身仍如第一堂由後端代理建立）。',
+  label: '專案架構圖：規則判斷都在本機完成，要 Key 的步驟才離開這台電腦',
+  caption: '建檔、長條圖與「跑她的一天」都在這台電腦上算完，不需要 API Key。要 Key 的步驟會把整份 Prompt（含她的用藥與症狀）送到 OpenAI；今日摘要則由後端把對話另外送給文字模型。',
   children: [
     dzone({ x: 8, y: 138, w: 845, h: 330, label: '本機 · 不需要 API KEY', colour: C.green }),
     dzone({ x: 958, y: 138, w: 434, h: 330, label: '外部服務', fill: ZONE_COOL }),
@@ -134,14 +134,14 @@ export const w2Architecture = diagram({
     }),
     dnode({
       x: 990, y: 170, w: 300, h: 150, tone: 'white', accent: C.apricot,
-      kicker: '唯一需要 KEY 的地方', title: 'OpenAI Realtime',
-      lines: ['紅隊挑戰', '讓豆豆真的開口'],
+      kicker: '需要 KEY 的地方', title: 'OpenAI Realtime',
+      lines: ['問豆豆 · 紅隊', '讓豆豆真的開口'],
     }),
 
     dflow('w2arch', [[350, 245], [505, 245]], { both: true }),
     dlabelBlock(427, 214, ['① 事件與你的規則', '送去跑規則']),
     darc('w2arch', [190, 160], [1140, 160], 52),
-    dlabel(665, 62, '② 只有「真的開口」這一步才出網路', { anchor: 'middle', colour: APRICOT_TEXT, weight: 700 }),
+    dlabel(665, 62, '② 要 Key 的步驟才出網路，Prompt 整份送去', { anchor: 'middle', colour: APRICOT_TEXT, weight: 700 }),
     dflow('w2arch', [[665, 330], [665, 362]]),
     dlabel(683, 352, '讀她的資料'),
   ].join('\n    '),
@@ -153,8 +153,8 @@ export const w2Flow = diagram({
   id: 'w2flow',
   w: 1400,
   h: 500,
-  label: '系統流程圖：記憶要經過分層、擋掉絕不能記的一類與筆數上限才進 Prompt；主動訊息由程式決定說不說',
-  caption: '兩條路都由程式把關：記憶先分層、擋掉絕不能記的那一類，再取每層最多 16 筆才進 Prompt；要不要開口也是程式決定，模型只負責怎麼講。',
+  label: '系統流程圖：記憶要經過分層、關鍵字檢查與筆數上限才進 Prompt；主動訊息由程式決定說不說',
+  caption: '兩條路都由程式把關：記憶先分層，含密碼、金鑰這類字的直接擋下，再取每層最多 16 筆才進 Prompt；要不要開口也是程式決定，模型只負責怎麼講。',
   children: [
     dlabel(0, 30, '記憶怎麼進 PROMPT', { colour: C.inkSoft, size: 14, weight: 800 }),
     dnode({ x: 8, y: 48, w: 286, h: 104, n: 1, accent: C.blue, title: '使用者說一句話', lines: ['「我對花生過敏」'] }),
@@ -163,7 +163,7 @@ export const w2Flow = diagram({
     dnode({ x: 1106, y: 48, w: 286, h: 104, n: 4, accent: C.apricot, title: '組成 Prompt 段落', lines: ['每層最多 16 筆'] }),
     dnode({
       x: 740, y: 192, w: 286, h: 76, tone: 'white', accent: C.danger,
-      title: '這一類直接拒絕', lines: ['密碼 · 金鑰 · 驗證碼'],
+      title: '含這些字就拒絕', lines: ['密碼 · 金鑰 · 驗證碼'],
     }),
     dflow('w2flow', [[302, 100], [366, 100]]),
     dflow('w2flow', [[668, 100], [732, 100]]),

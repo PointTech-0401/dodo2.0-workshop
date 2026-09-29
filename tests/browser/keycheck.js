@@ -166,7 +166,7 @@ ok("C 只動被改的那一欄，天氣那行不受影響",
    text("#weatherApiKeyStatus").includes("✓ 測試通過"), text("#weatherApiKeyStatus"));
 typeKey("#weatherApiKeyInput", "weather-changed");
 ok("C 天氣改了也退回去",
-   text("#weatherApiKeyStatus") === "要讓豆豆查得到天氣，填第一版用的那把天氣 API Key。", text("#weatherApiKeyStatus"));
+   text("#weatherApiKeyStatus") === "要讓豆豆查得到天氣，貼講師給的那一把天氣 API Key；沒有也能上課，只是查不到天氣。", text("#weatherApiKeyStatus"));
 
 // --- D. 已連接 之後再改，退回的是「已連接」那一行 ---------------------------
 resetAll();

@@ -18,7 +18,7 @@
   <div style="position: absolute; inset: 0; display: flex; flex-direction: column; gap: 30px; padding: 58px 88px 52px 108px;">
     <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 32px; padding-bottom: 18px; border-bottom: 1px solid #cfd9dc;">
       <span style="color: #287653; font: 800 16px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .18em;">WORKSHOP 02 · 會記得、會主動，也知道何時閉嘴</span>
-      <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">03 / 17</span>
+      <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">11 / 22</span>
     </div>
     <div style="display: flex; flex-direction: column; gap: 13px;">
       <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">第二堂會動到專案的哪些地方</h1>
@@ -26,7 +26,7 @@
     </div>
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
       <figure style="margin: 0; display: flex; flex-direction: column; gap: 14px;">
-  <svg viewBox="0 0 1400 490" role="img" aria-label="專案架構圖：第二堂所有判斷都在本機完成，只有讓豆豆開口那一條線離開這台電腦" style="display: block; width: 100%; height: auto; font-family: 'Noto Sans TC','Microsoft JhengHei UI',sans-serif;">
+  <svg viewBox="0 0 1400 490" role="img" aria-label="專案架構圖：規則判斷都在本機完成，要 Key 的步驟才離開這台電腦" style="display: block; width: 100%; height: auto; font-family: 'Noto Sans TC','Microsoft JhengHei UI',sans-serif;">
     <defs>
       <marker id="w2arch-ink" viewBox="0 0 12 12" refX="10.6" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
         <path d="M 1.6 1.4 L 11 6 L 1.6 10.6 Z" fill="#3f5a70"></path>
@@ -77,20 +77,20 @@
     <g>
     <rect x="990" y="170" width="300" height="150" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
     
-    <text x="1012" y="196" fill="#f1b879" font-size="13" font-weight="800" letter-spacing="1.6">唯一需要 KEY 的地方</text>
+    <text x="1012" y="196" fill="#f1b879" font-size="13" font-weight="800" letter-spacing="1.6">需要 KEY 的地方</text>
     <text x="1012" y="222" fill="#15324a" font-size="19" font-weight="700">OpenAI Realtime</text>
-    <text x="1012" y="250" fill="#4d6475" font-size="15.5">紅隊挑戰</text>
+    <text x="1012" y="250" fill="#4d6475" font-size="15.5">問豆豆 · 紅隊</text>
     <text x="1012" y="272" fill="#4d6475" font-size="15.5">讓豆豆真的開口</text>
   </g>
     <path d="M 350 245 L 505 245" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w2arch-ink)" marker-start="url(#w2arch-ink)"></path>
     <text x="427" y="214" text-anchor="middle" fill="#15324a" font-size="15.5" font-weight="600">① 事件與你的規則</text>
     <text x="427" y="233" text-anchor="middle" fill="#15324a" font-size="15.5" font-weight="600">送去跑規則</text>
     <path d="M 190 160 C 190 52, 1140 52, 1140 160" fill="none" stroke="#c07f2c" stroke-width="1.9" stroke-linecap="round" marker-end="url(#w2arch-apricot)" marker-start="url(#w2arch-apricot)"></path>
-    <text x="665" y="62" text-anchor="middle" fill="#a8722a" font-size="15.5" font-weight="700">② 只有「真的開口」這一步才出網路</text>
+    <text x="665" y="62" text-anchor="middle" fill="#a8722a" font-size="15.5" font-weight="700">② 要 Key 的步驟才出網路，Prompt 整份送去</text>
     <path d="M 665 330 L 665 362" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w2arch-ink)"></path>
     <text x="683" y="352" text-anchor="start" fill="#15324a" font-size="15.5" font-weight="600">讀她的資料</text>
   </svg>
-  <figcaption style="color: #4d6475; font: 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">建檔、長條圖與「跑她的一天」全部在這台電腦上算完，不需要 API Key。只有讓豆豆真的開口那一條線才出網路（連線本身仍如第一堂由後端代理建立）。</figcaption>
+  <figcaption style="color: #4d6475; font: 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">建檔、長條圖與「跑她的一天」都在這台電腦上算完，不需要 API Key。要 Key 的步驟會把整份 Prompt（含她的用藥與症狀）送到 OpenAI；今日摘要則由後端把對話另外送給文字模型。</figcaption>
 </figure>
     </div>
     

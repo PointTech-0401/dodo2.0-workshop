@@ -6,7 +6,7 @@
 
 | 路徑 | 是什麼 |
 |---|---|
-| `workshop-1/*.dc.html` · `workshop-2/*.dc.html` | 一張投影片一個檔案（16 / 17 張），`canvas.json` 決定順序與標題 |
+| `workshop-1/*.dc.html` · `workshop-2/*.dc.html` | 一張投影片一個檔案（17 / 22 張），`canvas.json` 決定順序與標題 |
 | `workshop-1-listen-then-answer-slides.html` | 放映版：一次一張滿螢幕，方向鍵翻頁 |
 | `workshop-2-remember-and-stay-quiet-slides.html` | 同上 |
 | `src/` | 產生投影片的腳本 |
@@ -43,7 +43,7 @@ New-Item -ItemType Directory -Force $out | Out-Null
 
 - `New-Item` 先開好資料夾。`export/` 沒進版本控制，新拉的專案裡不存在，而 Chrome 印到不存在的路徑會安靜地什麼都不做。
 - 結尾的 `| Out-Null` 讓 PowerShell 等 Chrome 印完（一份約 30 秒）。沒有它指令會馬上返回，看起來像失敗。
-- `--virtual-time-budget` 是等 Google Fonts 下載完的緩衝，拿掉的話字會退回系統字體。
+- `--virtual-time-budget` 是等 Google Fonts 下載完的緩衝，拿掉的話字會退回系統字型。
 
 匯進 Canva 之後那份設計就跟這個資料夾沒關係了：在 Canva 改的內容不會回到 `src/`，重新產生也不會保留 Canva 的修改。挑一邊當正本。
 

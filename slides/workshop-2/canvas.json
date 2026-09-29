@@ -9,92 +9,92 @@
       "title": "01 · 封面"
     },
     {
-      "file": "ThreeIdeas.dc.html",
-      "x": 1760,
-      "y": 0,
-      "w": 1600,
-      "h": 900,
-      "title": "02 · 三個核心觀念"
-    },
-    {
-      "file": "ProjectMap.dc.html",
-      "x": 3520,
-      "y": 0,
-      "w": 1600,
-      "h": 900,
-      "title": "03 · 專案架構"
-    },
-    {
-      "file": "MemoryFlow.dc.html",
-      "x": 5280,
-      "y": 0,
-      "w": 1600,
-      "h": 900,
-      "title": "04 · 系統流程"
-    },
-    {
-      "file": "NoPerfectScore.dc.html",
-      "x": 0,
-      "y": 1140,
-      "w": 1600,
-      "h": 900,
-      "title": "05 · 沒有滿分是刻意的"
-    },
-    {
-      "file": "MemoryLayers.dc.html",
-      "x": 1760,
-      "y": 1140,
-      "w": 1600,
-      "h": 900,
-      "title": "06 · 三層記憶"
-    },
-    {
       "file": "Outcomes.dc.html",
-      "x": 3520,
-      "y": 1140,
+      "x": 1760,
+      "y": 0,
       "w": 1600,
       "h": 900,
-      "title": "07 · 學習成果"
+      "title": "02 · 學習成果"
     },
     {
       "file": "Timetable.dc.html",
+      "x": 3520,
+      "y": 0,
+      "w": 1600,
+      "h": 900,
+      "title": "03 · 時間表"
+    },
+    {
+      "file": "Opening.dc.html",
       "x": 5280,
+      "y": 0,
+      "w": 1600,
+      "h": 900,
+      "title": "04 · 開場四步"
+    },
+    {
+      "file": "WhoWrites.dc.html",
+      "x": 0,
       "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "08 · 時間表"
+      "title": "05 · 誰能寫"
     },
     {
-      "file": "PromptLayer.dc.html",
-      "x": 0,
-      "y": 2280,
+      "file": "HerWords.dc.html",
+      "x": 1760,
+      "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "09 · 第二堂的 Prompt 層"
+      "title": "06 · 先聽她說三句話"
     },
     {
       "file": "LabIntake.dc.html",
-      "x": 1760,
-      "y": 2280,
-      "w": 1600,
-      "h": 900,
-      "title": "10 · 實作一：幫她建檔"
-    },
-    {
-      "file": "MemoryViewer.dc.html",
       "x": 3520,
-      "y": 2280,
+      "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "11 · 記憶清單"
+      "title": "07 · 實作一：幫她建檔"
     },
     {
       "file": "RedTeam.dc.html",
       "x": 5280,
+      "y": 1140,
+      "w": 1600,
+      "h": 900,
+      "title": "08 · 紅隊挑戰"
+    },
+    {
+      "file": "MemoryLayers.dc.html",
+      "x": 0,
       "y": 2280,
       "w": 1600,
       "h": 900,
-      "title": "12 · 紅隊挑戰"
+      "title": "09 · 三層記憶"
+    },
+    {
+      "file": "MemoryViewer.dc.html",
+      "x": 1760,
+      "y": 2280,
+      "w": 1600,
+      "h": 900,
+      "title": "10 · 記憶清單"
+    },
+    {
+      "file": "ProjectMap.dc.html",
+      "x": 3520,
+      "y": 2280,
+      "w": 1600,
+      "h": 900,
+      "title": "11 · 專案架構"
+    },
+    {
+      "file": "PromptLayer.dc.html",
+      "x": 5280,
+      "y": 2280,
+      "w": 1600,
+      "h": 900,
+      "title": "12 · 第二堂的 Prompt 層"
     },
     {
       "file": "ProactiveRules.dc.html",
@@ -113,28 +113,68 @@
       "title": "14 · 跑她的一天"
     },
     {
-      "file": "LiveTalk.dc.html",
+      "file": "OneDayResults.dc.html",
       "x": 3520,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "15 · 實作三：主動對話"
+      "title": "15 · 四組跑完"
     },
     {
-      "file": "KeyMatrix.dc.html",
+      "file": "NoPerfectScore.dc.html",
       "x": 5280,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "16 · 哪些練習需要 Key"
+      "title": "16 · 沒有滿分是刻意的"
     },
     {
-      "file": "SafetyClose.dc.html",
+      "file": "LiveTalk.dc.html",
       "x": 0,
       "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "17 · 安全示範與完成標準"
+      "title": "17 · 實作三：主動對話"
+    },
+    {
+      "file": "Dilemmas.dc.html",
+      "x": 1760,
+      "y": 4560,
+      "w": 1600,
+      "h": 900,
+      "title": "18 · 五題兩難"
+    },
+    {
+      "file": "ThreeIdeas.dc.html",
+      "x": 3520,
+      "y": 4560,
+      "w": 1600,
+      "h": 900,
+      "title": "19 · 三個核心觀念"
+    },
+    {
+      "file": "Close.dc.html",
+      "x": 5280,
+      "y": 4560,
+      "w": 1600,
+      "h": 900,
+      "title": "20 · 收尾"
+    },
+    {
+      "file": "KeyMatrix.dc.html",
+      "x": 0,
+      "y": 5700,
+      "w": 1600,
+      "h": 900,
+      "title": "21 · 哪些步驟要連上模型"
+    },
+    {
+      "file": "MemoryFlow.dc.html",
+      "x": 1760,
+      "y": 5700,
+      "w": 1600,
+      "h": 900,
+      "title": "22 · 系統流程"
     }
   ],
   "launch": {

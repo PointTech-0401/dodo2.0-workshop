@@ -581,7 +581,7 @@ function refreshApiUi() {
   if (!weatherApiKeyStatusOwned) {
     $("#weatherApiKeyStatus").textContent = weatherConfigured
       ? `✓ 天氣 API 已連接（${weatherSource === "environment" ? ".env" : "本次程式"}）`
-      : "要讓豆豆查得到天氣，填第一版用的那把天氣 API Key。";
+      : "要讓豆豆查得到天氣，貼講師給的那一把天氣 API Key；沒有也能上課，只是查不到天氣。";
     $("#weatherApiKeyStatus").classList.toggle("is-ready", weatherConfigured);
   }
   $("#weatherToolStatus").textContent = weatherConfigured
