@@ -1,0 +1,12 @@
+# Windows 的批次檔要用 CRLF，LF 的 .bat 可能跑不動。
+*.bat text eol=crlf
+
+# 下面這些不進學生用的 ZIP（scripts/pack_student_zip.py 打包的，以及 GitHub 自己產生的原始碼壓縮檔）。
+# 只影響壓縮檔，clone 下來的完整專案不受影響。
+/.gitattributes export-ignore
+/docs/ export-ignore
+/scripts/ export-ignore
+/slides/ export-ignore
+/tests/ export-ignore
+/package.json export-ignore
+/bun.lock export-ignore

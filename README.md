@@ -1,5 +1,46 @@
 # dodo 2.0 Workshop
 
+## 給學生：安裝與開啟
+
+約 15 分鐘，只做一次。兩堂課用同一次安裝。
+
+### 1. 裝 uv
+
+按 `Win + R`，輸入 `powershell`，按 Enter。貼上下面這一行，按 Enter，等它跑完：
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+把視窗關掉，再開一個新的，輸入 `uv --version`。出現版本號就成功了。
+
+### 2. 下載並解壓縮
+
+講師會給你下載連結。下載後，在檔案上按右鍵，選「解壓縮全部」，再按「解壓縮」。
+
+打開解壓縮出來的資料夾。要直接看到 `start.bat` 和 `app.py`。如果只看到另一個資料夾，再點進去。
+
+### 3. 開啟
+
+對 `start.bat` 點兩下。第一次會下載套件，要等幾分鐘。如果跳出「無法驗證發行者」，按「執行」。
+
+黑色視窗上課期間不要關。關掉的話，再對 `start.bat` 點兩下。
+
+瀏覽器會自動打開。沒有的話，把黑色視窗裡「已啟動」那一行的網址貼到 Chrome 或 Edge。
+
+### 4. 第一次的畫面
+
+照講師的指示貼上金鑰。金鑰只留在這台電腦的記憶體，程式一關就沒了。黑色視窗被關掉之後，要到右上角「系統設定」再貼一次。
+
+### 卡住了
+
+- **只看到另一個資料夾，沒有 `start.bat`**：再點進去一層。
+- **`uv` 不是內部或外部命令**：把 PowerShell 關掉，重開一個新的。
+- **`start.bat` 打不開或被擋下**：在資料夾上方的網址列輸入 `cmd`，按 Enter，貼上 `uv run python app.py`，按 Enter。
+- **畫面寫「Realtime 連線逾時」，但金鑰測試是綠的**：請巡場的人幫忙。
+
+## 這個專案是什麼
+
 這是兩堂各 2–3 小時的大學生工作坊專案。所有學生使用同一個客端；輸入方式可選打字或語音，輸出方式可獨立選擇文字或語音。
 
 去年的 Prompt、Function Calling、Tool 與 MCP 不在本次重複實作；今年改用 dodo 2.0 的兩個問題作為主軸：
@@ -113,13 +154,25 @@ else：直接進入上次選擇的模式
 
 ## 安裝
 
-需要 Python 3.11+ 與 [uv](https://docs.astral.sh/uv/)。
+只需要 [uv](https://docs.astral.sh/uv/)。Python 由 uv 依 `.python-version` 自動下載（釘在 3.12，去年在電腦教室驗證過），不必另外裝。學生的安裝步驟在最上面的「給學生」。
+
+開發與跑測試：
 
 ```powershell
 cd D:\Project\dodo2.0-workshop
 uv sync --extra dev
 Copy-Item .env.example .env
 ```
+
+### 打包給學生
+
+```powershell
+uv run python scripts/pack_student_zip.py
+```
+
+輸出在 `dist/dodo2.0-workshop.zip`。內容取自 git 已提交的部分（預設 `HEAD`，可用 `--ref` 指定 tag），所以要先 commit 或先打 tag；缺 `start.bat`、`.python-version`，或帶了測試、簡報、講師文件時，腳本會拒絕並刪掉輸出的 ZIP。ZIP 的根目錄直接是專案，不帶測試、簡報與講師文件（規則寫在 `.gitattributes`），批次檔一律 CRLF。
+
+不要讓學生用 GitHub 的「Download ZIP」或 Release 頁面的「Source code (zip)」，那兩個都會多包一層資料夾，學生解壓縮後再多一層，CMD 就站錯資料夾。給他們這支腳本打出來的檔案的直接下載連結。腳本只打包，不發佈。
 
 可直接在首次啟動畫面分別輸入 OpenAI API Key 與 OpenWeatherMap API Key；每個 Key 只有「測試」按鈕，儲存統一交給最下方的按鈕（未測試的 Key 會在儲存時自動先測試）。兩把 Key 是一起測、一起存的，不會等完一把才跑另一把，所以一把壞掉時另一把的問題也會同時看到。測試通過之後又改了 Key，那一行會退回原本的內容。完成初次設定後，「系統設定」視窗可用右上角「×」或 Esc 關閉。Key 只保存到這次 Python 程式的記憶體，重啟後需重新輸入。講師也可以預先在 `.env` 填入：
 
@@ -132,7 +185,7 @@ OPENAI_REALTIME_VOICE=sage
 WEATHER_API_KEY=沿用_Workshop_1.0_的_OpenWeatherMap_Key
 ```
 
-不要把共用 API Key 寫進教材、投影片或 Git。現場可由講師預先在每台電腦設定環境變數。
+不要把共用 API Key 寫進教材、投影片或 Git。學校統一管理的電腦教室沒辦法預先設定，現場由學生在首次啟動畫面貼上講師給的金鑰，不需要 `.env`。
 
 ## 執行
 

@@ -2,11 +2,13 @@
 
 ## 課前準備
 
-1. 每台電腦安裝 Python 3.11+ 與 uv。
-2. 執行 `uv sync --extra dev`。
-3. 執行 `uv run pytest`。
-4. 執行 `uv run python app.py serve --no-browser`，確認 `http://127.0.0.1:8000/` 可開啟。
-5. 決定由學生在首次啟動畫面輸入個人 API Key，或由講師預先在每台電腦的 `.env` 設定；不要將共用 Key 寫入教材。畫面右上角的入口叫「系統設定」（同時管 API Key 與輸出入方式）。
+學生機（電腦教室由學校統一管理，當天由學生自己裝）只需要 uv。Python 由 uv 依 `.python-version` 自動下載（3.12），不必另外裝，也不需要 `--extra dev`。
+
+1. 講師機：安裝 uv，執行 `uv sync --extra dev` 與 `uv run pytest`。
+2. 先 commit（或打 tag），再打包學生用的 ZIP：`uv run python scripts/pack_student_zip.py`。打的是已提交的內容，沒 commit 的檔案不會進去；缺 `start.bat`，或帶了測試、簡報這類開發用資料夾時，腳本會拒絕並刪掉 ZIP。ZIP 的根目錄直接是專案，沒有多一層資料夾。不要讓學生用 GitHub 的「Download ZIP」或 Release 頁面的「Source code (zip)」，那兩個會多一層，學生解壓縮後 CMD 會站錯資料夾。
+3. 學生解壓縮後對 `start.bat` 點兩下就會啟動。被學校政策擋下時，退回在資料夾裡開 CMD 執行 `uv run python app.py`。
+4. 講師機執行 `uv run python app.py serve --no-browser`，確認 `http://127.0.0.1:8000/` 可開啟。
+5. 金鑰由學生在首次啟動畫面貼上講師給的那一把（只留在這台電腦的記憶體，程式一關就沒了），不需要 `.env`；不要將共用 Key 寫入教材。畫面右上角的入口叫「系統設定」（同時管 API Key 與輸出入方式）。
 6. 實際測試 Key 驗證、Realtime 文字回覆、天氣 function calling 與至少一台耳麥的語音連線。沒有 Key 時聊天會明確停用，不會出現假回覆。
 7. 切到 Workshop 2 的「主動規則」分頁按一次「跑她的一天」，確認在**沒有 API Key** 的情況下也會出結果，這是網路或額度出問題時的備援主線。
 
