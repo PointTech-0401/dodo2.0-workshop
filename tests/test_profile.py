@@ -195,7 +195,7 @@ def test_the_elder_section_is_generated_from_the_care_file() -> None:
     assert "作息：05:00 起床、21:30 就寢" in prompt
     assert "不打擾時段：早餐 06:30–07:00、午餐 11:00–11:30、午睡 12:30–14:00、歌唱班 15:00–16:00（週二、四）" in prompt
     assert "用藥：07:00 血壓藥、血糖藥（早餐後，配溫水）；21:00 安眠藥半顆" in prompt
-    assert "回診／復健：每週三 09:30 復健" in prompt and "2026-09-04 09:00 回診 新陳代謝科" in prompt
+    assert "回診／復健：每週三 09:30 復健" in prompt and "2026-10-09 09:00 回診 新陳代謝科" in prompt
     assert "緊急聯絡人：兒子 邱志明（電話由照護員保管" in prompt
 
 
@@ -378,6 +378,23 @@ def test_workshop2_starter_is_workshop_one_done_with_an_empty_care_file() -> Non
     assert workspace["profile"]["elder_profile"] == EMPTY_ELDER_PROFILE
     assert workspace["profile"]["workshop2_blocks"] == WORKSHOP2_PROMPT_BLOCKS
     assert "preamble" in workspace["profile"]["agent"]["prompt_blocks"]["conversation_style"]
+
+
+def test_workshop2_starter_already_calls_her_what_the_interview_says() -> None:
+    """第二堂一律從這份開始，講師不再請學生手動把 Workshop 1 的稱呼改掉。
+
+    建檔還是空的，所以第二段的「稱呼」要靠 agent.address 撐住；第一堂的預設檔照舊是王奶奶。
+    """
+
+    workspace = workshop2_starter()
+    agent = workspace["profile"]["agent"]
+
+    assert agent["address"] == REFERENCE["elder_profile"]["address"] == "秀蘭阿嬤"
+    assert "陪伴 秀蘭阿嬤" in agent["system_prompt"]
+    assert "王奶奶" not in compose_full_instructions(workspace)
+    assert "# 長者資料\n稱呼：秀蘭阿嬤" in compose_workshop2_prompt(workspace)
+    session_one = json.loads((ROOT / "student" / "my-dodo.json").read_text(encoding="utf-8"))
+    assert session_one["profile"]["agent"]["address"] == "王奶奶"
 
 
 def test_no_output_token_cap_survives_anywhere_in_a_project() -> None:

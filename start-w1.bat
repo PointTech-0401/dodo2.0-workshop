@@ -1,7 +1,8 @@
 @echo off
 rem Keep this file plain ASCII: cmd mis-parses multibyte text after chcp 65001, at random.
+rem Workshop 1 only. start-w2.bat is this same file with --workshop 2 (its own port, 8001).
 pushd "%~dp0"
-title DODO Workshop - keep this window open
+title DODO Workshop 1 - keep this window open
 
 where uv >nul 2>nul
 if errorlevel 1 set "PATH=%USERPROFILE%\.local\bin;%PATH%"
@@ -17,7 +18,7 @@ echo DODO Workshop is starting. The first run downloads packages and takes a few
 echo Keep this window open during class.
 echo If the browser does not open by itself, paste the http://127.0.0.1 address shown below into Chrome or Edge.
 echo.
-uv run python app.py serve %*
+uv run python app.py serve --workshop 1 %*
 echo.
 echo The server has stopped. Press any key to close this window.
 pause >nul

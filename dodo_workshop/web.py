@@ -70,6 +70,12 @@ app = FastAPI(title="dodo 2.0 Workshop")
 app.mount("/assets", StaticFiles(directory=WEB_DIR), name="assets")
 _runtime_api_key: str | None = None
 _runtime_weather_api_key: str | None = None
+# How the black window launched this server, set by run_server before uvicorn
+# starts. `None` is a plain `app.py serve`: both stages, as before. Only
+# `--workshop 2` turns voice off, and `--allow-voice` turns it back on for the
+# instructor's machine, so `_allow_voice` is already the answer the page needs.
+_workshop_mode: int | None = None
+_allow_voice = True
 
 
 def selected_realtime_voice() -> str:
@@ -219,6 +225,8 @@ def bootstrap() -> dict[str, Any]:
             if _runtime_weather_api_key
             else ("environment" if active_weather_api_key() else None)
         ),
+        "workshop_mode": _workshop_mode,
+        "allow_voice": _allow_voice,
     }
 
 
@@ -512,12 +520,22 @@ async def realtime_session(payload: RealtimeSessionRequest) -> Response:
     return Response(content=upstream.text, media_type="application/sdp")
 
 
-def run_server(host: str, port: int, open_browser: bool, init: bool = False) -> None:
+def run_server(
+    host: str,
+    port: int,
+    open_browser: bool,
+    init: bool = False,
+    workshop: int | None = None,
+    allow_voice: bool = False,
+) -> None:
     import threading
     import webbrowser
 
     import uvicorn
 
+    global _workshop_mode, _allow_voice
+    _workshop_mode = workshop
+    _allow_voice = workshop != 2 or allow_voice
     url = f"http://{host}:{port}/" + ("?init=1" if init else "")
     if open_browser:
         threading.Timer(0.8, lambda: webbrowser.open(url)).start()

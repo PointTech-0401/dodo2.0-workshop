@@ -19,8 +19,10 @@ from pathlib import Path
 
 DEFAULT_OUT = "dist/dodo2.0-workshop.zip"
 
-# 學生的第一步就是對 start.bat 點兩下，缺了它或 app.py 的 ZIP 對學生就是壞的。
-REQUIRED = ("app.py", "start.bat", ".python-version")
+# 學生的第一步就是對 start-w1.bat（第二堂是 start-w2.bat）點兩下，缺了它們或 app.py 的 ZIP 對學生就是壞的。
+REQUIRED = ("app.py", "start-w1.bat", "start-w2.bat", ".python-version")
+# 舊的單一啟動檔不帶 --workshop，兩堂會開在同一個網址。它還在，學生就可能點到它。
+RETIRED = ("start.bat",)
 # 這些由 .gitattributes 排除；它們出現，代表規則還沒進這個 ref（多半是還沒 commit）。
 DEV_ONLY_FOLDERS = ("tests/", "docs/", "slides/", "scripts/")
 
@@ -49,8 +51,11 @@ def _problems(ref: str, names: list[str]) -> list[str]:
     missing = [name for name in REQUIRED if name not in names]
     if missing:
         problems.append(
-            f"{ref} 的根目錄缺 {', '.join(missing)}：學生解壓縮後不能點 start.bat 啟動，或會多一層資料夾。是不是還沒 commit？"
+            f"{ref} 的根目錄缺 {', '.join(missing)}：學生解壓縮後不能點 start-w1.bat／start-w2.bat 啟動，或會多一層資料夾。是不是還沒 commit？"
         )
+    retired = [name for name in RETIRED if name in names]
+    if retired:
+        problems.append(f"{ref} 還帶著舊的 {', '.join(retired)}：學生點到它，兩堂會開在同一個網址。要先刪掉再 commit。")
     leaked = sorted({name.split("/")[0] for name in names if name.startswith(DEV_ONLY_FOLDERS)})
     if leaked:
         problems.append(f"{ref} 帶了開發用的資料夾 {', '.join(leaked)}：.gitattributes 的排除規則沒進這個版本。是不是還沒 commit？")

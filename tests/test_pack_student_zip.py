@@ -23,7 +23,8 @@ ATTRIBUTES = ROOT / ".gitattributes"
 # 學生要用到的，以及不該跟著 ZIP 出去的（測試、簡報、講師文件、打包腳本自己）。
 STUDENT_FILES = {
     "app.py": "print('hi')\n",
-    "start.bat": "@echo off\nuv run python app.py serve %*\n",
+    "start-w1.bat": "@echo off\nuv run python app.py serve --workshop 1 %*\n",
+    "start-w2.bat": "@echo off\nuv run python app.py serve --workshop 2 %*\n",
     "README.md": "readme\n",
     "pyproject.toml": "[project]\n",
     "uv.lock": "lock\n",
@@ -103,7 +104,8 @@ def test_app_py_sits_at_the_zip_root(packed: Packed) -> None:
     names = _entries(packed)
 
     assert "app.py" in names
-    assert "start.bat" in names
+    assert {"start-w1.bat", "start-w2.bat"} <= names
+    assert "start.bat" not in names
 
 
 def test_zip_holds_only_what_a_student_needs(packed: Packed) -> None:
@@ -112,17 +114,18 @@ def test_zip_holds_only_what_a_student_needs(packed: Packed) -> None:
     assert top_level == STUDENT_TOP_LEVEL
 
 
-def test_start_bat_keeps_windows_line_endings_whatever_git_is_set_to(packed: Packed) -> None:
+@pytest.mark.parametrize("launcher", ["start-w1.bat", "start-w2.bat"])
+def test_launchers_keep_windows_line_endings_whatever_git_is_set_to(packed: Packed, launcher: str) -> None:
     _entries(packed)
-    data = zipfile.ZipFile(packed.zip_path).read("start.bat")
+    data = zipfile.ZipFile(packed.zip_path).read(launcher)
 
     assert b"\r\n" in data
     assert data.replace(b"\r\n", b"").count(b"\n") == 0  # 一個單獨的 LF 都不能有
 
 
-@pytest.mark.parametrize("missing", ["app.py", "start.bat", ".python-version"])
+@pytest.mark.parametrize("missing", ["app.py", "start-w1.bat", "start-w2.bat", ".python-version"])
 def test_refuses_a_ref_missing_a_file_students_depend_on(tmp_path: Path, missing: str) -> None:
-    """還沒 commit 就打包時，HEAD 裡沒有新加的 start.bat，腳本卻照樣印「已打包」，學生拿到就斷在第 3 步。"""
+    """還沒 commit 就打包時，HEAD 裡沒有新加的啟動檔，腳本卻照樣印「已打包」，學生拿到就斷在第 3 步。"""
 
     repo = _make_repo(tmp_path, {name: text for name, text in STUDENT_FILES.items() if name != missing})
     out = tmp_path / "bad.zip"
@@ -131,6 +134,19 @@ def test_refuses_a_ref_missing_a_file_students_depend_on(tmp_path: Path, missing
 
     assert done.returncode != 0
     assert missing in done.stderr
+    assert not out.exists()
+
+
+def test_refuses_a_ref_that_still_carries_the_old_launcher(tmp_path: Path) -> None:
+    """舊的 start.bat 不帶 --workshop：學生點到它，兩堂開在同一個網址，第二堂就接著第一堂的資料。"""
+
+    repo = _make_repo(tmp_path, {**STUDENT_FILES, "start.bat": "@echo off\nuv run python app.py serve %*\n"})
+    out = tmp_path / "bad.zip"
+
+    done = _pack(repo, out)
+
+    assert done.returncode != 0
+    assert "start.bat" in done.stderr
     assert not out.exists()
 
 
@@ -162,7 +178,7 @@ def test_rejects_a_ref_that_git_would_read_as_an_option(tmp_path: Path) -> None:
 
 
 def test_refuses_a_zip_that_would_unpack_with_an_extra_folder(tmp_path: Path) -> None:
-    repo = _make_repo(tmp_path, {"dodo2.0-workshop/app.py": "x\n", "dodo2.0-workshop/start.bat": "x\n"})
+    repo = _make_repo(tmp_path, {"dodo2.0-workshop/app.py": "x\n", "dodo2.0-workshop/start-w1.bat": "x\n"})
     out = tmp_path / "bad.zip"
 
     done = _pack(repo, out)

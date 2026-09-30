@@ -16,27 +16,30 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 
 ### 2. 下載並解壓縮
 
-講師會給你下載連結。下載後，在檔案上按右鍵，選「解壓縮全部」，再按「解壓縮」。
+打開講師給的短網址，下載課程 ZIP。在檔案上按右鍵，選「解壓縮全部」，再按「解壓縮」。
 
-打開解壓縮出來的資料夾。要直接看到 `start.bat` 和 `app.py`。如果只看到另一個資料夾，再點進去。
+打開解壓縮出來的資料夾。要直接看到 `start-w1.bat`、`start-w2.bat` 和 `app.py`。如果只看到另一個資料夾，再點進去。
 
 ### 3. 開啟
 
-對 `start.bat` 點兩下。第一次會下載套件，要等幾分鐘。如果跳出「無法驗證發行者」，按「執行」。
+- **第一堂**：對 `start-w1.bat` 點兩下。
+- **第二堂**：對 `start-w2.bat` 點兩下，不用再裝一次。講師說開始再點。
 
-黑色視窗上課期間不要關。關掉的話，再對 `start.bat` 點兩下。
+第一次會下載套件，要等幾分鐘。如果跳出「無法驗證發行者」，按「執行」。
+
+黑色視窗上課期間不要關。關掉的話，再對同一個檔點兩下。
 
 瀏覽器會自動打開。沒有的話，把黑色視窗裡「已啟動」那一行的網址貼到 Chrome 或 Edge。
 
 ### 4. 第一次的畫面
 
-照講師的指示貼上金鑰。金鑰只留在這台電腦的記憶體，程式一關就沒了。黑色視窗被關掉之後，要到右上角「系統設定」再貼一次。
+照講師的指示貼上金鑰。金鑰只留在這台電腦的記憶體，程式一關就沒了。黑色視窗被關掉之後，要到右上角「系統設定」再貼一次。第二堂開的是另一支程式，金鑰也要再貼一次。
 
 ### 卡住了
 
-- **只看到另一個資料夾，沒有 `start.bat`**：再點進去一層。
+- **只看到另一個資料夾，沒有 `start-w1.bat`**：再點進去一層。
 - **`uv` 不是內部或外部命令**：把 PowerShell 關掉，重開一個新的。
-- **`start.bat` 打不開或被擋下**：在資料夾上方的網址列輸入 `cmd`，按 Enter，貼上 `uv run python app.py`，按 Enter。
+- **啟動檔打不開或被擋下**：在資料夾上方的網址列輸入 `cmd`，按 Enter，貼上 `uv run python app.py serve --workshop 1`（第二堂把 1 換成 2），按 Enter。
 - **畫面寫「Realtime 連線逾時」，但金鑰測試是綠的**：請巡場的人幫忙。
 
 ## 這個專案是什麼
@@ -53,8 +56,8 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 - 一個共用瀏覽器客端：兩堂課、文字與語音都從同一個畫面進入。
 - 第一堂：分開調整 Model instructions 與 Realtime 回合設定，並實際套用到同一個 Realtime session。
 - 第二堂：讀一份訪談稿，幫秀蘭阿嬤建檔（六區＋每區「問豆豆這一區」），用三組範例或自己寫的四個分塊定下對話規範，用兩個數字跑完她的星期二，並排一筆待提醒讓豆豆在真實時間到達時自己開口一次；課尾從對話長出一筆 C 層今日摘要。
-- 一個作品檔 `my-dodo.json`：第一堂下載，第二堂可直接匯入延續。
-- Workshop 2 starter：只參加第二堂者會載入講師準備的第一堂完成版。
+- 一個作品檔 `my-dodo.json`：每一堂最後下載，帶回家。
+- 兩個啟動檔：`start-w1.bat` 只開第一堂；`start-w2.bat` 只開第二堂，固定用打字與文字，每個人都從 `starter/workshop2-default-dodo.json` 這份起始檔開始。
 - 真實模型回覆：沒有 API Key 時會明確停用聊天，不用固定回聲假裝成 AI。
 
 ## 共用客端規格
@@ -105,7 +108,7 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 2. **輸入方式**：選擇「打字」或「語音」。
 3. **輸出方式**：獨立選擇「文字」或「語音」。
 4. **裝置檢查**：只有語音輸入才要求麥克風權限；語音輸出建議使用耳機。
-5. **課程入口**：選擇從 Workshop 1 開始、繼續本機作品，或只參加 Workshop 2。
+5. **課程入口**：選擇從 Workshop 1 開始、繼續本機作品，或只參加 Workshop 2。用 `--workshop 1` 啟動時沒有「只參加 Workshop 2」；用 `--workshop 2` 啟動時不問輸入輸出方式、也不問入口，直接載入起始檔（這個網址已經有進度時接著用）。
 6. **完成**：保存模式與裝置偏好後進入共用聊天畫面。
 
 建議保存格式：
@@ -170,7 +173,7 @@ Copy-Item .env.example .env
 uv run python scripts/pack_student_zip.py
 ```
 
-輸出在 `dist/dodo2.0-workshop.zip`。內容取自 git 已提交的部分（預設 `HEAD`，可用 `--ref` 指定 tag），所以要先 commit 或先打 tag；缺 `start.bat`、`.python-version`，或帶了測試、簡報、講師文件時，腳本會拒絕並刪掉輸出的 ZIP。ZIP 的根目錄直接是專案，不帶測試、簡報與講師文件（規則寫在 `.gitattributes`），批次檔一律 CRLF。
+輸出在 `dist/dodo2.0-workshop.zip`。內容取自 git 已提交的部分（預設 `HEAD`，可用 `--ref` 指定 tag），所以要先 commit 或先打 tag；缺 `start-w1.bat`、`start-w2.bat`、`.python-version`，或帶了測試、簡報、講師文件時，腳本會拒絕並刪掉輸出的 ZIP。ZIP 的根目錄直接是專案，不帶測試、簡報與講師文件（規則寫在 `.gitattributes`），批次檔一律 CRLF。
 
 不要讓學生用 GitHub 的「Download ZIP」或 Release 頁面的「Source code (zip)」，那兩個都會多包一層資料夾，學生解壓縮後再多一層，CMD 就站錯資料夾。給他們這支腳本打出來的檔案的直接下載連結。腳本只打包，不發佈。
 
@@ -195,7 +198,17 @@ WEATHER_API_KEY=沿用_Workshop_1.0_的_OpenWeatherMap_Key
 uv run python app.py
 ```
 
-瀏覽器會開啟 `http://127.0.0.1:8000/`。需要重新選擇輸入／輸出方式時：
+瀏覽器會開啟 `http://127.0.0.1:8000/`，兩堂都看得到（開發與講師備課用）。上課用啟動參數把兩堂分開：
+
+| 指令 | 誰用 | 看得到 | 網址 |
+|---|---|---|---|
+| `uv run python app.py serve --workshop 1`（`start-w1.bat`） | 學生，第一堂 | 只有 01 | `http://127.0.0.1:8000/` |
+| `uv run python app.py serve --workshop 2`（`start-w2.bat`） | 學生，第二堂 | 只有 02；固定打字與文字，系統設定沒有語音選項 | `http://127.0.0.1:8001/` |
+| `uv run python app.py serve --workshop 2 --allow-voice` | 講師機，第二堂 | 只有 02；可以把輸出切成語音接喇叭 | `http://127.0.0.1:8001/` |
+
+第二堂用另一個 port，瀏覽器資料就跟第一堂分開：第一次開啟時直接載入起始檔，不會讀第一堂的設定；中途關掉再開，會接著這一堂上次的進度。
+
+需要重新選擇輸入／輸出方式時：
 
 ```powershell
 uv run python app.py init
@@ -283,18 +296,9 @@ Realtime session 會註冊 1.0 的 `get_weather`、`read_memory`、`update_memor
 
 **24 小時帶狀圖**（48 格半小時）畫出每一分鐘豆豆被規則按住的時間，改建檔就重畫，**唯讀**。前端那份窗計算只畫圖，決策一律走後端；兩邊同義由 `uicheck.js` 拿一次真實模擬回傳的 `schedule` 逐位元組比對釘住。下面第二行點名**現在哪一條規則在卡人**，並補一句「但重要提醒照樣送得出去」，這解掉「我把間隔改小了為什麼一整天沒變化」這個最常見的困惑（真正在卡的是每日上限）。
 
-**跑她的一天**（星期二，18 個事件，先預測再跑）回報兩個互相拉扯的數字：
+**跑她的一天**（星期二，18 個事件，先預測再跑）回報兩個互相拉扯的數字：漏掉的健康關心與打擾。課堂上學生要先猜再跑，所以各組跑出來的數字與結論不寫在這份會發給學生的 README，放在講師用的 `docs/workshop-2.md` 與 `docs/instructor-guide.md`（`tests/test_proactive.py` 會確認那兩份印的數字跟引擎實際跑出來的一樣）。擋人統計讀的是決策器自己回報的規則代碼，不是從理由句子撈關鍵字。
 
-| 規則 | 漏掉的健康關心 | 打擾 |
-|---|---|---|
-| 預設 30／4 | 1 / 3 | 2 / 13 |
-| 收緊 30／2 | 2 / 3 | 1 / 13 |
-| 放寬 0／20 | 0 / 3 | 7 / 13 |
-| **60／4** | **2 / 3** | **3 / 13** |
-
-最後一列是反面教材：只放大間隔會讓兩個數字**一起變壞**。`(0, 0)` 在整個參數格裡不可達，預設值也在前緣上；`tests/test_proactive.py` 的 sweep 測試把這些性質寫成測試。擋人統計讀的是決策器自己回報的規則代碼，不是從理由句子撈關鍵字。
-
-**對照開關**改用寫死的閘門（22:00–08:00＋用餐窗）跑同一天，在她身上兩軸都比較差：05:30 和 07:30 她醒著卻被擋（其中一次是該追問膝蓋的健康關心），12:45 她在午睡卻被放行去閒聊。**閘門的來源不對**：它問「現在幾點」，不問「她在做什麼」。
+**對照開關**改用寫死的閘門（22:00–08:00＋用餐窗）跑同一天，用來比較「閘門從她的作息算出來」和「閘門寫死」的差別。
 
 ### 主動對話：真的開口、待提醒清單、今日摘要
 
@@ -317,16 +321,15 @@ Realtime session 會註冊 1.0 的 `get_weather`、`read_memory`、`update_memor
 ## 兩堂課如何銜接
 
 ```text
-Workshop 1：agent.prompt_blocks + realtime.turn_detection
-              ↓ 下載 / 自動保存
-Workshop 2：workshop2_blocks + elder_profile + proactive_policy + memory + proactive_state
-              ↓
+Workshop 1（start-w1.bat，port 8000）：agent.prompt_blocks + realtime.turn_detection
+Workshop 2（start-w2.bat，port 8001）：從 starter/workshop2-default-dodo.json 開始
+              workshop2_blocks + elder_profile + proactive_policy + memory + proactive_state
 instructions = Workshop 1 的 5 個分塊 + Workshop 2 的 4 個對話規範分塊與 4 個生成段落
 ```
 
-- 同一台電腦：第二堂啟動後會自動讀取上次成果。
-- 換一台電腦：按「匯入」，選擇第一堂下載的 `my-dodo.json`。
-- 只參加第二堂：首次引導選擇「只參加 Workshop 2」，載入 `starter/workshop2-default-dodo.json`。
+- 兩堂用不同的網址，瀏覽器裡的資料彼此分開。第二堂每個人都從同一份起始檔開始（第一堂的分塊是出廠預設、稱呼是秀蘭阿嬤），講師講的結果才會跟每一台的畫面一樣。只上第二堂的人也一樣，直接點 `start-w2.bat`。
+- 第二堂中途關掉黑色視窗：再點一次 `start-w2.bat`、重貼金鑰，接著上次的進度。
+- 不帶 `--workshop` 啟動時兩堂都看得到，首次引導仍有「只參加 Workshop 2」這個入口，會載入同一份起始檔。
 - `init` 只重新選擇輸入／輸出方式與系統設定，不會清除作品與課程進度。
 
 `student/lesson1_*.json` 是早期 CLI 範例；共用客端與兩堂正式流程均以 `student/my-dodo.json` 的 schema 為準（`schema_version: 2`）。

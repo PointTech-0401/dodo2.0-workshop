@@ -9,6 +9,7 @@ items to the transcript rather than trusting that the two files drift together.
 """
 
 import re
+from datetime import date, timedelta
 
 from dodo_workshop.config import ROOT, load_json
 
@@ -158,6 +159,22 @@ def test_the_ambiguous_sweet_is_only_a_discussion_item() -> None:
             assert "偷吃" not in item["value"] and "不要跟護理師講" not in item["value"], item
     # 阿桂那條偷吃糖在不記清單裡是對的；阿嬤自己這句連不記清單都不能進。
     assert all("不要跟護理師講" not in note["text"] for note in REFERENCE["elder_profile"]["declined_notes"])
+
+
+def test_next_friday_is_counted_from_the_interview_date() -> None:
+    """阿嬤說「下禮拜五早上九點要回診」。訪談日期一搬，回診那天要跟著搬，
+    還得是星期五，不然「她的一天」在星期五排不出這個回診。"""
+
+    stated = re.search(r"訪談日期：(\d{4}-\d{2}-\d{2})（星期(.)）", INTERVIEW)
+    assert stated, "訪談稿檔頭要寫「訪談日期：YYYY-MM-DD（星期X）」"
+    interviewed = date.fromisoformat(stated.group(1))
+    checkup = next(item for item in REFERENCE["elder_profile"]["appointments"] if "新陳代謝科" in item["label"])
+
+    assert REFERENCE["interviewed_on"] == stated.group(1)
+    assert "一二三四五六日"[interviewed.weekday()] == stated.group(2)
+    assert "下禮拜五早上九點要回診" in INTERVIEW and checkup["time"] == "09:00"
+    # 下禮拜的星期一，再加四天。
+    assert date.fromisoformat(checkup["date"]) == interviewed + timedelta(days=7 - interviewed.weekday() + 4)
 
 
 def test_transcript_declares_itself_fictional() -> None:

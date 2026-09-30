@@ -53,7 +53,7 @@
       <div id="messages" class="messages" aria-live="polite">
         <article class="message system">
           <span class="speaker">SYSTEM</span>
-          <p>先把系統設定填好。改完右邊的設定按「套用」，再問同一句話，比比看前後差在哪。「何時算說完」要用麥克風講話才試得出來。</p>
+          <p id="introMessage">先把系統設定填好。改完右邊的設定按「套用」，再問同一句話，比比看前後差在哪。「何時算說完」要用麥克風講話才試得出來。</p>
         </article>
       </div>
       <form id="chatForm" class="composer">
@@ -573,7 +573,7 @@
       <button id="closeOnboarding" type="button" class="sheet-close" aria-label="關閉設定" title="關閉設定（Esc）" hidden>×</button>
       <p class="eyebrow">FIRST RUN</p>
       <h2 id="onboardingTitle">不管你手上有什麼設備，都做得出同一個 Dodo</h2>
-      <p class="lead">先填好 OpenAI 和天氣的 Key，再選你要怎麼跟它講、它怎麼回你。用講的要有麥克風；要聽它講話建議戴耳機。</p>
+      <p id="onboardingLead" class="lead">先填好 OpenAI 和天氣的 Key，再選你要怎麼跟它講、它怎麼回你。用講的要有麥克風；要聽它講話建議戴耳機。</p>
       <fieldset>
         <legend>連接 OpenAI API</legend>
         <div class="api-key-row">
@@ -592,12 +592,14 @@
         </div>
         <p id="weatherApiKeyStatus" class="api-status">要讓豆豆查得到天氣，貼講師給的那一把天氣 API Key；沒有也能上課，只是查不到天氣。</p>
       </fieldset>
-      <fieldset>
+      <!-- start-w2.bat hides both choices (and so the microphone check): session 2
+           is 打字／文字 only, unless the server was started with --allow-voice. -->
+      <fieldset id="inputModeChoice">
         <legend>選擇輸入方式</legend>
         <label class="choice"><input type="radio" name="inputMode" value="text" checked><span><strong>打字</strong><small>用鍵盤打字，不會開麥克風</small></span></label>
         <label class="choice"><input type="radio" name="inputMode" value="voice"><span><strong>語音</strong><small>用麥克風講話，可以試插話和「它怎麼知道你講完了」</small></span></label>
       </fieldset>
-      <fieldset>
+      <fieldset id="outputModeChoice">
         <legend>選擇輸出方式</legend>
         <label class="choice"><input type="radio" name="outputMode" value="text" checked><span><strong>文字</strong><small>答案直接印在畫面上，不會出聲</small></span></label>
         <label class="choice"><input type="radio" name="outputMode" value="voice"><span><strong>語音</strong><small>Dodo 用語音回答</small></span></label>

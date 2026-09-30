@@ -536,10 +536,15 @@ const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => (
 ));
 
 function switchStage(stage) {
-  const isFirst = Number(stage) === 1;
+  // start-w1.bat／start-w2.bat open one session each. Every entry point funnels
+  // through here (the stage buttons, the remembered stage, 匯入, the first-run
+  // sheet), so this is the one place the other stage is refused. `?.` because
+  // the buttons are wired before bootstrap arrives.
+  const shown = Number(bootstrapData?.workshop_mode ?? stage);
+  const isFirst = shown === 1;
   $("#workshop1Panel").hidden = !isFirst;
   $("#workshop2Panel").hidden = isFirst;
-  $$(".stage-button").forEach((button) => button.classList.toggle("is-active", Number(button.dataset.stage) === Number(stage)));
+  $$(".stage-button").forEach((button) => button.classList.toggle("is-active", Number(button.dataset.stage) === shown));
   $("#conversationTitle").textContent = isFirst ? "讓 Dodo 聽完，再回答" : "再讓它記得你，適時主動關心";
   // 第二堂的標題長一倍，預設字級一定會折行。`.is-long` 讓它縮到剛好一行。用
   // container query 而不是 vw，因為聊天區的寬度是拖曳出來的，不是視窗寬度。
@@ -555,6 +560,26 @@ function switchStage(stage) {
 function storedStage() {
   const stage = Number(localStorage.getItem(STAGE_KEY));
   return stage === 1 || stage === 2 ? stage : null;
+}
+
+/** Hide what belongs to the session this launch did not open; switchStage() is
+ *  what actually refuses it. A plain `app.py serve` reports no mode, and then
+ *  nothing here changes. */
+function applyLaunchMode() {
+  const mode = bootstrapData.workshop_mode;
+  if (!mode) return;
+  $$(".stage-button").forEach((button) => { button.hidden = Number(button.dataset.stage) !== mode; });
+  if (mode === 1) $('input[name="entry"][value="workshop2"]').closest(".choice").hidden = true;
+  // Nothing to pick in session 2: initialize() has already carried on this
+  // browser's project or loaded the Workshop 2 starter.
+  if (mode === 2) $("#entryChoice").hidden = true;
+  // 「何時算說完」is a Workshop 1 tab, out of reach from start-w2.bat.
+  if (mode === 2) $("#introMessage").textContent = "先把系統設定填好。改完右邊的設定按「套用」，再問同一句話，比比看前後差在哪。";
+  if (!bootstrapData.allow_voice) {
+    $("#inputModeChoice").hidden = true;
+    $("#outputModeChoice").hidden = true;
+    $("#onboardingLead").textContent = "先填好 OpenAI 和天氣的 Key。這一堂都用打字，答案直接印在畫面上。";
+  }
 }
 
 function applyMode() {
@@ -753,7 +778,7 @@ function showOnboarding(forceInit) {
   if (setup?.outputMode) $(`input[name="outputMode"][value="${setup.outputMode}"]`).checked = true;
   if (forceInit) {
     $("#entryChoice").hidden = true;
-    $("#onboardingTitle").textContent = "API 與輸出入設定";
+    $("#onboardingTitle").textContent = bootstrapData.allow_voice ? "API 與輸出入設定" : "API 設定";
     $("#finishOnboarding").textContent = "儲存設定";
   }
   refreshApiUi();
@@ -829,12 +854,16 @@ async function finishOnboarding() {
     $("#onboardingError").textContent = "請先輸入並測試 OpenAI API Key。";
     return;
   }
-  const inputMode = $('input[name="inputMode"]:checked').value;
-  const outputMode = $('input[name="outputMode"]:checked').value;
+  // start-w2.bat without --allow-voice hides both choices, so the rule is stated
+  // here instead of trusting whatever the hidden radios hold.
+  const inputMode = bootstrapData.allow_voice ? $('input[name="inputMode"]:checked').value : "text";
+  const outputMode = bootstrapData.allow_voice ? $('input[name="outputMode"]:checked').value : "text";
   if (inputMode === "voice" && !microphoneReady && setup?.inputMode !== "voice") {
     $("#onboardingError").textContent = "請先檢查麥克風，或將輸入方式改為打字。";
     return;
   }
+  // Hidden when reopened from 「系統設定」, and on start-w2.bat's first run, where
+  // initialize() already picked the project and the stage.
   const forced = $("#entryChoice").hidden;
   let startStage = 1;
   if (!forced) {
@@ -1465,6 +1494,7 @@ async function initialize() {
   bootstrapData = await fetch("/api/bootstrap").then((response) => response.json());
   apiConfigured = bootstrapData.api_configured;
   weatherConfigured = bootstrapData.weather_configured;
+  applyLaunchMode();
   const storedProject = readStored(PROJECT_KEY);
   // Same one path as 匯入. A stored project that the server rejects is one no
   // longer readable at all, so starting clean beats rendering schema-1 data
@@ -1472,15 +1502,28 @@ async function initialize() {
   // Cloned, never aliased: `collectWorkshopN()` assigns into `workspace.profile`,
   // and `bootstrapData.default_workspace` is read back as the pristine default by
   // intakeFromFields() and by the prompt composer's block fallbacks.
+  // start-w2.bat offers no entry choice, so its fresh start is the Workshop 2
+  // starter, the file 只參加 Workshop 2 loads. A project already in this browser
+  // (the black window was restarted mid-class) carries on as usual.
+  const freshWorkspace = bootstrapData.workshop_mode === 2
+    ? bootstrapData.workshop2_starter
+    : bootstrapData.default_workspace;
   try {
     workspace = storedProject
       ? await normalizeWorkspace(storedProject)
-      : structuredClone(bootstrapData.default_workspace);
+      : structuredClone(freshWorkspace);
   } catch {
-    workspace = structuredClone(bootstrapData.default_workspace);
+    workspace = structuredClone(freshWorkspace);
     addMessage("system", "上次保存的作品讀不進來，已從預設開始。");
   }
   setup = normalizeSetup(readStored(SETUP_KEY));
+  // start-w2.bat is 打字／文字 only. A voice setup can still be stored for this
+  // address by an --allow-voice run, and left alone it would open a microphone
+  // the page no longer offers a way to turn off.
+  if (!bootstrapData.allow_voice && setup && (setup.inputMode === "voice" || setup.outputMode === "voice")) {
+    setup = { ...setup, inputMode: "text", outputMode: "text" };
+    localStorage.setItem(SETUP_KEY, JSON.stringify(setup));
+  }
   // Options must exist before loadFields() assigns #agentVoice.value, or the
   // assignment hits an empty <select>, the picker falls back to its first entry,
   // and the next 套用 silently overwrites the student's saved voice.

@@ -13,6 +13,7 @@ DODO_PORT=8123 bun run tests/browser/uicheck.js       # 分頁切換、套用按
 DODO_PORT=8123 bun run tests/browser/legacycheck.js   # 舊專案裡的 max_output_tokens 不會回到下載檔
 DODO_PORT=8123 bun run tests/browser/narrationcheck.js # 旁白與工具前開場的標籤有沒有貼在對的泡泡上
 DODO_PORT=8123 bun run tests/browser/keycheck.js      # 兩把 API Key 並行測試／儲存，狀態列不互相洗掉
+DODO_PORT=8123 bun run tests/browser/modecheck.js     # start-w1.bat／start-w2.bat：只開一堂、第二堂固定打字與文字
 ```
 
 每個腳本都以 exit code 表示結果（0 = 全過）。用不到就整個 `tests/browser/` 刪掉，

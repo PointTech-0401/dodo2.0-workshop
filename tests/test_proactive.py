@@ -137,7 +137,7 @@ def test_appointments_only_appear_on_their_day_thirty_minutes_early() -> None:
     friday = [event for event in build_day(PROFILE, MEMORY, 5) if event["source"] == "appointment"]
 
     assert [(event["time"], event["topic"]) for event in wednesday] == [("09:00", "09:30 復健（膝蓋電療、熱敷）")]
-    assert friday[0]["time"] == "08:30" and "新陳代謝科" in friday[0]["topic"]  # 2026-09-04 is a Friday
+    assert friday[0]["time"] == "08:30" and "新陳代謝科" in friday[0]["topic"]  # 2026-10-09 is a Friday
 
 
 def test_a_thin_file_still_produces_a_day() -> None:
