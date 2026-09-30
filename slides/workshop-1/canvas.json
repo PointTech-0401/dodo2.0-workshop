@@ -25,36 +25,36 @@
       "title": "03 · 課程流程"
     },
     {
-      "file": "Install.dc.html",
+      "file": "ProjectMap.dc.html",
       "x": 5280,
       "y": 0,
       "w": 1600,
       "h": 900,
-      "title": "04 · 安裝"
+      "title": "04 · 專案架構"
     },
     {
-      "file": "ApiKeys.dc.html",
+      "file": "Install.dc.html",
       "x": 0,
       "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "05 · API Key 與連線"
+      "title": "05 · 安裝"
     },
     {
-      "file": "ThreeLayers.dc.html",
+      "file": "ApiKeys.dc.html",
       "x": 1760,
       "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "06 · 三個層次"
+      "title": "06 · API Key 與連線"
     },
     {
-      "file": "ProjectMap.dc.html",
+      "file": "ThreeLayers.dc.html",
       "x": 3520,
       "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "07 · 專案架構"
+      "title": "07 · 三個層次"
     },
     {
       "file": "TurnFlow.dc.html",

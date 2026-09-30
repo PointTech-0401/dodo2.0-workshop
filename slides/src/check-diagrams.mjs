@@ -9,7 +9,6 @@ const TARGETS = [
   ['slides/workshop-1', 'ProjectMap.dc.html'],
   ['slides/workshop-1', 'TurnFlow.dc.html'],
   ['slides/workshop-2', 'ProjectMap.dc.html'],
-  ['slides/workshop-2', 'MemoryFlow.dc.html'],
 ];
 
 const problems = [];

@@ -30,151 +30,143 @@
       "y": 0,
       "w": 1600,
       "h": 900,
-      "title": "04 · 開場設定"
-    },
-    {
-      "file": "WhoWrites.dc.html",
-      "x": 0,
-      "y": 1140,
-      "w": 1600,
-      "h": 900,
-      "title": "05 · 誰能寫入記憶"
-    },
-    {
-      "file": "HerWords.dc.html",
-      "x": 1760,
-      "y": 1140,
-      "w": 1600,
-      "h": 900,
-      "title": "06 · 訪談稿"
-    },
-    {
-      "file": "LabIntake.dc.html",
-      "x": 3520,
-      "y": 1140,
-      "w": 1600,
-      "h": 900,
-      "title": "07 · 實作一：建檔"
-    },
-    {
-      "file": "RedTeam.dc.html",
-      "x": 5280,
-      "y": 1140,
-      "w": 1600,
-      "h": 900,
-      "title": "08 · 紅隊測試"
-    },
-    {
-      "file": "MemoryLayers.dc.html",
-      "x": 0,
-      "y": 2280,
-      "w": 1600,
-      "h": 900,
-      "title": "09 · 三層記憶"
-    },
-    {
-      "file": "MemoryViewer.dc.html",
-      "x": 1760,
-      "y": 2280,
-      "w": 1600,
-      "h": 900,
-      "title": "10 · 記憶清單"
+      "title": "04 · 開場"
     },
     {
       "file": "ProjectMap.dc.html",
+      "x": 0,
+      "y": 1140,
+      "w": 1600,
+      "h": 900,
+      "title": "05 · 專案架構"
+    },
+    {
+      "file": "WhoWrites.dc.html",
+      "x": 1760,
+      "y": 1140,
+      "w": 1600,
+      "h": 900,
+      "title": "06 · 誰能寫入記憶"
+    },
+    {
+      "file": "HerWords.dc.html",
+      "x": 3520,
+      "y": 1140,
+      "w": 1600,
+      "h": 900,
+      "title": "07 · 訪談稿"
+    },
+    {
+      "file": "LabIntake.dc.html",
+      "x": 5280,
+      "y": 1140,
+      "w": 1600,
+      "h": 900,
+      "title": "08 · 實作一：建檔 1–3 區"
+    },
+    {
+      "file": "LabIntakeMore.dc.html",
+      "x": 0,
+      "y": 2280,
+      "w": 1600,
+      "h": 900,
+      "title": "09 · 實作一：建檔 4–6 區"
+    },
+    {
+      "file": "RedTeam.dc.html",
+      "x": 1760,
+      "y": 2280,
+      "w": 1600,
+      "h": 900,
+      "title": "10 · 紅隊測試"
+    },
+    {
+      "file": "MemoryLayers.dc.html",
       "x": 3520,
       "y": 2280,
       "w": 1600,
       "h": 900,
-      "title": "11 · 專案架構"
+      "title": "11 · 三層記憶"
+    },
+    {
+      "file": "MemoryViewer.dc.html",
+      "x": 5280,
+      "y": 2280,
+      "w": 1600,
+      "h": 900,
+      "title": "12 · 記憶清單"
     },
     {
       "file": "PromptLayer.dc.html",
-      "x": 5280,
-      "y": 2280,
+      "x": 0,
+      "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "12 · 對話規範"
+      "title": "13 · 對話規範"
     },
     {
       "file": "ProactiveRules.dc.html",
-      "x": 0,
+      "x": 1760,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "13 · 實作二：主動規則"
+      "title": "14 · 實作二：主動規則"
     },
     {
       "file": "OneDay.dc.html",
-      "x": 1760,
+      "x": 3520,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "14 · 跑她的一天"
+      "title": "15 · 跑她的一天"
     },
     {
       "file": "OneDayResults.dc.html",
-      "x": 3520,
+      "x": 5280,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "15 · 模擬結果"
+      "title": "16 · 模擬結果"
     },
     {
       "file": "NoPerfectScore.dc.html",
-      "x": 5280,
-      "y": 3420,
-      "w": 1600,
-      "h": 900,
-      "title": "16 · 取捨"
-    },
-    {
-      "file": "LiveTalk.dc.html",
       "x": 0,
       "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "17 · 實作三：主動對話"
+      "title": "17 · 取捨"
     },
     {
-      "file": "Dilemmas.dc.html",
+      "file": "LiveTalk.dc.html",
       "x": 1760,
       "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "18 · 倫理問題"
+      "title": "18 · 實作三：主動對話"
     },
     {
-      "file": "ThreeIdeas.dc.html",
+      "file": "Dilemmas.dc.html",
       "x": 3520,
       "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "19 · 重點回顧"
+      "title": "19 · 倫理問題"
     },
     {
-      "file": "Close.dc.html",
+      "file": "TodaySummary.dc.html",
       "x": 5280,
       "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "20 · 收尾"
+      "title": "20 · 今日摘要與下載"
     },
     {
-      "file": "KeyMatrix.dc.html",
+      "file": "ThreeIdeas.dc.html",
       "x": 0,
       "y": 5700,
       "w": 1600,
       "h": 900,
-      "title": "21 · 需要 API Key 的步驟"
-    },
-    {
-      "file": "MemoryFlow.dc.html",
-      "x": 1760,
-      "y": 5700,
-      "w": 1600,
-      "h": 900,
-      "title": "22 · 系統流程"
+      "title": "21 · 重點回顧"
     }
   ],
   "launch": {

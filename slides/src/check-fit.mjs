@@ -2,7 +2,7 @@ import { textW } from './kit.mjs';
 import { readFileSync } from 'node:fs';
 const CW = 1600 - 108 - 88;
 const CHROME = 58 + 52 + 35 + 30 + 30;
-for (const [d, f] of [['workshop-1','ProjectMap'],['workshop-1','TurnFlow'],['workshop-2','ProjectMap'],['workshop-2','MemoryFlow']]) {
+for (const [d, f] of [['workshop-1','ProjectMap'],['workshop-1','TurnFlow'],['workshop-2','ProjectMap']]) {
   const s = readFileSync('slides/' + d + '/' + f + '.dc.html', 'utf8');
   const vh = +s.match(/viewBox="0 0 (\d+) (\d+)"/)[2];
   const title = s.match(/font: 700 52px[^>]*>([^<]*)</)[1];

@@ -6,6 +6,9 @@ import { w1Architecture, w1Flow } from './diagrams.mjs';
 
 const A = C.blue;
 const EB = 'WORKSHOP 01 · 讓 DODO 聽完，再回答';
+// The course ZIP lives on Google Drive behind a short link. Fill it in before
+// class; the Install slide prints it as-is.
+const ZIP_URL = '短網址（課前填入）';
 const S = [];
 const add = (file, title, make) => S.push({ file, title, make });
 
@@ -27,7 +30,7 @@ add('Outcomes.dc.html', '學習目標', (n, t) => slide({
     '用 OpenAI Realtime API 比較不同 Prompt 分塊的回答。',
     `比較 ${code('Server VAD')}、${code('Semantic VAD')} 與 Push-to-talk 三種回合判斷。`,
     '用「套用」更新正在進行的對話。',
-    '成果留在這台電腦上，第二堂接著使用。',
+    '分辨哪些事寫在 Prompt 裡拜託模型，哪些事交給程式。',
   ], { accent: A, size: 25, gap: 20 }),
 }));
 
@@ -38,18 +41,24 @@ add('Timetable.dc.html', '課程流程', (n, t) => slide({
     [{ label: '段落', w: '240px' }, { label: '內容', w: '1fr' }],
     [
       ['示範', '打字送出，與用講的有什麼不同'],
-      ['安裝與連線', '安裝、貼上金鑰、送出第一句'],
-      ['三個層次', 'Prompt、回合控制、回答長度；系統架構'],
+      ['安裝與連線', '金鑰放在哪裡；安裝、貼上金鑰、送出第一句'],
+      ['三個層次', 'Prompt、回合控制、回答長度；一句話的處理流程'],
       ['Prompt', '內容與長度；送出的時機'],
       ['回合判斷', 'Server VAD、Semantic VAD、Push-to-talk'],
       ['休息', ''],
       ['<strong style="color: #15324a;">實作一</strong>', '調整 Prompt，比較前後回答'],
       ['<strong style="color: #15324a;">實作二</strong>', '用語音測試回合控制'],
       ['Prompt 的限制', '同一句話問五次'],
-      ['收尾', '第二堂的銜接；備份 my-dodo.json'],
+      ['收尾', '下載這一堂的成果；第二堂怎麼開始'],
     ],
     { accent: A, size: 20, pad: 11 },
   ),
+}));
+
+add('ProjectMap.dc.html', '專案架構', (n, t) => slide({
+  eyebrow: EB, num: n, total: t, accent: A,
+  title: '專案架構',
+  body: w1Architecture,
 }));
 
 add('Install.dc.html', '安裝', (n, t) => slide({
@@ -60,14 +69,14 @@ add('Install.dc.html', '安裝', (n, t) => slide({
     row([
       steps([
         `按 Win + R，輸入 powershell，貼上下面的指令並執行。重開 PowerShell，輸入 <span style="white-space: nowrap;">${code('uv --version')}</span> 確認版本號。`,
-        `下載課程 ZIP，按右鍵「解壓縮全部」。資料夾裡要直接看到 ${code('start.bat')}。`,
-        `對 ${code('start.bat')} 點兩下。第一次會下載套件；出現「無法驗證發行者」時按「執行」。黑色視窗不要關。`,
+        `打開 <span style="white-space: nowrap;">${code(ZIP_URL)}</span> 下載課程 ZIP，按右鍵「解壓縮全部」。資料夾裡要直接看到 ${code('start-w1.bat')}。`,
+        `對 ${code('start-w1.bat')} 點兩下。第一次會下載套件；出現「無法驗證發行者」時按「執行」。黑色視窗不要關。`,
         '瀏覽器開啟後，貼上課堂用的金鑰。',
       ], { accent: A, size: 21, gap: 14 }),
       `<div style="flex: 0 0 470px;">${card({
         accent: C.apricot, bg: C.paper, kicker: '常見問題',
         title: '裝不起來時',
-        body: '只看到另一個資料夾：再點進去一層。「uv 不是內部或外部命令」：重開 PowerShell。start.bat 被擋：在資料夾網址列輸入 cmd，執行 uv run python app.py。',
+        body: '只看到另一個資料夾：再點進去一層。「uv 不是內部或外部命令」：重開 PowerShell。start-w1.bat 被擋：在資料夾網址列輸入 cmd，執行 <span style="white-space: nowrap;">uv run python app.py serve --workshop 1</span>。',
       })}</div>`,
     ], { gap: 32 }),
     darkPanel('POWERSHELL', '第 1 步的指令', [
@@ -122,12 +131,6 @@ add('ThreeLayers.dc.html', '三個層次', (n, t) => slide({
     }),
   ]),
   foot: 'Prompt 不判斷你是否講完；回合控制不決定回答內容。',
-}));
-
-add('ProjectMap.dc.html', '專案架構', (n, t) => slide({
-  eyebrow: EB, num: n, total: t, accent: A,
-  title: '專案架構',
-  body: w1Architecture,
 }));
 
 add('TurnFlow.dc.html', '系統流程', (n, t) => slide({
@@ -337,7 +340,7 @@ add('DoneCriteria.dc.html', '完成標準', (n, t) => slide({
     '問「你叫什麼？我叫什麼？」時，答得出「角色與身分」設定的名字與稱呼。',
     '修改過至少一個 A 區分塊並套用，比較過前後回答。',
     '有耳麥：完成實作二的五個步驟。',
-    '第二堂在同一台電腦接著使用；my-dodo.json 是備份，<strong>不含</strong> API Key。',
+    '按「下載我的 Dodo」帶走這一堂的成果（my-dodo.json），檔案裡<strong>不含</strong> API Key。',
   ], { accent: C.green, size: 24, gap: 18 }),
   foot: '參考：OpenAI Realtime 官方文件中的文字輸入、連線時送出 Prompt、工具呼叫與回合判斷。',
 }));
