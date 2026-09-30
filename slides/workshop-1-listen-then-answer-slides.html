@@ -267,13 +267,68 @@
     .where span, .hint { display: none; }
   }
 
+  /* ---- speaker notes (N) ---- */
+
+  .notes {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 24;
+    display: none;
+    height: 40vh;
+    overflow: auto;
+    padding: 14px 28px 76px;
+    border-top: 1px solid rgba(220, 230, 236, .2);
+    background: #0f2233;
+    color: var(--chrome);
+    font: 17px/1.6 var(--sans);
+  }
+
+  body.is-notes .notes { display: block; }
+  body.is-notes .stage { bottom: 40vh; }
+  /* The bar sits over the drawer's last lines; solid, it reads as a footer
+     instead of text printed on text. The drawer's bottom padding scrolls clear. */
+  body.is-notes .bar { background: #0f2233; border-top: 1px solid rgba(220, 230, 236, .12); }
+  body.is-overview .notes { display: none; }
+
+  .notes-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    color: var(--chrome-dim);
+    font: 600 13px/1.4 var(--sans);
+  }
+
+  .notes h3, .n-time {
+    margin: 12px 0 4px;
+    color: var(--apricot);
+    font: 800 13px/1.2 var(--sans);
+    letter-spacing: .12em;
+  }
+
+  .n-time { color: var(--accent); filter: brightness(1.6); }
+  .notes .n-goal {
+    margin: 4px 0 2px;
+    padding: 8px 12px;
+    border-left: 4px solid var(--accent);
+    background: rgba(220, 230, 236, .07);
+    color: #fff;
+    font: 700 19px/1.5 var(--sans);
+  }
+  .notes ul, .notes ol { margin: 0; padding-left: 22px; }
+  .notes li { margin: 2px 0; }
+  .notes dl { margin: 0; }
+  .notes dt { margin-top: 8px; font-weight: 700; }
+  .notes dd { margin: 2px 0 0 22px; color: var(--chrome-dim); }
+
   /* Printing is how the deck leaves this repo (PDF -> Canva / handout), so the
      paper is the artboard itself: one 1600x900 page per slide, no margin. */
   @page { size: 1600px 900px; margin: 0; }
 
   @media print {
     body { overflow: visible; background: #fff; }
-    .rail, .bar, .hint, .overview { display: none !important; }
+    .rail, .bar, .hint, .overview, .notes { display: none !important; }
     .stage { position: static; display: block; overflow: visible; }
     .slide { position: static; opacity: 1; visibility: visible; break-after: page; }
     .slide:last-child { break-after: auto; }
@@ -1166,10 +1221,17 @@
   <div class="grid" id="grid"></div>
 </div>
 
+<aside class="notes" id="notes" aria-label="講者備註">
+  <div class="notes-head"><b>講者備註</b><span id="notes-next"></span></div>
+  <div id="notes-body"></div>
+</aside>
+
 <div class="hint" id="hint">
   <span><kbd>&larr;</kbd> <kbd>&rarr;</kbd> 翻頁</span>
   <span><kbd>O</kbd> 總覽</span>
   <span><kbd>F</kbd> 全螢幕</span>
+  <span><kbd>N</kbd> 備註</span>
+  <span><kbd>S</kbd> 講者視窗</span>
 </div>
 
 <div class="bar">
@@ -1198,16 +1260,58 @@
   (function () {
     var TITLES = ["封面","學習目標","課程流程","安裝","API Key 與連線","三個層次","專案架構","系統流程","回答長度","Prompt 送出時機","三種回合判斷","實作一","聲線與 Prompt","工具前開場","實作二","Prompt 的限制","完成標準"];
     var NUMS = ["01","02","03","04","05","06","07","08","09","10","11","12","13","14","15","16","17"];
+    var NOTES = ["\u003cp class=\"n-time\">開場前\u003c/p>\u003cp class=\"n-goal\">封面。學生進場時就放著，人到齊後講兩句開場就翻下一張。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>大家好，今天兩堂課用的都是同一個 Dodo。第一堂讓它學會聽你講完再回答，第二堂讓它記得人，也知道什麼時候該開口。\u003c/li>\u003cli>這一堂我們拆成三件事：它講什麼、什麼時候換人講、一次講多長。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>課前，我在講師機：開好程式、貼好金鑰，問一句確認連得上。\u003c/li>\u003cli>課前，確認講師機喇叭有聲音，後面示範要放給全班聽。\u003c/li>\u003c/ol>","\u003cp class=\"n-time\">0 分\u003c/p>\u003cp class=\"n-goal\">講解。告訴大家今天結束時要會什麼，念過去就好，約 1 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>今天結束的時候，希望大家分得清楚三件事：Prompt 決定它講什麼；VAD 或按鍵決定什麼時候換人講；回答要多長，是寫在 Prompt 裡。\u003c/li>\u003cli>先講清楚，今天看到的每一句回答，都是真的送到 OpenAI Realtime API 拿回來的，不是我們寫死的罐頭句子。\u003c/li>\u003cli>今天做的東西會留在你這台電腦上，第二堂接著用。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">0–10 分\u003c/p>\u003cp class=\"n-goal\">講解＋示範。流程帶過去，接著切到講師機做開場示範，約 10 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>今天有兩個實作：實作一用打字，實作二戴耳機用講的。\u003c/li>\u003cli>（示範完）大家有看到嗎？打字送出，它馬上就回；用講的，就得有人判斷「你講完了沒」。這就是今天要處理的事。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>我在講師機：先打字問一句，讓大家看它馬上回。\u003c/li>\u003cli>我在講師機：改用講的，講到一半停一秒，讓大家看到它可能搶著回答。\u003c/li>\u003cli>示範完講上面第二句，接到安裝。\u003c/li>\u003c/ol>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>講師機這時是預設的 Semantic VAD，停一秒它多半會等你講完。沒搶話也沒關係，這段只要帶出「用講的，就得有人判斷講完了沒」；真的搶話，留到後面「三種回合判斷」那張用 Server VAD 示範。\u003c/li>\u003cli>大家課前就裝好的話，下一段只剩連線檢查，多出來的時間給講解。安裝拖太久，從講解段扣時間，不要扣實作。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">10–35 分\u003c/p>\u003cp class=\"n-goal\">帶著做。這張放著讓大家照四步安裝，約 15 分鐘，你和巡場的人下去幫忙。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>接下來安裝，一共四步，大概 15 分鐘。兩堂課只要裝這一次。\u003c/li>\u003cli>右邊是最常見的三種卡法，卡住先對一下；還是不行就舉手。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>請大家：照投影片四步做，最後貼上金鑰。\u003c/li>\u003cli>巡場的人開始走動，專門處理安裝。\u003c/li>\u003cli>有人 5 分鐘還裝不起來：請他換到課前裝好的備用座位，課後再幫他看。\u003c/li>\u003c/ol>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>發下去的 ZIP 要用打包好的直接下載連結。GitHub 的「Download ZIP」會多包一層資料夾，學生打開會找不到 start.bat。\u003c/li>\u003cli>看到「Realtime 連線逾時」，可是金鑰測試是綠的 → 不是金鑰的問題，是教室網路擋了即時連線。只有一台這樣就換座位；整間都這樣，第一堂改看投影，第二堂走不需要 Key 的步驟。\u003c/li>\u003cli>start.bat 被學校電腦擋下 → 在那個資料夾的網址列輸入 cmd，再執行 uv run python app.py。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">10–35 分\u003c/p>\u003cp class=\"n-goal\">帶著做。大家貼金鑰，每個人問一句確認連上。先完成的人玩神經模式，順便等還在裝的人。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>你貼的 Key 只存在這台電腦的程式裡。黑色視窗一關就沒了，要重貼；它也不會寫進之後下載的作品檔。\u003c/li>\u003cli>天氣 Key 可以不填，只是問天氣時它會說還沒設定。\u003c/li>\u003cli>怎麼知道接上了？輸入「你叫什麼？我叫什麼？」，它用中文答出名字和稱呼，就完成了。\u003c/li>\u003cli>已經接上的人可以先玩：按「神經模式」、按「套用」，再問同一句，聽聽口氣差多少。玩完按「溫柔陪伴」、「套用」換回來。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>請大家：貼上金鑰，按最下面的按鈕儲存。\u003c/li>\u003cli>請大家：輸入「你叫什麼？我叫什麼？」確認。\u003c/li>\u003cli>先完成的人：試神經模式，再換回溫柔陪伴。\u003c/li>\u003c/ol>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>按神經模式之前，一定先講這句：「這只是看 Prompt 能把口氣帶多遠，不會拿來對長者。」預設稱呼是王奶奶，神經模式會嗆她，旁聽的老師看得到。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">35–45 分\u003c/p>\u003cp class=\"n-goal\">講解。把 Prompt、回合控制、回答長度這三件事分開，講完就翻，約 3 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>語音 AI 表現好不好，看三件事，各自對應畫面上一個位置。\u003c/li>\u003cli>第一件是 A 區那五個分塊，也就是 Prompt：它是誰、用什麼口氣、能講什麼。\u003c/li>\u003cli>第二件是 B 區的回合控制：什麼時候開始聽、怎樣算你講完了、你能不能打斷它。\u003c/li>\u003cli>第三件是回答長度，一樣寫在 A 區的「對話方式」裡，我們沒有設字數上限。\u003c/li>\u003cli>記一句就好：Prompt 不負責判斷你講完了沒，回合控制也不決定它回答什麼。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">35–45 分\u003c/p>\u003cp class=\"n-goal\">講解。架構圖只講 Key 放在哪，其他格子帶過，約 2 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>這張圖大家只要記一件事：Key 只在你電腦上那個黑色視窗裡，網頁拿不到。\u003c/li>\u003cli>建立連線的那一次會經過你電腦上的後端；連上之後，聲音和文字是瀏覽器直接跟 OpenAI 講。\u003c/li>\u003cli>其他格子是給想看程式的人，課後可以自己對照。\u003c/li>\u003c/ul>\u003ch3>被問到就這樣答\u003c/h3>\u003cdl>\u003cdt>問：為什麼每台電腦各跑一個伺服器，不架一台大家共用？\u003c/dt>\u003cdd>答：因為瀏覽器只有在本機網址或 HTTPS 網址才肯開麥克風，所以我們讓每台電腦各跑一個本機伺服器。\u003c/dd>\u003c/dl>","\u003cp class=\"n-time\">35–45 分\u003c/p>\u003cp class=\"n-goal\">講解。一句話送出去之後經過哪些步驟，重點是第 ① 步和右下角的兩次回覆，約 3 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>先看第 ① 步：一連線，Prompt 就跟著送出去了，所以它講的第一句話就已經是豆豆。\u003c/li>\u003cli>你打字送出，算一個文字回合，不會經過 VAD。\u003c/li>\u003cli>看右下角：要查天氣時，它會在同一個回覆裡先講一句，再去叫工具；工具的結果送回去之後，下一個回覆才是正式回答。等一下實作會看到。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">45–58 分\u003c/p>\u003cp class=\"n-goal\">講解。控制回答長度的兩種做法，以及為什麼我們寫在 Prompt 裡，約 3 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>要讓它講短一點，有兩種做法：一種是在 Prompt 裡請它講短，一種是直接設字數上限。\u003c/li>\u003cli>設字數上限的話，字數一到就停，句子會斷在一半。所以我們不設上限，把長度寫在 Prompt 裡。\u003c/li>\u003cli>代價是模型不一定每次都照做。最後一段我會同一句話問五次給大家看。\u003c/li>\u003cli>補充一點：「安靜多久算講完」只有用麥克風的時候才有用，打字不會經過它。\u003c/li>\u003c/ul>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>最後那句一定要講。學生常把打字回答得快或慢，當成 VAD 設定的效果。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">45–58 分\u003c/p>\u003cp class=\"n-goal\">講解。為什麼 Prompt 要在連線的那一刻就送出，約 2 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>Prompt 是在建立連線的那一刻就送出去的；之後你按「套用」，會再更新一次。\u003c/li>\u003cli>如果等連上以後才補送，第一句可能是 OpenAI 預設的人格在回答。我們自己就遇過它直接回英文。\u003c/li>\u003cli>剛才連線檢查問「你叫什麼？我叫什麼？」，就是在確認這件事。\u003c/li>\u003c/ul>\u003ch3>被問到就這樣答\u003c/h3>\u003cdl>\u003cdt>問：怎麼確定 Prompt 有送成功？\u003c/dt>\u003cdd>答：問它「你叫什麼？我叫什麼？」，答得出分塊裡寫的名字和稱呼，就是送到了。\u003c/dd>\u003c/dl>","\u003cp class=\"n-time\">58–70 分\u003c/p>\u003cp class=\"n-goal\">講解＋示範。三種判斷「你講完了沒」的方法，最後用喇叭示範一次搶話，然後休息，約 12 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>第一種 Semantic VAD，聽你講的意思來判斷講完沒。等待傾向設 low，代表它比較願意等，適合講話慢、句子中間會停的長輩。\u003c/li>\u003cli>第二種 Server VAD，只看你安靜多久。安靜 800 毫秒就算講完，反應快，但你停一下它就可能搶話。\u003c/li>\u003cli>第三種 Push-to-talk，按住才錄、放開才送，完全不用判斷，在吵的地方最穩。\u003c/li>\u003cli>還有一點：你一插話它就停，是回合偵測把它打斷的，不是 Prompt 叫它停。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>我在講師機：B 區切到 Server VAD、開喇叭，講「我今天早上去……」然後停一秒，讓大家聽到它搶著回答。約 2 分鐘。\u003c/li>\u003cli>示範完切回 Semantic VAD，實作二第 1 步要用。\u003c/li>\u003cli>宣布休息 10 分鐘。\u003c/li>\u003c/ol>","\u003cp class=\"n-time\">80–105 分\u003c/p>\u003cp class=\"n-goal\">帶著做。實作一，全班用打字改 Prompt、比較前後回答。這張放著讓大家照七步做，約 25 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>休息回來，我們做實作一。這一段全部用打字，不需要耳麥。\u003c/li>\u003cli>照投影片七步做：先確認連線、問名字，再輸入那句搭公車的話；接著改分塊、按「套用」，同一句再問一次，比比看差在哪。\u003c/li>\u003cli>這一段請改「角色與身分」或「對話方式」。「個性與聲音」管的是講多快、聲音高低，文字模式看不出來，留到實作二。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>請大家：照投影片七步做。\u003c/li>\u003cli>最後加一步：請大家問「臺北今天天氣如何？」，接到後面工具前開場那張。\u003c/li>\u003c/ol>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>有人說找不到「套用」 → 那顆按鈕要改過東西才會出現。看不到，就代表送出去的已經是最新的。\u003c/li>\u003cli>有人想直接改下面那份完整 System Prompt → 那份只能看，要改請回上面的分塊。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">80–105 分\u003c/p>\u003cp class=\"n-goal\">講解。實作一做到一半時講：聲線和「個性與聲音」分塊是兩回事，約 2 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>聲線決定的是音色，有 10 種可以挑，預設是 sage。「個性與聲音」這個分塊決定的是用字、節奏和態度。兩個互不影響。\u003c/li>\u003cli>程式不會看你寫了什麼形容詞，就去改語速的設定。\u003c/li>\u003cli>還有一個 OpenAI 的限制：它用聲音回答過之後，同一段對話就不能換聲線。所以改了聲線按「套用」，會重新連線，重連之後它不記得剛才聊過什麼。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">80–105 分\u003c/p>\u003cp class=\"n-goal\">講解＋帶著做。大家剛問完天氣，解釋那句「我幫您看一下」是什麼，再請大家刪一行比較，約 5 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>剛才問天氣的時候，有沒有先看到一句「我幫您看一下」，外面是虛線框？這叫工具前開場。\u003c/li>\u003cli>它跟查天氣的工具呼叫在同一個回覆裡；工具結果回來之後的下一個回覆，才是正式回答。\u003c/li>\u003cli>預設的「對話方式」裡有一行，要它查之前先講一句。這是為了上課看得到才加的。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>請大家：在「對話方式」刪掉要它先講一句的那一行，按「套用」，再問一次天氣。\u003c/li>\u003cli>請大家看：那句開場不見了。\u003c/li>\u003c/ol>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>另一種杏色虛線框叫「旁白」，是模型自己把心裡的盤算講出來。不一定會出現，沒出現不是壞掉。\u003c/li>\u003c/ul>\u003ch3>被問到就這樣答\u003c/h3>\u003cdl>\u003cdt>問：旁白是怎麼判斷的？比對字串嗎？\u003c/dt>\u003cdd>答：不是比對字串，是讀模型自己標在輸出上的標籤。用關鍵字猜的話，它正常講故事時說的「我想想」也會被抓進來。\u003c/dd>\u003c/dl>","\u003cp class=\"n-time\">105–145 分\u003c/p>\u003cp class=\"n-goal\">帶著做。實作二，全班戴耳機用講的，一步換一種回合設定。你喊「講」和「停」帶節奏，約 40 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>實作二要用講的，請大家戴上耳機。\u003c/li>\u003cli>先切成語音：到「系統設定」，輸入、輸出都選語音，按「檢查麥克風」，瀏覽器問就按允許，再按「儲存設定」。\u003c/li>\u003cli>接下來五步，每一步我說「講」，大家照表上那句話講 30 秒；我說「停」，大家安靜 30 秒，看自己的畫面。\u003c/li>\u003cli>第 1、2 步如果它在你沒講話的時候自己回答，那是收到隔壁的聲音。這就是 Push-to-talk 存在的理由，第 5 步做完就聽得出差別。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>我在講師機：跟大家一起切語音、檢查麥克風、儲存。\u003c/li>\u003cli>每一步：我先念這一步 B 區要怎麼設、按「套用」，再喊「講」→ 30 秒 →「停」→ 30 秒。講師機同步做，沒耳麥的人看投影。\u003c/li>\u003cli>第 3 步：請大家要它講長一點，才有時間插話說「等一下」。\u003c/li>\u003c/ol>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>最常卡住的一步：沒按「檢查麥克風」，設定存不起來。\u003c/li>\u003cli>一律戴耳機，不開喇叭。開喇叭的話隔壁聽得到，麥克風也會收到它自己的聲音。\u003c/li>\u003cli>不要叫沒耳麥的人改用打字比較。打字不經過回合判斷，沒有東西可以比。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">145–155 分\u003c/p>\u003cp class=\"n-goal\">示範。你在講師機把同一句話問五次，全班看投影。要帶出的是：寫在 Prompt 裡的要求，模型不一定每次照做。約 10 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>長度寫在 Prompt 裡，模型會盡量配合，但沒有任何機制保證它每一次都照做。\u003c/li>\u003cli>對照剛才的插話：你一開口它就停，是回合偵測直接把它中斷，不需要模型配合。\u003c/li>\u003cli>所以要分清楚：哪些事拜託模型，哪些事要寫進程式。第二堂講「什麼時候必須閉嘴」，全部都寫在程式裡。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>我在講師機：在「對話方式」最後加「一次最多兩個短句」，按「套用」。\u003c/li>\u003cli>同一句「今天天氣好冷，你覺得我要穿什麼？」連問五次。\u003c/li>\u003cli>跟大家一起數：五次裡有幾次只講兩句。數完再講上面三句。\u003c/li>\u003c/ol>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>課前先在講師機試一次。當場五次剛好都照做，也照實講：「這次剛好都照做，不代表下次也會。」\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">155–165 分\u003c/p>\u003cp class=\"n-goal\">收尾。念完成標準，交代第二堂要注意的事，約 5 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>完成標準是看你做了什麼，我不會一個一個檢查。\u003c/li>\u003cli>第二堂在同一台電腦上會自動接著用。按「下載我的 Dodo」存一份 my-dodo.json，是換電腦時的備份，裡面沒有 Key。\u003c/li>\u003cli>黑色視窗先不要關；關了的話，第二堂要到「系統設定」重貼金鑰。\u003c/li>\u003c/ul>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>下課前提醒：只上第二堂的人要提早到，先把安裝做完。\u003c/li>\u003c/ul>"];
+    var SPEAKER_DOC = "\u003c!doctype html>\u003chtml lang=\"zh-Hant\">\u003chead>\u003cmeta charset=\"utf-8\">\u003ctitle>講者視窗 · 讓 Dodo 聽完，再回答\u003c/title>\n\u003cstyle>\n  body { margin: 0; padding: 22px 28px; background: #0c1c2b; color: #dce6ec; font: 18px/1.6 'Microsoft JhengHei UI', 'Noto Sans TC', sans-serif; }\n  header { display: flex; align-items: baseline; gap: 18px; padding-bottom: 12px; border-bottom: 1px solid rgba(220,230,236,.2); }\n  #sp-count { color: #f1b879; font: 800 22px/1 Consolas, monospace; }\n  #sp-title { flex: 1; font: 700 22px/1.3 'Noto Serif TC', serif; }\n  #sp-clock { color: #8ba3b4; font: 700 20px/1 Consolas, monospace; }\n  #sp-next { margin: 10px 0 0; color: #8ba3b4; font-size: 15px; }\n  h3, .n-time { margin: 16px 0 4px; color: #f1b879; font: 800 14px/1.2 sans-serif; letter-spacing: .12em; }\n  .n-time { color: #8fd0f0; }\n  .n-goal { margin: 6px 0 4px; padding: 10px 14px; border-left: 4px solid #8fd0f0; background: rgba(143,208,240,.1); color: #fff; font-weight: 700; font-size: 21px; line-height: 1.5; }\n  ul, ol { margin: 0; padding-left: 24px; } li { margin: 3px 0; }\n  dl { margin: 0; } dt { margin-top: 8px; font-weight: 700; } dd { margin: 2px 0 0 24px; color: #a9bccb; }\n  footer { margin-top: 22px; color: #8ba3b4; font-size: 13px; }\n\u003c/style>\u003c/head>\u003cbody>\n\u003cheader>\u003cspan id=\"sp-count\">\u003c/span>\u003cspan id=\"sp-title\">\u003c/span>\u003cspan id=\"sp-clock\">00:00\u003c/span>\u003c/header>\n\u003cp id=\"sp-next\">\u003c/p>\n\u003cmain id=\"sp-notes\">\u003c/main>\n\u003cfooter>在這個視窗按 ← → 也能翻頁；R 計時歸零。\u003c/footer>\n\u003c/body>\u003c/html>";
     var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
     var total = slides.length;
     var root = document.documentElement;
     var body = document.body;
     var current = 0;
     var built = false;
+    var speaker = null;
+    var startedAt = Date.now();
 
     function fit() {
-      root.style.setProperty('--scale', String(Math.min(window.innerWidth / 1600, window.innerHeight / 900)));
+      var drawer = document.getElementById('notes');
+      var reserved = drawer && body.classList.contains('is-notes') ? drawer.offsetHeight : 0;
+      root.style.setProperty('--scale', String(Math.min(window.innerWidth / 1600, (window.innerHeight - reserved) / 900)));
     }
+
+    function nextLabel() {
+      return current < total - 1 ? '下一張：' + NUMS[current + 1] + ' ' + TITLES[current + 1] : '最後一張';
+    }
+
+    function renderNotes() {
+      if (!NOTES.length) return;
+      document.getElementById('notes-body').innerHTML = NOTES[current] || '<p>（這一張沒有備註）</p>';
+      document.getElementById('notes-next').textContent = nextLabel();
+      if (!speaker || speaker.closed) return;
+      var d = speaker.document;
+      d.getElementById('sp-count').textContent = NUMS[current] + ' / ' + total;
+      d.getElementById('sp-title').textContent = TITLES[current];
+      d.getElementById('sp-next').textContent = nextLabel();
+      d.getElementById('sp-notes').innerHTML = NOTES[current] || '';
+    }
+
+    function openSpeaker() {
+      if (!NOTES.length) return;
+      if (speaker && !speaker.closed) { speaker.focus(); return; }
+      speaker = window.open('', 'dodo-speaker', 'width=980,height=780');
+      if (!speaker) return;
+      speaker.document.open();
+      speaker.document.write(SPEAKER_DOC);
+      speaker.document.close();
+      speaker.document.addEventListener('keydown', onKey);
+      startedAt = Date.now();
+      renderNotes();
+    }
+
+    setInterval(function () {
+      if (!speaker || speaker.closed) return;
+      var s = Math.floor((Date.now() - startedAt) / 1000);
+      var clock = speaker.document.getElementById('sp-clock');
+      if (clock) clock.textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    }, 1000);
 
     function show(i, push) {
       current = Math.max(0, Math.min(total - 1, i));
@@ -1229,6 +1333,7 @@
       if (push !== false) {
         try { history.replaceState(null, '', '#' + (current + 1)); } catch (err) { /* sandboxed */ }
       }
+      renderNotes();
     }
 
     // Thumbnails clone the real slides, so the overview can never drift from
@@ -1298,10 +1403,19 @@
       } catch (err) { /* fullscreen may be blocked */ }
     });
 
-    document.addEventListener('keydown', function (e) {
+    // Shared by the player and the speaker window, so both flip the same deck.
+    function onKey(e) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       var k = e.key;
       var over = body.classList.contains('is-overview');
+      if (NOTES.length && (k === 'n' || k === 'N')) {
+        body.classList.toggle('is-notes');
+        fit();
+        e.preventDefault();
+        return;
+      }
+      if (NOTES.length && (k === 's' || k === 'S')) { openSpeaker(); e.preventDefault(); return; }
+      if (k === 'r' || k === 'R') { startedAt = Date.now(); return; }
       if (k === 'ArrowRight' || k === 'PageDown' || k === ' ') {
         if (over) setOverview(false); else show(current + 1);
         e.preventDefault();
@@ -1314,7 +1428,9 @@
       else if (k === 'Escape') { if (over) setOverview(false); }
       else if (k === 'f' || k === 'F') { document.getElementById('full').click(); }
       wake();
-    });
+    }
+
+    document.addEventListener('keydown', onKey);
 
     var touchX = null;
     document.addEventListener('touchstart', function (e) { touchX = e.touches[0].clientX; }, { passive: true });

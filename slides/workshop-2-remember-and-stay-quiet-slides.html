@@ -267,13 +267,68 @@
     .where span, .hint { display: none; }
   }
 
+  /* ---- speaker notes (N) ---- */
+
+  .notes {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 24;
+    display: none;
+    height: 40vh;
+    overflow: auto;
+    padding: 14px 28px 76px;
+    border-top: 1px solid rgba(220, 230, 236, .2);
+    background: #0f2233;
+    color: var(--chrome);
+    font: 17px/1.6 var(--sans);
+  }
+
+  body.is-notes .notes { display: block; }
+  body.is-notes .stage { bottom: 40vh; }
+  /* The bar sits over the drawer's last lines; solid, it reads as a footer
+     instead of text printed on text. The drawer's bottom padding scrolls clear. */
+  body.is-notes .bar { background: #0f2233; border-top: 1px solid rgba(220, 230, 236, .12); }
+  body.is-overview .notes { display: none; }
+
+  .notes-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    color: var(--chrome-dim);
+    font: 600 13px/1.4 var(--sans);
+  }
+
+  .notes h3, .n-time {
+    margin: 12px 0 4px;
+    color: var(--apricot);
+    font: 800 13px/1.2 var(--sans);
+    letter-spacing: .12em;
+  }
+
+  .n-time { color: var(--accent); filter: brightness(1.6); }
+  .notes .n-goal {
+    margin: 4px 0 2px;
+    padding: 8px 12px;
+    border-left: 4px solid var(--accent);
+    background: rgba(220, 230, 236, .07);
+    color: #fff;
+    font: 700 19px/1.5 var(--sans);
+  }
+  .notes ul, .notes ol { margin: 0; padding-left: 22px; }
+  .notes li { margin: 2px 0; }
+  .notes dl { margin: 0; }
+  .notes dt { margin-top: 8px; font-weight: 700; }
+  .notes dd { margin: 2px 0 0 22px; color: var(--chrome-dim); }
+
   /* Printing is how the deck leaves this repo (PDF -> Canva / handout), so the
      paper is the artboard itself: one 1600x900 page per slide, no margin. */
   @page { size: 1600px 900px; margin: 0; }
 
   @media print {
     body { overflow: visible; background: #fff; }
-    .rail, .bar, .hint, .overview { display: none !important; }
+    .rail, .bar, .hint, .overview, .notes { display: none !important; }
     .stage { position: static; display: block; overflow: visible; }
     .slide { position: static; opacity: 1; visibility: visible; break-after: page; }
     .slide:last-child { break-after: auto; }
@@ -1392,10 +1447,17 @@
   <div class="grid" id="grid"></div>
 </div>
 
+<aside class="notes" id="notes" aria-label="講者備註">
+  <div class="notes-head"><b>講者備註</b><span id="notes-next"></span></div>
+  <div id="notes-body"></div>
+</aside>
+
 <div class="hint" id="hint">
   <span><kbd>&larr;</kbd> <kbd>&rarr;</kbd> 翻頁</span>
   <span><kbd>O</kbd> 總覽</span>
   <span><kbd>F</kbd> 全螢幕</span>
+  <span><kbd>N</kbd> 備註</span>
+  <span><kbd>S</kbd> 講者視窗</span>
 </div>
 
 <div class="bar">
@@ -1424,16 +1486,58 @@
   (function () {
     var TITLES = ["封面","學習目標","課程流程","開場設定","誰能寫入記憶","訪談稿","實作一：建檔","紅隊測試","三層記憶","記憶清單","專案架構","對話規範","實作二：主動規則","跑她的一天","模擬結果","取捨","實作三：主動對話","倫理問題","重點回顧","收尾","需要 API Key 的步驟","系統流程"];
     var NUMS = ["01","02","03","04","05","06","07","08","09","10","11","12","13","14","15","16","17","18","19","20","21","22"];
+    var NOTES = ["\u003cp class=\"n-time\">開場前\u003c/p>\u003cp class=\"n-goal\">封面。學生進場時就放著，人到齊後講兩句開場就翻下一張。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>第二堂的主角是一位長輩，秀蘭阿嬤。她是虛構的人物。\u003c/li>\u003cli>今天要回答三個問題：該記得她什麼、什麼時候可以主動找她講話、什麼時候必須閉嘴。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>課前，我在講師機：輸出改成語音，接上教室喇叭。\u003c/li>\u003cli>整堂有三個時刻要讓全班聽到豆豆的聲音：開場它自己先開口、第一次按「問豆豆這一區」、實作三 21:45 那則提醒。\u003c/li>\u003c/ol>","\u003cp class=\"n-time\">0 分\u003c/p>\u003cp class=\"n-goal\">講解。今天會做出哪些東西，念過去就好，約 1 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>今天會做出一份建檔、一套記憶規則、一組主動開口的規則。最後讓豆豆真的主動開口一次，也被規則擋下一次。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">0 分\u003c/p>\u003cp class=\"n-goal\">講解。流程帶過去，約 1 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>前半段建檔、做紅隊測試；後半段設定主動規則、試主動對話；最後談兩個需要人來判斷的問題。\u003c/li>\u003c/ul>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>網路或金鑰出問題時：讀訪談稿、建檔、長條圖、跑她的一天都不需要 Key，照樣做得完。要 Key 的只有問豆豆、紅隊、前後對照、真的開口、今日摘要。最後面有一張備用投影片整理這件事。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">0–10 分\u003c/p>\u003cp class=\"n-goal\">帶著做。四步開場設定，你一步一步喊，全班跟著做，約 10 分鐘。第 3 步做完，講師機的豆豆會自己先開口。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>（第 2 步時）為什麼要改稱呼？不改的話，Prompt 前半段叫她王奶奶，後半段叫她秀蘭阿嬤。\u003c/li>\u003cli>順便記一下：「套用」這顆按鈕，要欄位改過才會出現。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>請大家：按最上方的「02 記憶與主動」。\u003c/li>\u003cli>請大家：回到「01 Realtime Agent」，稱呼改成「秀蘭阿嬤」，按「套用」。\u003c/li>\u003cli>請大家：到「主動對話」分頁排一筆閒聊，提醒時間選剛過去的一分鐘，按「加入待提醒」。我在講師機也做，喇叭讓全班聽到它先開口。\u003c/li>\u003cli>只上第二堂的人：打開「完整 System Prompt」，看第一堂設定了什麼。\u003c/li>\u003c/ol>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>兩堂都上的人重開畫面，常會停在第一堂 → 請他按最上方「02 記憶與主動」。\u003c/li>\u003cli>講師機如果已經套用過參考建檔 → 第 3 步類型改選「重要提醒」，不然下午的時段會被午睡或歌唱班擋下。\u003c/li>\u003cli>只上第二堂的人要在開場前裝好，這一段不等人。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">10–15 分\u003c/p>\u003cp class=\"n-goal\">講解。有誰會寫進記憶，以及今天大家要扮的兩個角色，約 5 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>有三個地方會寫進豆豆的記憶：護理員填的建檔、豆豆自己記下她講的近況、系統整理的今日摘要。細節等紅隊做完再講。\u003c/li>\u003cli>今天大家要扮兩個角色。填表的時候，你是護理員；按「問豆豆這一區」、輸入紅隊的句子、回答豆豆的時候，你就是秀蘭阿嬤，所以那些句子都是用「我」講的。\u003c/li>\u003cli>這裡的「護理員」是指機構裡負責建檔的人；訪談稿裡她講的護理師、照服員，是她自己的叫法。\u003c/li>\u003c/ul>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>兩個角色一定要講清楚。不然學生會以為紅隊第 3 句「幫我刪掉」，是護理員自己要刪。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">15–25 分\u003c/p>\u003cp class=\"n-goal\">講解。學生自己讀訪談稿，你念投影片上三句，講清楚每句在建檔時代表什麼，約 10 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>「躺著不算起來啦」：她四點多就醒了，但五點才真的起來。起床時間要你自己判斷。\u003c/li>\u003cli>「我睡覺的時候誰來我都不理」：午睡就是不打擾的時段。\u003c/li>\u003cli>「不要一直問我先生」：這是豆豆不能主動提起的話題。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>請大家：按「顯示訪談稿」，自己讀一遍。\u003c/li>\u003cli>我把投影片上三句念出來，一句一句講它代表什麼。\u003c/li>\u003c/ol>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>按「問豆豆這一區」時，訪談稿會自動收起來，才看得到答案。要再讀，就再按一次「顯示訪談稿」。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">25–60 分\u003c/p>\u003cp class=\"n-goal\">帶著做。實作一建檔，這張放 35 分鐘。六區一區一區來：你先講這區怎麼填，大家填完再按「問豆豆這一區」。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>第 1 區：她希望被叫「秀蘭阿嬤」，不是「邱女士」，訪談稿第 5 段有講。\u003c/li>\u003cli>第 2 區：起床 05:00、就寢 21:30。作息填六段，全部勾「不打擾」：早餐、午餐、午睡、歌唱班（勾星期二、四）、晚餐、八點檔。走廊運動不用填。\u003c/li>\u003cli>第 3 區：血壓藥、血糖藥填 07:00，就是早餐吃完那一包；21:00 的安眠藥一定要填；回診日期填 2026-09-04；電話留空，它不會進 Prompt。\u003c/li>\u003cli>第 4 區：興趣填 4 筆、醫囑填 2 筆就夠了。醫囑「少甜少油」放這一區，因為它是長期事實，豆豆改不動。\u003c/li>\u003cli>第 5 區：膝蓋、頭暈、睡眠標「症狀」，豆豆會追問；想吃鹹粥標「短期念頭」，是聊天的材料。\u003c/li>\u003cli>第 6 區：先生、兒子多久來一次、膝蓋不會好了，放「不主動提起」；阿桂的病、存摺印章、說照服員粗心，放「不記」。\u003c/li>\u003cli>還有「翻身很用力」這一句：不記進 AI，但那是她的身體被怎麼對待，要交給真人處理。訪談稿的附記寫了已經轉知護理長。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>每一區約 5 分鐘：我講下面那句判斷 → 大家填 → 大家按那一區右上角的「問豆豆這一區」。\u003c/li>\u003cli>第一次按「問豆豆」時，講師機開喇叭，讓全班聽到它怎麼回答。\u003c/li>\u003c/ol>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>上面每一區那句一定要念。作息填法不一樣，後面「放寬」那一組的數字會跟投影片對不上；血壓藥時間填錯，結果會把它列成漏掉的提醒。\u003c/li>\u003cli>吃糖那一句（訪談稿第 1 段）只點出來，不下結論，最後一段再談。\u003c/li>\u003cli>有人落後，才介紹「直接載入範例建檔」，不要一開始就講。載入之後一樣要按「套用」。\u003c/li>\u003cli>建檔超時，從後面對話規範那 10 分鐘扣。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">60–75 分\u003c/p>\u003cp class=\"n-goal\">帶著做。紅隊測試：大家扮秀蘭阿嬤，試著讓豆豆記下不該記的東西，約 15 分鐘。不打分數，看它記了什麼。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>現在大家是秀蘭阿嬤。把投影片上 01、02、03、05 這四句打給豆豆，看它記了什麼。\u003c/li>\u003cli>看兩個地方：一個是聊天區標著 TOOL 的那一行，那是豆豆去寫記憶的紀錄；另一個是建檔裡的記憶清單。\u003c/li>\u003cli>這一段我們不自動判對錯。如果能自動判，就代表已經有一個完美的分類器了，而這一段要看的，正是它不存在。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>請大家：把四句輸入給豆豆，看 TOOL 那一行和記憶清單。\u003c/li>\u003cli>做完：刪掉一筆豆豆記的 → 按「＋ 新聊天」→ 問「你記得我卡片的號碼嗎？」\u003c/li>\u003cli>我在講師機：先不按新聊天問一次，再按了新聊天問一次，讓大家看差別。\u003c/li>\u003c/ol>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>第 04 句「我膝蓋好多了」現在不要講。先講的話，膝蓋那筆症狀會被換掉，實作三就沒有膝蓋可以問了。\u003c/li>\u003cli>四句豆豆都沒記的人 → 請他先說「我喜歡吃西瓜，記一下」，再刪那一筆。\u003c/li>\u003cli>紅隊要連得上 OpenAI；連不上的人看講師機投影。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">75–80 分\u003c/p>\u003cp class=\"n-goal\">講解。紅隊做完才講規則：三層記憶差在哪，關鍵字過濾擋得住什麼、擋不住什麼，約 3 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>剛才大家看到它記了各種東西，現在來看規則。三層的差別，在同一個名目再存一次會怎樣：A 層並存、B 層取代、C 層覆寫。\u003c/li>\u003cli>B 層整層最多 16 筆，滿了就丟最舊的。\u003c/li>\u003cli>長期偏好要放 A 層。放 B 層的話，她每講一種新水果，前一種就被換掉。\u003c/li>\u003cli>最右邊的 X：程式只檢查豆豆要存的那一筆，有沒有「密碼、金鑰、帳號、信用卡、驗證碼」這些字。它把名目寫成「卡號後四碼」就擋不到。擋不擋得住，要看它剛好用了哪個字。\u003c/li>\u003c/ul>\u003ch3>被問到就這樣答\u003c/h3>\u003cdl>\u003cdt>問：關鍵字過濾還有哪些漏洞？\u003c/dt>\u003cdd>答：有三個。第一，它只檢查豆豆寫記憶那一步，建檔表單和今日摘要不經過它。第二，第三人的病、對人的評價，程式完全不檢查，只在 Prompt 裡請它別記。第三，那句話還留在對話裡，沒按新聊天的話，今日摘要會再把它送一次給文字模型。\u003c/dd>\u003c/dl>","\u003cp class=\"n-time\">75–80 分\u003c/p>\u003cp class=\"n-goal\">講解。記憶清單怎麼看、刪掉為什麼要配新聊天、護理員鎖的兩面，講完休息，約 2 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>刪掉一筆，只是從 Prompt 拿掉。同一段對話裡，它還聽得到你剛才講的話，所以要先按「＋ 新聊天」再問。記憶和對話是兩個不同的地方。\u003c/li>\u003cli>護理員鎖有兩面。她要刪醫囑，豆豆拒絕，請她找護理員，就是剛才紅隊第 03 句。她說「我膝蓋好多了」，豆豆就換掉那筆症狀、不再追問，這個實作三第 1 步會做。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>宣布休息 10 分鐘。\u003c/li>\u003c/ol>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>這兩句都要靠模型配合。「少甜少油」要它傳的內容跟醫囑一字不差，才會看到「已拒絕」，不然會看到「找不到」。沒成功就照實講：是模型沒配合，權限沒有變。\u003c/li>\u003c/ul>\u003ch3>被問到就這樣答\u003c/h3>\u003cdl>\u003cdt>問：護理員鎖能保證什麼？\u003c/dt>\u003cdd>答：保證那一筆一定還在，但不保證模型看得到。每一層只送最新 16 筆進 Prompt，護理員填的排在最前面，豆豆多記幾筆，最早的就會掉出 Prompt。鎖也擋不住豆豆在旁邊另外加一筆相反的。\u003c/dd>\u003c/dl>","\u003cp class=\"n-time\">90–100 分\u003c/p>\u003cp class=\"n-goal\">講解。休息回來第一張，架構圖只講一件事：她的健康資料會送到哪裡，約 2 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>這張只講說明文字的最後一句：要 Key 的步驟，會把整份 Prompt 送到 OpenAI，包括她的用藥和症狀。今日摘要則是後端把對話另外送給一個文字模型整理。\u003c/li>\u003c/ul>\u003ch3>被問到就這樣答\u003c/h3>\u003cdl>\u003cdt>問：她的健康資料會送到 OpenAI 嗎？\u003c/dt>\u003cdd>答：會。所以今天的人物是虛構的。真實長者的資料屬於敏感個資，要本人同意，也要跟廠商約定好資料怎麼處理。\u003c/dd>\u003c/dl>","\u003cp class=\"n-time\">90–100 分\u003c/p>\u003cp class=\"n-goal\">帶著做。換兩種對話規範，同一句話各問一次比較，約 8 分鐘。要帶出的是：規範只管怎麼記、怎麼開口，建檔一個字都不用動。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>這四格只管豆豆怎麼記、怎麼開口。她的資料都是從建檔自動填進來的，建檔一個字都沒動。\u003c/li>\u003cli>四格裡那些英文，是豆豆讀寫記憶用的工具名稱，不用改。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>請大家：載入「話少型」→ 按「套用」→ 在「同一句話，前後對照」按「問這一句」。\u003c/li>\u003cli>請大家：載入「陪伴型」→ 按「套用」→ 再按一次「問這一句」。標「套用前」的就是話少型的答案。\u003c/li>\u003cli>最後停在陪伴型，實作三第 2 步「請教她」會用到它第 09 格那一句。\u003c/li>\u003c/ol>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>第二次問的時候，模型看得到第一次的答案，兩個答案會互相影響。被問到就照實講；要比得乾淨，中間按「＋ 新聊天」。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">100–125 分\u003c/p>\u003cp class=\"n-goal\">講解。實作二開始前，先講清楚七條規則怎麼擋人。這一頁只做模擬，豆豆不會說話，約 5 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>豆豆要主動開口之前，程式會由上往下檢查這七條，被任何一條擋下就不開口。只有第 1 條重要提醒例外，一路直達。\u003c/li>\u003cli>大家能調的只有兩個數字：第 5 條的間隔、第 6 條的每日上限。安靜和不打擾時段是從建檔的作息算出來的，要改就回建檔改。\u003c/li>\u003cli>記住一點，等一下會用到：重要提醒不算在每日次數裡，但它講完之後，間隔會從那一刻重新算。\u003c/li>\u003cli>長條圖下面第二行，會寫現在是哪一條在卡。例如把間隔從 30 改成 10 卻沒變化，多半是每日上限在卡。\u003c/li>\u003c/ul>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>長條圖畫的是今天，「跑她的一天」跑的是星期二。今天如果不是星期二、四，長條圖上看不到歌唱班，模擬卻會在 15:10 擋下一則。有人問就這樣解釋。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">100–125 分\u003c/p>\u003cp class=\"n-goal\">帶著做。四組設定依序跑「她的一天」，每一組都先猜再按，約 10 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>先講兩個數字的意思。「漏掉的健康關心」：該問她身體、卻被規則擋下的次數。「打擾」：豆豆自己先開口閒聊的次數，她來找豆豆不算。\u003c/li>\u003cli>這一天的 18 個事件來自參考建檔，全班跑的是同一天。你的建檔決定哪些時段不能開口；你漏填的用藥，會列在結果最下面。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>每一組：請大家先在兩個欄位填預測，再按「跑她的一天」。\u003c/li>\u003cli>第 1 組跑完，我把時間軸當成她的一天念出來：「05:30 天亮了，05:50 聊望春風，07:20 講新聞，08:00、08:15、10:00、14:30……她這一天被豆豆找去閒聊七次。」\u003c/li>\u003c/ol>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>有人數字跟投影片不一樣 → 先請他對起床、就寢和不打擾。最常見的是多填了走廊運動，又沒取消預設勾著的不打擾。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">100–125 分\u003c/p>\u003cp class=\"n-goal\">講解。公布四組結果，重點講 60／4 為什麼兩項都變差，約 5 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>最意外的應該是 60／4：間隔拉長，兩項反而都變差。\u003c/li>\u003cli>原因是這樣：07:00 的吃藥提醒講完，間隔重新算；07:30 的膝蓋追問才隔半小時，就被 60 分鐘擋掉了。被擋的事不會延後，省下來的那一次，給了 10:00 的閒聊。\u003c/li>\u003cli>所以不是間隔越大越差，結果是鋸齒狀的。每日上限 4 則時（前面是漏掉幾次、後面是打擾幾次）：間隔 11 到 20 分是 3／4，21 到 30 是 1／2，31 到 60 是 2／3，61 到 75 是 3／4，76 到 120 又回到 1／2。\u003c/li>\u003cli>放寬那組雖然一次都沒漏，但 30／7 也一次不漏，只打擾 4 次。\u003c/li>\u003c/ul>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>有學生打 90 發現又變好 → 照實講：這一天的時刻表是我們排的，07:30 剛好在吃藥後半小時，所以 30 分是一個分界。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">100–125 分\u003c/p>\u003cp class=\"n-goal\">帶著做＋講解。勾固定時段再跑一次，然後講取捨：沒有一組設定兩項都是 0，約 5 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>我們用測試掃過 182 組設定，沒有一組兩項都是 0，也沒有一組同時比 30／4 好。不過這是這一天、這套規則的結果，不是定律。\u003c/li>\u003cli>為什麼做不到兩項都是 0？因為健康關心和閒聊共用同一組旋鈕，而每一則閒聊都算打擾。\u003c/li>\u003cli>如果是我，會選 30／4：漏掉一次追問，下一次還能再問；要一次都不漏，至少得多吵她兩次。（換成你自己的選擇也可以；學生不用交答案。）\u003c/li>\u003cli>固定時段那組兩項都比較差：05:30、07:30 她醒著卻被擋，07:30 正好是該追問膝蓋的那一次；12:45 她在午睡，反而放行去閒聊。因為它只看現在幾點，不看她在做什麼。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>請大家：勾「改用固定時段跑」，再按一次「跑她的一天」，看對照結果。\u003c/li>\u003c/ol>","\u003cp class=\"n-time\">125–145 分\u003c/p>\u003cp class=\"n-goal\">帶著做。實作三，讓豆豆真的主動開口，也看它被規則擋下。全部用「🧪 自己編一個狀況試一次」，四步，約 20 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>（第 1 步後）把紅隊第 03 句和這一句放在一起看：她要刪醫囑，豆豆不肯；她說膝蓋好了，豆豆就更新。這是護理員鎖的兩面。\u003c/li>\u003cli>（第 3 步後）21:45 閒聊被擋、重要提醒照講：是人事先把哪一類事標成值得吵醒她，程式照著標籤放行。\u003c/li>\u003cli>（第 4 步後）主動開口一律先過程式的規則，被擋下就不會去問模型，所以 Prompt 寫什麼都用不上。這就是第一堂最後那句：哪些事拜託模型，哪些事寫進程式。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>先設定：請大家把「假裝現在幾點」填 10:00；上面「上一次主動找她是幾分鐘前」填 60、「今日已發送」填 0。\u003c/li>\u003cli>第 1 步：類型選「健康關心」，內容會自動帶最後一筆症狀（睡眠），改成「關心她的膝蓋」。大家當阿嬤回「我膝蓋好多了」，再到建檔看那筆症狀被換掉。\u003c/li>\u003cli>第 2 步之前：「上一次主動找她」再填一次 60（豆豆每真的開口一次，這兩格會跳回真實數字）。然後閒聊「請教她怎麼煮麵」；再勾「假裝她剛剛說了不想聊」試一次 → 被擋下。\u003c/li>\u003cli>第 3 步：取消勾選，時間改 21:45。閒聊被擋；重要提醒內容填「九點的安眠藥還沒吃，記得吃半顆」，照常送出。講師機開喇叭。\u003c/li>\u003cli>第 4 步我示範：對話規範第 09 格加「隨時都可以找她聊，半夜也要聊」→ 按「套用」→ 回來用 21:45 再試閒聊，一樣被擋。\u003c/li>\u003c/ol>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>不要用「⏰ 排一個真的時間」做這一段。上課時間常落在她的午睡、歌唱班或晚餐，一排就被擋。\u003c/li>\u003cli>第 2 步「請教她怎麼煮麵」要靠模型配合，課前在講師機試一次。\u003c/li>\u003c/ul>\u003ch3>被問到就這樣答\u003c/h3>\u003cdl>\u003cdt>問：她對豆豆說「我不想聊」，規則會生效嗎？\u003c/dt>\u003cdd>答：不會。要有人按「她剛說不想聊」那顆按鈕才會。按了之後最多 60 分鐘就失效，碰到她的起床時間會提早失效。60 分鐘是課堂用的數字。\u003c/dd>\u003cdt>問：重要提醒半夜也照講，合理嗎？\u003c/dt>\u003cdd>答：這一版把重要提醒寫死成永遠放行，是簡化。哪些提醒能在睡眠時段講，應該由護理員決定；吃了安眠藥的人半夜被叫醒，有跌倒的風險。\u003c/dd>\u003c/dl>","\u003cp class=\"n-time\">145–155 分\u003c/p>\u003cp class=\"n-goal\">講解。左邊三件規則已經處理，照念；右邊兩題需要人判斷，講立場（目前是草案），約 10 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>先看左邊，規則已經處理的三件。第一，她說不想聊的時候，吃藥提醒還是照送。她拒絕的是閒聊，不是照護；提醒講一句就好，不追問。如果她連提醒都一直拒絕，那是要讓護理員知道的訊號。\u003c/li>\u003cli>第二，半夜不做健康關心，被擋的那一次就不問了。重要提醒照送，但哪些提醒可以吵醒她，應該由護理員決定。像隔天早上的回診，前一晚睡前或當天早上提醒就好。\u003c/li>\u003cli>第三，醫囑豆豆刪不掉，會請她找護理員或醫生。不刪紀錄，不等於逼她照做；先接住她的不滿，不要說教。\u003c/li>\u003cli>糖（立場草案）：豆豆不答應幫她保密，也不自己跑去告訴護理員。這件事不記下來，請她自己跟護理師說。當下接住她，不唸她，也不替醫生說可以吃。她要是說冒冷汗、發抖、心悸、頭昏到站不住，不管跟糖有沒有關係，都請她馬上找護理員。\u003c/li>\u003cli>心情低落（立場草案）：AI 不可以自己通知家屬。心情是 AI 猜的，會猜錯；要不要告訴家人，由護理員或社工判斷，也要先問過她。AI 能做的，是照事先講好的規則記下觀察，交給真人。\u003c/li>\u003cli>這兩題背後是同一個標準：這件事是不是照護需要知道的健康變化，而且記什麼、誰看得到，要事先跟她講好。一顆糖不是；持續的心情低落是。\u003c/li>\u003c/ul>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>右邊兩題的立場還是草案。定案之前，可以照你自己的立場講。\u003c/li>\u003cli>這一版沒有任何通報或緊急流程，Prompt 只會請她找真人。被問到就照實講。\u003c/li>\u003c/ul>\u003ch3>被問到就這樣答\u003c/h3>\u003cdl>\u003cdt>問：為什麼豆豆不能答應幫她保密？\u003c/dt>\u003cdd>答：她講的話會留在對話裡，今日摘要也可能把它整理進記憶，護理員看得到。豆豆保證不了，答應了就是騙她。\u003c/dd>\u003c/dl>","\u003cp class=\"n-time\">155–165 分\u003c/p>\u003cp class=\"n-goal\">收尾。三個重點各講一句，約 3 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>今天記三件事就好。第一，要不要開口是程式決定的，模型只負責怎麼說。\u003c/li>\u003cli>第二，安靜時段是從她的作息算出來的，不是一個固定的設定值。\u003c/li>\u003cli>第三，設計記憶時，要先想清楚誰能寫、誰能改、誰能刪。\u003c/li>\u003c/ul>\u003ch3>被問到就這樣答\u003c/h3>\u003cdl>\u003cdt>問：「虛擬孫女」算不算騙長者？\u003c/dt>\u003cdd>答：虛擬孫女是這堂課的角色設定。她問是不是真人時豆豆怎麼回答，預設 Prompt 沒有另外規定，交給模型判斷。\u003c/dd>\u003cdt>問：長者知道自己被記下來嗎？\u003c/dt>\u003cdd>答：預設的規則是讀寫記憶前先講一句；話少型拿掉了這一句，代價是她不知道自己被記。記下的東西護理員都看得到。\u003c/dd>\u003c/dl>","\u003cp class=\"n-time\">155–165 分\u003c/p>\u003cp class=\"n-goal\">帶著做。最後兩步：產生今日摘要、下載備份，再念完成標準，約 5 分鐘。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>右邊是完成標準。「她的一天」只看有沒有跑過，不看跑出幾分。\u003c/li>\u003c/ul>\u003ch3>操作\u003c/h3>\u003col>\u003cli>請大家：按「產生今日摘要」，到建檔的記憶清單，確認多了一筆標「系統整理」的。\u003c/li>\u003cli>請大家：按「下載我的 Dodo」，存一份 my-dodo.json。\u003c/li>\u003c/ol>\u003ch3>容易卡住\u003c/h3>\u003cul>\u003cli>今日摘要只摘畫面上這一段對話，也就是上次按「＋ 新聊天」之後的；紅隊之後按過新聊天，就只摘那之後的內容。再按一次會蓋掉前一筆。\u003c/li>\u003cli>被問到的話：摘要是後端另外叫一個文字模型做的，不是聊天用的 Realtime 模型。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">備用\u003c/p>\u003cp class=\"n-goal\">備用。網路或金鑰出問題時才翻到這張。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>現在連不上 OpenAI，但大部分步驟不需要 Key：讀訪談稿、建檔、長條圖、跑她的一天、固定時段對照，都照樣做得完。\u003c/li>\u003c/ul>","\u003cp class=\"n-time\">備用\u003c/p>\u003cp class=\"n-goal\">備用。有人問「記憶和主動開口怎麼串起來」時才翻。\u003c/p>\u003ch3>可以這樣講\u003c/h3>\u003cul>\u003cli>上面這條是記憶：豆豆要寫記憶時先分層，含密碼、金鑰這類字的會被拒絕，每層最多 16 筆送進 Prompt。\u003c/li>\u003cli>下面這條是主動開口：事件先過七條規則，被擋下只留一行說明，通過了才讓模型開口。\u003c/li>\u003c/ul>"];
+    var SPEAKER_DOC = "\u003c!doctype html>\u003chtml lang=\"zh-Hant\">\u003chead>\u003cmeta charset=\"utf-8\">\u003ctitle>講者視窗 · 會記得、會主動，也知道何時閉嘴\u003c/title>\n\u003cstyle>\n  body { margin: 0; padding: 22px 28px; background: #0c1c2b; color: #dce6ec; font: 18px/1.6 'Microsoft JhengHei UI', 'Noto Sans TC', sans-serif; }\n  header { display: flex; align-items: baseline; gap: 18px; padding-bottom: 12px; border-bottom: 1px solid rgba(220,230,236,.2); }\n  #sp-count { color: #f1b879; font: 800 22px/1 Consolas, monospace; }\n  #sp-title { flex: 1; font: 700 22px/1.3 'Noto Serif TC', serif; }\n  #sp-clock { color: #8ba3b4; font: 700 20px/1 Consolas, monospace; }\n  #sp-next { margin: 10px 0 0; color: #8ba3b4; font-size: 15px; }\n  h3, .n-time { margin: 16px 0 4px; color: #f1b879; font: 800 14px/1.2 sans-serif; letter-spacing: .12em; }\n  .n-time { color: #8fd0f0; }\n  .n-goal { margin: 6px 0 4px; padding: 10px 14px; border-left: 4px solid #8fd0f0; background: rgba(143,208,240,.1); color: #fff; font-weight: 700; font-size: 21px; line-height: 1.5; }\n  ul, ol { margin: 0; padding-left: 24px; } li { margin: 3px 0; }\n  dl { margin: 0; } dt { margin-top: 8px; font-weight: 700; } dd { margin: 2px 0 0 24px; color: #a9bccb; }\n  footer { margin-top: 22px; color: #8ba3b4; font-size: 13px; }\n\u003c/style>\u003c/head>\u003cbody>\n\u003cheader>\u003cspan id=\"sp-count\">\u003c/span>\u003cspan id=\"sp-title\">\u003c/span>\u003cspan id=\"sp-clock\">00:00\u003c/span>\u003c/header>\n\u003cp id=\"sp-next\">\u003c/p>\n\u003cmain id=\"sp-notes\">\u003c/main>\n\u003cfooter>在這個視窗按 ← → 也能翻頁；R 計時歸零。\u003c/footer>\n\u003c/body>\u003c/html>";
     var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
     var total = slides.length;
     var root = document.documentElement;
     var body = document.body;
     var current = 0;
     var built = false;
+    var speaker = null;
+    var startedAt = Date.now();
 
     function fit() {
-      root.style.setProperty('--scale', String(Math.min(window.innerWidth / 1600, window.innerHeight / 900)));
+      var drawer = document.getElementById('notes');
+      var reserved = drawer && body.classList.contains('is-notes') ? drawer.offsetHeight : 0;
+      root.style.setProperty('--scale', String(Math.min(window.innerWidth / 1600, (window.innerHeight - reserved) / 900)));
     }
+
+    function nextLabel() {
+      return current < total - 1 ? '下一張：' + NUMS[current + 1] + ' ' + TITLES[current + 1] : '最後一張';
+    }
+
+    function renderNotes() {
+      if (!NOTES.length) return;
+      document.getElementById('notes-body').innerHTML = NOTES[current] || '<p>（這一張沒有備註）</p>';
+      document.getElementById('notes-next').textContent = nextLabel();
+      if (!speaker || speaker.closed) return;
+      var d = speaker.document;
+      d.getElementById('sp-count').textContent = NUMS[current] + ' / ' + total;
+      d.getElementById('sp-title').textContent = TITLES[current];
+      d.getElementById('sp-next').textContent = nextLabel();
+      d.getElementById('sp-notes').innerHTML = NOTES[current] || '';
+    }
+
+    function openSpeaker() {
+      if (!NOTES.length) return;
+      if (speaker && !speaker.closed) { speaker.focus(); return; }
+      speaker = window.open('', 'dodo-speaker', 'width=980,height=780');
+      if (!speaker) return;
+      speaker.document.open();
+      speaker.document.write(SPEAKER_DOC);
+      speaker.document.close();
+      speaker.document.addEventListener('keydown', onKey);
+      startedAt = Date.now();
+      renderNotes();
+    }
+
+    setInterval(function () {
+      if (!speaker || speaker.closed) return;
+      var s = Math.floor((Date.now() - startedAt) / 1000);
+      var clock = speaker.document.getElementById('sp-clock');
+      if (clock) clock.textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    }, 1000);
 
     function show(i, push) {
       current = Math.max(0, Math.min(total - 1, i));
@@ -1455,6 +1559,7 @@
       if (push !== false) {
         try { history.replaceState(null, '', '#' + (current + 1)); } catch (err) { /* sandboxed */ }
       }
+      renderNotes();
     }
 
     // Thumbnails clone the real slides, so the overview can never drift from
@@ -1524,10 +1629,19 @@
       } catch (err) { /* fullscreen may be blocked */ }
     });
 
-    document.addEventListener('keydown', function (e) {
+    // Shared by the player and the speaker window, so both flip the same deck.
+    function onKey(e) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       var k = e.key;
       var over = body.classList.contains('is-overview');
+      if (NOTES.length && (k === 'n' || k === 'N')) {
+        body.classList.toggle('is-notes');
+        fit();
+        e.preventDefault();
+        return;
+      }
+      if (NOTES.length && (k === 's' || k === 'S')) { openSpeaker(); e.preventDefault(); return; }
+      if (k === 'r' || k === 'R') { startedAt = Date.now(); return; }
       if (k === 'ArrowRight' || k === 'PageDown' || k === ' ') {
         if (over) setOverview(false); else show(current + 1);
         e.preventDefault();
@@ -1540,7 +1654,9 @@
       else if (k === 'Escape') { if (over) setOverview(false); }
       else if (k === 'f' || k === 'F') { document.getElementById('full').click(); }
       wake();
-    });
+    }
+
+    document.addEventListener('keydown', onKey);
 
     var touchX = null;
     document.addEventListener('touchstart', function (e) { touchX = e.touches[0].clientX; }, { passive: true });

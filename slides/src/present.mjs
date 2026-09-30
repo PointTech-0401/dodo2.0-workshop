@@ -1,14 +1,60 @@
 // Wraps the .dc.html artboards in a presentation player: one 1600x900 slide
 // scaled to the viewport, keyboard driven, with an overview grid.
+// With a notes module it also carries speaker notes (N: drawer, S: speaker
+// window) and writes the same notes as a printable Markdown file.
 import { readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
-const [, , dir, out, deckName, accentName] = process.argv;
+const [, , dir, out, deckName, accentName, notesPath] = process.argv;
 
 const ACCENTS = { blue: '#397d9f', green: '#287653' };
 const accent = ACCENTS[accentName];
 
 const canvas = JSON.parse(readFileSync(join(dir, 'canvas.json'), 'utf8'));
+
+// Notes are keyed by artboard file, so a slide that is added, renamed or
+// dropped without its notes stops the build instead of silently shifting them.
+const notes = notesPath ? (await import(pathToFileURL(resolve(notesPath)).href)).default : null;
+if (notes) {
+  const files = canvas.artboards.map((a) => a.file);
+  const missing = files.filter((f) => !notes[f]);
+  const unknown = Object.keys(notes).filter((f) => !files.includes(f));
+  const noGoal = files.filter((f) => notes[f] && !notes[f].goal);
+  if (missing.length || unknown.length || noGoal.length) {
+    throw new Error(`notes out of sync with ${dir}: missing [${missing.join(', ')}] unknown [${unknown.join(', ')}] no goal [${noGoal.join(', ')}]`);
+  }
+}
+
+// `do` is a sequence the presenter walks through, so it is the one numbered list.
+const NOTE_LISTS = [['say', '可以這樣講', 'ul'], ['do', '操作', 'ol'], ['watch', '容易卡住', 'ul']];
+const QA_LABEL = '被問到就這樣答';
+const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function noteHtml(n) {
+  if (!n) return '';
+  const parts = [];
+  if (n.time) parts.push(`<p class="n-time">${esc(n.time)}</p>`);
+  if (n.goal) parts.push(`<p class="n-goal">${esc(n.goal)}</p>`);
+  for (const [key, label, tag] of NOTE_LISTS) {
+    if (n[key]?.length) parts.push(`<h3>${label}</h3><${tag}>${n[key].map((t) => `<li>${esc(t)}</li>`).join('')}</${tag}>`);
+  }
+  if (n.qa?.length) {
+    parts.push(`<h3>${QA_LABEL}</h3><dl>${n.qa.map(([q, a]) => `<dt>問：${esc(q)}</dt><dd>答：${esc(a)}</dd>`).join('')}</dl>`);
+  }
+  return parts.join('');
+}
+
+function noteMd(title, num, n) {
+  const lines = [`## ${num} · ${title}${n.time ? `（${n.time}）` : ''}`, ''];
+  if (n.goal) lines.push(`> ${n.goal}`, '');
+  for (const [key, label, tag] of NOTE_LISTS) {
+    const mark = (i) => (tag === 'ol' ? `${i + 1}.` : '-');
+    if (n[key]?.length) lines.push(`**${label}**`, '', ...n[key].map((t, i) => `${mark(i)} ${t}`), '');
+  }
+  if (n.qa?.length) lines.push(`**${QA_LABEL}**`, '', ...n.qa.map(([q, a]) => `- 問：${q}\n  答：${a}`), '');
+  return lines.join('\n');
+}
 
 // Each artboard file is one slide; take the markup between the helmet (fonts,
 // which the player supplies once) and the closing wrapper.
@@ -27,6 +73,40 @@ ${s.body}
   </div>
 </section>`)
   .join('\n');
+
+// Inline JSON inside <script>: `<` is escaped so a note can never close the tag.
+const inlineJson = (v) => JSON.stringify(v).replace(/</g, '\\u003c');
+const notesJson = inlineJson(notes ? slides.map((s) => noteHtml(notes[s.file])) : []);
+
+// The speaker window is an about:blank popup the player writes into, so it
+// shares the player's origin even from file:// and needs no second file.
+const speakerDoc = `<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>講者視窗 · ${esc(deckName)}</title>
+<style>
+  body { margin: 0; padding: 22px 28px; background: #0c1c2b; color: #dce6ec; font: 18px/1.6 'Microsoft JhengHei UI', 'Noto Sans TC', sans-serif; }
+  header { display: flex; align-items: baseline; gap: 18px; padding-bottom: 12px; border-bottom: 1px solid rgba(220,230,236,.2); }
+  #sp-count { color: #f1b879; font: 800 22px/1 Consolas, monospace; }
+  #sp-title { flex: 1; font: 700 22px/1.3 'Noto Serif TC', serif; }
+  #sp-clock { color: #8ba3b4; font: 700 20px/1 Consolas, monospace; }
+  #sp-next { margin: 10px 0 0; color: #8ba3b4; font-size: 15px; }
+  h3, .n-time { margin: 16px 0 4px; color: #f1b879; font: 800 14px/1.2 sans-serif; letter-spacing: .12em; }
+  .n-time { color: #8fd0f0; }
+  .n-goal { margin: 6px 0 4px; padding: 10px 14px; border-left: 4px solid #8fd0f0; background: rgba(143,208,240,.1); color: #fff; font-weight: 700; font-size: 21px; line-height: 1.5; }
+  ul, ol { margin: 0; padding-left: 24px; } li { margin: 3px 0; }
+  dl { margin: 0; } dt { margin-top: 8px; font-weight: 700; } dd { margin: 2px 0 0 24px; color: #a9bccb; }
+  footer { margin-top: 22px; color: #8ba3b4; font-size: 13px; }
+</style></head><body>
+<header><span id="sp-count"></span><span id="sp-title"></span><span id="sp-clock">00:00</span></header>
+<p id="sp-next"></p>
+<main id="sp-notes"></main>
+<footer>在這個視窗按 ← → 也能翻頁；R 計時歸零。</footer>
+</body></html>`;
+
+if (notes) {
+  const md = [`# ${deckName}：講者備註`, '', ...slides.map((s) => noteMd(s.title, s.num, notes[s.file]))].join('\n');
+  const mdOut = out.endsWith('-slides.html') ? out.replace(/-slides\.html$/, '-notes.md') : `${out}.notes.md`;
+  writeFileSync(mdOut, md, 'utf8');
+  console.log(`notes -> ${mdOut}`);
+}
 
 const html = `<title>${deckName}</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;800;900&amp;family=Noto+Serif+TC:wght@500;700;900&amp;display=swap">
@@ -297,13 +377,68 @@ const html = `<title>${deckName}</title>
     .where span, .hint { display: none; }
   }
 
+  /* ---- speaker notes (N) ---- */
+
+  .notes {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 24;
+    display: none;
+    height: 40vh;
+    overflow: auto;
+    padding: 14px 28px 76px;
+    border-top: 1px solid rgba(220, 230, 236, .2);
+    background: #0f2233;
+    color: var(--chrome);
+    font: 17px/1.6 var(--sans);
+  }
+
+  body.is-notes .notes { display: block; }
+  body.is-notes .stage { bottom: 40vh; }
+  /* The bar sits over the drawer's last lines; solid, it reads as a footer
+     instead of text printed on text. The drawer's bottom padding scrolls clear. */
+  body.is-notes .bar { background: #0f2233; border-top: 1px solid rgba(220, 230, 236, .12); }
+  body.is-overview .notes { display: none; }
+
+  .notes-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    color: var(--chrome-dim);
+    font: 600 13px/1.4 var(--sans);
+  }
+
+  .notes h3, .n-time {
+    margin: 12px 0 4px;
+    color: var(--apricot);
+    font: 800 13px/1.2 var(--sans);
+    letter-spacing: .12em;
+  }
+
+  .n-time { color: var(--accent); filter: brightness(1.6); }
+  .notes .n-goal {
+    margin: 4px 0 2px;
+    padding: 8px 12px;
+    border-left: 4px solid var(--accent);
+    background: rgba(220, 230, 236, .07);
+    color: #fff;
+    font: 700 19px/1.5 var(--sans);
+  }
+  .notes ul, .notes ol { margin: 0; padding-left: 22px; }
+  .notes li { margin: 2px 0; }
+  .notes dl { margin: 0; }
+  .notes dt { margin-top: 8px; font-weight: 700; }
+  .notes dd { margin: 2px 0 0 22px; color: var(--chrome-dim); }
+
   /* Printing is how the deck leaves this repo (PDF -> Canva / handout), so the
      paper is the artboard itself: one 1600x900 page per slide, no margin. */
   @page { size: 1600px 900px; margin: 0; }
 
   @media print {
     body { overflow: visible; background: #fff; }
-    .rail, .bar, .hint, .overview { display: none !important; }
+    .rail, .bar, .hint, .overview, .notes { display: none !important; }
     .stage { position: static; display: block; overflow: visible; }
     .slide { position: static; opacity: 1; visibility: visible; break-after: page; }
     .slide:last-child { break-after: auto; }
@@ -323,10 +458,17 @@ ${sections}
   <div class="grid" id="grid"></div>
 </div>
 
+${notes ? `<aside class="notes" id="notes" aria-label="講者備註">
+  <div class="notes-head"><b>講者備註</b><span id="notes-next"></span></div>
+  <div id="notes-body"></div>
+</aside>` : ''}
+
 <div class="hint" id="hint">
   <span><kbd>&larr;</kbd> <kbd>&rarr;</kbd> 翻頁</span>
   <span><kbd>O</kbd> 總覽</span>
-  <span><kbd>F</kbd> 全螢幕</span>
+  <span><kbd>F</kbd> 全螢幕</span>${notes ? `
+  <span><kbd>N</kbd> 備註</span>
+  <span><kbd>S</kbd> 講者視窗</span>` : ''}
 </div>
 
 <div class="bar">
@@ -355,16 +497,58 @@ ${sections}
   (function () {
     var TITLES = ${JSON.stringify(slides.map((s) => s.title))};
     var NUMS = ${JSON.stringify(slides.map((s) => s.num))};
+    var NOTES = ${notesJson};
+    var SPEAKER_DOC = ${inlineJson(speakerDoc)};
     var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
     var total = slides.length;
     var root = document.documentElement;
     var body = document.body;
     var current = 0;
     var built = false;
+    var speaker = null;
+    var startedAt = Date.now();
 
     function fit() {
-      root.style.setProperty('--scale', String(Math.min(window.innerWidth / 1600, window.innerHeight / 900)));
+      var drawer = document.getElementById('notes');
+      var reserved = drawer && body.classList.contains('is-notes') ? drawer.offsetHeight : 0;
+      root.style.setProperty('--scale', String(Math.min(window.innerWidth / 1600, (window.innerHeight - reserved) / 900)));
     }
+
+    function nextLabel() {
+      return current < total - 1 ? '下一張：' + NUMS[current + 1] + ' ' + TITLES[current + 1] : '最後一張';
+    }
+
+    function renderNotes() {
+      if (!NOTES.length) return;
+      document.getElementById('notes-body').innerHTML = NOTES[current] || '<p>（這一張沒有備註）</p>';
+      document.getElementById('notes-next').textContent = nextLabel();
+      if (!speaker || speaker.closed) return;
+      var d = speaker.document;
+      d.getElementById('sp-count').textContent = NUMS[current] + ' / ' + total;
+      d.getElementById('sp-title').textContent = TITLES[current];
+      d.getElementById('sp-next').textContent = nextLabel();
+      d.getElementById('sp-notes').innerHTML = NOTES[current] || '';
+    }
+
+    function openSpeaker() {
+      if (!NOTES.length) return;
+      if (speaker && !speaker.closed) { speaker.focus(); return; }
+      speaker = window.open('', 'dodo-speaker', 'width=980,height=780');
+      if (!speaker) return;
+      speaker.document.open();
+      speaker.document.write(SPEAKER_DOC);
+      speaker.document.close();
+      speaker.document.addEventListener('keydown', onKey);
+      startedAt = Date.now();
+      renderNotes();
+    }
+
+    setInterval(function () {
+      if (!speaker || speaker.closed) return;
+      var s = Math.floor((Date.now() - startedAt) / 1000);
+      var clock = speaker.document.getElementById('sp-clock');
+      if (clock) clock.textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    }, 1000);
 
     function show(i, push) {
       current = Math.max(0, Math.min(total - 1, i));
@@ -386,6 +570,7 @@ ${sections}
       if (push !== false) {
         try { history.replaceState(null, '', '#' + (current + 1)); } catch (err) { /* sandboxed */ }
       }
+      renderNotes();
     }
 
     // Thumbnails clone the real slides, so the overview can never drift from
@@ -455,10 +640,19 @@ ${sections}
       } catch (err) { /* fullscreen may be blocked */ }
     });
 
-    document.addEventListener('keydown', function (e) {
+    // Shared by the player and the speaker window, so both flip the same deck.
+    function onKey(e) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       var k = e.key;
       var over = body.classList.contains('is-overview');
+      if (NOTES.length && (k === 'n' || k === 'N')) {
+        body.classList.toggle('is-notes');
+        fit();
+        e.preventDefault();
+        return;
+      }
+      if (NOTES.length && (k === 's' || k === 'S')) { openSpeaker(); e.preventDefault(); return; }
+      if (k === 'r' || k === 'R') { startedAt = Date.now(); return; }
       if (k === 'ArrowRight' || k === 'PageDown' || k === ' ') {
         if (over) setOverview(false); else show(current + 1);
         e.preventDefault();
@@ -471,7 +665,9 @@ ${sections}
       else if (k === 'Escape') { if (over) setOverview(false); }
       else if (k === 'f' || k === 'F') { document.getElementById('full').click(); }
       wake();
-    });
+    }
+
+    document.addEventListener('keydown', onKey);
 
     var touchX = null;
     document.addEventListener('touchstart', function (e) { touchX = e.touches[0].clientX; }, { passive: true });

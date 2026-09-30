@@ -9,9 +9,16 @@
 | `workshop-1/*.dc.html` · `workshop-2/*.dc.html` | 一張投影片一個檔案（17 / 22 張），`canvas.json` 決定順序與標題 |
 | `workshop-1-listen-then-answer-slides.html` | 放映版：一次一張滿螢幕，方向鍵翻頁 |
 | `workshop-2-remember-and-stay-quiet-slides.html` | 同上 |
+| `workshop-1-listen-then-answer-notes.md` · `workshop-2-remember-and-stay-quiet-notes.md` | 講者備註的列印版，跟放映版裡的備註同一份來源 |
 | `src/` | 產生投影片的腳本 |
 
 放映版操作：`←` `→` 翻頁、`Home` `End` 跳頭尾、`O` 總覽縮圖、`F` 全螢幕。網址列的 `#7` 會記住頁碼。
+
+講者備註：每一張最上面一行寫這張在做什麼（講解、帶著做、示範或備用）和大約多久，下面分「可以這樣講」「操作」「容易卡住」「被問到就這樣答」。
+
+- `N`：在畫面下方打開備註，投影片自動縮到備註上方。一台螢幕試講時用。
+- `S`：另開講者視窗，顯示這一張的備註、下一張標題和計時；在講者視窗按 `←` `→` 也能翻頁，`R` 計時歸零。接投影機時，放映版放在投影那一面、講者視窗留在筆電。
+- 備註不會印進 PDF。
 
 ## 重新產生
 
@@ -20,11 +27,11 @@
 ```bash
 node slides/src/deck1.mjs slides/workshop-1
 node slides/src/deck2.mjs slides/workshop-2
-node slides/src/present.mjs slides/workshop-1 slides/workshop-1-listen-then-answer-slides.html "讓 Dodo 聽完，再回答" blue
-node slides/src/present.mjs slides/workshop-2 slides/workshop-2-remember-and-stay-quiet-slides.html "會記得、會主動，也知道何時閉嘴" green
+node slides/src/present.mjs slides/workshop-1 slides/workshop-1-listen-then-answer-slides.html "讓 Dodo 聽完，再回答" blue slides/src/notes1.mjs
+node slides/src/present.mjs slides/workshop-2 slides/workshop-2-remember-and-stay-quiet-slides.html "會記得、會主動，也知道何時閉嘴" green slides/src/notes2.mjs
 ```
 
-改內容請改 `src/deck1.mjs`／`deck2.mjs`，改架構圖與流程圖請改 `src/diagrams.mjs`，改共用版面請改 `src/kit.mjs`。直接改產出的 `.dc.html` 會在下次重新產生時被蓋掉。
+改內容請改 `src/deck1.mjs`／`deck2.mjs`，改講者備註請改 `src/notes1.mjs`／`notes2.mjs`（以投影片檔名對應；新增、改名或刪掉投影片卻沒改備註時，`present.mjs` 會直接報錯），改架構圖與流程圖請改 `src/diagrams.mjs`，改共用版面請改 `src/kit.mjs`。直接改產出的 `.dc.html` 會在下次重新產生時被蓋掉。
 
 ## 匯出 PDF（要搬進 Canva 或印講義時用）
 
