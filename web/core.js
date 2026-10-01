@@ -1048,8 +1048,10 @@ async function finishOnboarding() {
     saveProject();
     loadFields();
   }
-  // After the entry choice, which may just have replaced the whole workspace.
-  if (inputMode === "voice" && setup?.inputMode !== "voice") W1.startOnPushToTalk();
+  // After the entry choice, which may just have replaced the whole workspace: a
+  // fresh project under a voice setup starts on Push-to-talk too.
+  const freshProject = !forced && $('input[name="entry"]:checked').value !== "continue";
+  if (inputMode === "voice" && (setup?.inputMode !== "voice" || freshProject)) W1.startOnPushToTalk();
   const modeChanged = setup?.inputMode !== inputMode || setup?.outputMode !== outputMode;
   if (modeChanged) disconnectRealtime();
   setup = { version: 2, inputMode, outputMode, audioInputDeviceId: null, completed: true };
@@ -1706,6 +1708,13 @@ async function initialize() {
   if (!bootstrapData.allow_voice && setup && (setup.inputMode === "voice" || setup.outputMode === "voice")) {
     setup = { ...setup, inputMode: "text", outputMode: "text" };
     localStorage.setItem(SETUP_KEY, JSON.stringify(setup));
+  }
+  // start-w1.bat keeps the 打字／語音 choice across a new start, but the project
+  // starts over from the default, whose 何時算說完 is Semantic VAD. Voice input
+  // always starts on Push-to-talk, same as the moment 系統設定 switches to it.
+  if (!storedProject && setup?.inputMode === "voice") {
+    const turn = workspace.profile.realtime.turn_detection;
+    workspace.profile.realtime = { ...workspace.profile.realtime, turn_detection: { ...turn, type: "push_to_talk" } };
   }
   // Options must exist before loadFields() assigns #agentVoice.value, or the
   // assignment hits an empty <select>, the picker falls back to its first entry,

@@ -90,6 +90,21 @@ const SCENARIOS = {
       ok("...and does not re-run the first-run sheet", !visible($("#onboarding")));
     },
   },
+  "mode1-new-start-voice-starts-on-ptt": {
+    // The 打字／語音 choice survives a new start but the project starts over from
+    // the default (Semantic VAD). Voice input must still start on Push-to-talk.
+    launch: { workshop_mode: 1, allow_voice: true, fresh_start_id: "run-2" },
+    seed: ({ bootstrap }) => ({ launch: "run-1", setup: VOICE_SETUP, project: finishedWorkshop1(bootstrap) }),
+    autosave: ({ bootstrap }) => ({ workspace: finishedWorkshop1(bootstrap), saved_at: "2026-10-03T10:05:00+08:00" }),
+    async check({ ok, $, M }) {
+      $("#restoreDiscard").click();
+      await settle();
+      ok("重新開始 under a voice setup starts on Push-to-talk",
+         M.workspace.profile.realtime.turn_detection.type === "push_to_talk", M.workspace.profile.realtime.turn_detection.type);
+      ok("...on screen too", $("#turnDetectionMode").value === "push_to_talk");
+      ok("...and nothing waits for 套用", $("#saveWorkshop1").hidden);
+    },
+  },
   "mode1-first-run": {
     launch: { workshop_mode: 1, allow_voice: true, fresh_start_id: "run-1" },
     seed: () => ({}),

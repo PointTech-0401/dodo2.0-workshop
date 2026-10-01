@@ -495,6 +495,9 @@ legend { margin-bottom: 10px; font-weight: 800; }
 .rule-row.is-derived .rule-set { color: var(--ink-soft); }
 .link-to-intake { display: block; margin-top: 3px; border: 0; padding: 0; background: transparent; color: var(--blue); font-size: 10px; text-decoration: underline; }
 .link-to-intake:hover { color: var(--ink); }
+/* Inside a sentence the link has to stay in the line, or 「就去主動對話，讓豆豆…」
+   breaks into three lines around it. */
+.block-purpose .link-to-intake { display: inline; margin-top: 0; }
 .quiet-band.is-derived { cursor: pointer; }
 .quiet-band.is-derived:hover { outline: 2px solid var(--apricot); outline-offset: 2px; }
 .preview-label small { display: block; margin-top: 2px; color: var(--ink-soft); font-size: 10px; font-weight: 400; letter-spacing: 0; text-transform: none; }
