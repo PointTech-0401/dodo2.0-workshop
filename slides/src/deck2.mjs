@@ -9,15 +9,15 @@ const A = C.green;
 const EB = 'WORKSHOP 02 · 會記得、會主動，也知道何時閉嘴';
 const S = [];
 const add = (file, title, make) => S.push({ file, title, make });
-// Slide order follows the timetable: the results (取捨、X 類、重點回顧) come
-// after the step that produces them.
+// Slide order follows the timetable: the results (X 類、重點回顧) come after
+// the step that produces them.
 
 add('Main.dc.html', '封面', () => cover({
   eyebrow: 'SESSION 02 · 165 分鐘',
   number: '02',
   title: '會記得、會主動，也知道何時閉嘴',
   sub: '幫一位長者建檔、讓豆豆記得她，並決定它什麼時候可以開口',
-  meta: ['三層記憶 A / B / C', '一份訪談稿', '跑她的一天', '紅隊挑戰', '記憶清單'],
+  meta: ['三層記憶 A / B / C', '一份訪談稿', '主動規則', '紅隊挑戰', '記憶清單'],
   accent: A,
   halo: C.mint,
 }));
@@ -30,7 +30,7 @@ add('Outcomes.dc.html', '學習目標', (n, t) => slide({
     '說明 A、B、C 三層記憶的合併規則，以及長期偏好為什麼放 A 層。',
     '說明護理員填的 A 層資料 AI 不能改，B 層症狀可以更新的原因。',
     '從作息算出安靜與不打擾時段。',
-    '用間隔與每日上限模擬一天，比較兩個指標。',
+    '用間隔與每日上限決定一天最多開口幾次。',
     '觸發一次主動關心，也被規則擋下一次。',
     '測試關鍵字過濾的限制，以及其他防護方式。',
   ], { accent: A, size: 23, gap: 15 }),
@@ -43,14 +43,14 @@ add('Timetable.dc.html', '課程流程', (n, t) => slide({
     [{ label: '段落', w: '240px' }, { label: '內容', w: '1fr' }],
     [
       ['前置作業', '安裝、貼上金鑰、連線檢查'],
-      ['開場', '豆豆主動開口；專案架構'],
+      ['專案架構', '哪些在本機算、哪些送到 OpenAI'],
       ['誰能寫入記憶', '護理員、豆豆、系統；兩個角色'],
       ['訪談稿', '秀蘭阿嬤的三段話'],
       ['<strong style="color: #15324a;">實作一</strong>', '建檔，每一區問豆豆一句'],
       ['紅隊測試', '嘗試讓它記下不該記的內容'],
       ['記憶的規則', '三層記憶、護理員鎖、關鍵字過濾'],
       ['對話規範', '更換規範範例，比較同一句話的回答'],
-      ['<strong style="color: #15324a;">實作二</strong>', '主動規則與「她的一天」模擬'],
+      ['<strong style="color: #15324a;">實作二</strong>', '主動規則：七條規則與兩個數字'],
       ['<strong style="color: #15324a;">實作三</strong>', '主動對話'],
       ['倫理問題', '規則已處理的，與需要人判斷的'],
     ],
@@ -61,13 +61,6 @@ add('Timetable.dc.html', '課程流程', (n, t) => slide({
 add('Install.dc.html', '前置作業：安裝', installSlide({ eyebrow: EB, accent: A, workshop: 2 }));
 
 add('ApiKeys.dc.html', '前置作業：API Key 與連線檢查', apiKeySlide({ eyebrow: EB, accent: A, workshop: 2 }));
-
-add('Opening.dc.html', '開場', (n, t) => slide({
-  eyebrow: EB, num: n, total: t, accent: A,
-  title: '開場：豆豆自己先開口',
-  lede: '看投影。沒有人跟它說話，它自己先開口。',
-  body: band('今天要決定的是：豆豆什麼時候可以先開口，什麼時候必須閉嘴。', { accent: C.apricot }),
-}));
 
 add('ProjectMap.dc.html', '專案架構', (n, t) => slide({
   eyebrow: EB, num: n, total: t, accent: A,
@@ -248,7 +241,7 @@ add('PromptLayer.dc.html', '對話規範', (n, t) => slide({
 add('ProactiveRules.dc.html', '實作二：主動規則', (n, t) => slide({
   eyebrow: EB, num: n, total: t, accent: A,
   title: '實作二：主動規則',
-  lede: '這一頁只做模擬，豆豆不會說話。',
+  lede: '這一頁只調規則，豆豆不會說話。',
   body: row([
     `<div style="flex: 0 0 660px;">${darkPanel('程式檢查的順序', '由上往下，擋下就不說', [
       '1  重要提醒        → 一路直達',
@@ -268,90 +261,6 @@ add('ProactiveRules.dc.html', '實作二：主動規則', (n, t) => slide({
       band('這些規則寫在程式裡，不依賴模型遵守 Prompt。', { accent: C.apricot, tone: 'sky' }),
     ], { gap: 18 }),
   ], { gap: 32 }),
-}));
-
-add('OneDay.dc.html', '跑她的一天', (n, t) => slide({
-  eyebrow: EB, num: n, total: t, accent: A,
-  title: '跑她的一天（星期二）',
-  lede: '18 個事件來自參考建檔：用藥回診 2、健康關心 3、閒聊 13。時段依你填的作息計算。每一組先填預測再執行。',
-  body: stack([
-    table(
-      [
-        { label: '順序', w: '90px' },
-        { label: '間隔／每日上限', w: '360px' },
-        { label: '預測：漏掉的健康關心', w: '1fr', align: 'center' },
-        { label: '預測：打擾', w: '1fr', align: 'center' },
-      ],
-      [
-        ['1', '放寬　0 分 ／ 20 則', '?', '?'],
-        ['2', '收緊　30 分 ／ 2 則', '?', '?'],
-        ['3', '預設　30 分 ／ 4 則', '?', '?'],
-        ['4', '只放大間隔　60 分 ／ 4 則', '?', '?'],
-      ],
-      { accent: A, size: 21, pad: 12 },
-    ),
-    row([
-      `<div style="flex: 1 1 0;">${card({
-        accent: C.blue, bg: C.paper, kicker: '估算方法',
-        title: '一天可以講幾次',
-        body: '可開口的時數 ÷ 間隔，與每日上限取小的一個。閒聊從 05:30 開始，最後一次健康關心在 16:30。',
-      })}</div>`,
-      `<div style="flex: 1 1 0;">${card({
-        accent: C.apricot, bg: C.paper, kicker: '兩個指標',
-        title: '漏掉的健康關心與打擾',
-        body: '漏掉：該問身體卻被擋下的次數。打擾：豆豆主動開口閒聊的次數。',
-      })}</div>`,
-    ], { gap: 22 }),
-  ], { gap: 24 }),
-}));
-
-add('OneDayResults.dc.html', '模擬結果', (n, t) => slide({
-  eyebrow: EB, num: n, total: t, accent: A,
-  title: '模擬結果',
-  lede: '放寬那組只剩你填的作息在擋。打擾不是 7 次，看時間軸上多出或少掉的那一則，就是你的建檔跟參考不一樣的地方。',
-  body: stack([
-    table(
-      [
-        { label: '設定', w: '340px' },
-        { label: '漏掉的健康關心', w: '210px', align: 'center' },
-        { label: '打擾', w: '160px', align: 'center' },
-        { label: '說明', w: '1fr' },
-      ],
-      [
-        ['放寬　0 分 ／ 20 則', '0 / 3', `<strong style="color: ${C.danger};">7 / 13</strong>`, '沒有漏掉；30／7 也不漏，打擾 4 次'],
-        ['收緊　30 分 ／ 2 則', `<strong style="color: ${C.danger};">2 / 3</strong>`, '1 / 13', '打擾較少，多漏一次'],
-        ['預設　30 分 ／ 4 則', '1 / 3', '2 / 13', '預設值'],
-        ['只放大間隔　60 分 ／ 4 則', `<strong style="color: ${C.danger};">2 / 3</strong>`, `<strong style="color: ${C.danger};">3 / 13</strong>`, '兩項都比預設差'],
-      ],
-      { accent: A, size: 21 },
-    ),
-    `<div>${card({
-      accent: C.apricot, bg: C.paper, kicker: '60 分 ／ 4 則',
-      title: '間隔加長，兩項反而變差',
-      body: '07:00 的吃藥提醒會重新計算間隔，07:30 的追問因此被擋下；多出來的次數用在 10:00 的閒聊。間隔改成 90 分時，結果又回到 <span style="white-space: nowrap;">1／2</span>。',
-    })}</div>`,
-  ], { gap: 24 }),
-}));
-
-add('NoPerfectScore.dc.html', '取捨', (n, t) => slide({
-  eyebrow: EB, num: n, total: t, accent: A,
-  title: '兩個指標的取捨',
-  body: stack([
-    row([
-      card({
-        grow: true, accent: C.danger, kicker: '漏掉 vs 打擾',
-        title: '收緊或放寬各有代價',
-        body: '收緊（30／2）多漏一次追問；要完全不漏，至少打擾 4 次。',
-      }),
-      card({
-        grow: true, accent: C.green, kicker: '參數掃描',
-        title: '182 組設定',
-        body: '14 個間隔值 × 每日上限 0–12 則：沒有一組兩項都是 0，也沒有一組同時優於 30 分 ／ 4 則。',
-      }),
-    ]),
-    band('這個結果只適用於這一天的事件與這一套規則。', { accent: C.apricot }),
-  ], { gap: 26 }),
-  foot: '對照開關改用固定的 22:00–08:00：她醒著的時段被擋，午睡時反而放行，兩項都變差。',
 }));
 
 add('LiveTalk.dc.html', '實作三：主動對話', (n, t) => slide({
@@ -422,12 +331,12 @@ add('ThreeIdeas.dc.html', '重點回顧', (n, t) => slide({
     card({
       grow: true, accent: A, kicker: '分工',
       title: '程式決定是否開口，模型決定怎麼說',
-      body: '「跑她的一天」與 21:45 的兩則事件。',
+      body: '21:45 的兩則事件；Prompt 叫它半夜也聊，照樣被擋。',
     }),
     card({
       grow: true, accent: C.blue, kicker: '安靜時段',
       title: '由作息計算',
-      body: '24 小時長條與模擬結果。',
+      body: '24 小時長條；21:45 的閒聊被擋下。',
     }),
     card({
       grow: true, accent: C.apricot, kicker: '記憶',

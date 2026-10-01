@@ -26,7 +26,7 @@ export const w1Architecture = diagram({
     dnode({
       x: 40, y: 170, w: 300, h: 150, tone: 'sky', accent: C.blue,
       kicker: '瀏覽器', title: 'web/ 前端',
-      lines: ['第一堂、第二堂的畫面', '組 Prompt、建立連線', '記憶工具'],
+      lines: ['第一堂、第二堂的畫面', '組 Prompt、建立連線', '處理工具呼叫'],
     }),
     dnode({
       x: 515, y: 170, w: 300, h: 150, tone: 'white', accent: C.green, emph: true,
@@ -112,7 +112,7 @@ export const w2Architecture = diagram({
   w: 1400,
   h: 490,
   label: '專案架構圖：規則判斷都在本機完成，要 Key 的步驟才離開這台電腦',
-  caption: '建檔、長條圖與「跑她的一天」都在這台電腦上算完，不需要 API Key。要 Key 的步驟會把整份 Prompt（含她的用藥與症狀）送到 OpenAI；今日摘要則由後端把對話另外送給文字模型。',
+  caption: '建檔與長條圖都在這台電腦上算完，不需要 API Key。要 Key 的步驟會把整份 Prompt（含她的用藥與症狀）送到 OpenAI；今日摘要則由後端把對話另外送給文字模型。',
   children: [
     dzone({ x: 8, y: 138, w: 845, h: 330, label: '本機 · 不需要 API KEY', colour: C.green }),
     dzone({ x: 958, y: 138, w: 434, h: 330, label: '外部服務', fill: ZONE_COOL }),

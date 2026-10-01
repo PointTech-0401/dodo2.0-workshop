@@ -28,6 +28,7 @@ add('Outcomes.dc.html', '學習目標', (n, t) => slide({
     '用 OpenAI Realtime API 比較不同 Prompt 分塊的回答。',
     `比較 ${code('Server VAD')}、${code('Semantic VAD')} 與 Push-to-talk 三種回合判斷。`,
     '用「套用」更新正在進行的對話。',
+    '分辨聲線（音色）和「個性與聲音」分塊（演法）各自改變什麼。',
     '分辨哪些事寫在 Prompt 裡拜託模型，哪些事交給程式。',
   ], { accent: A, size: 25, gap: 20 }),
 }));
@@ -43,7 +44,8 @@ add('Timetable.dc.html', '課程流程', (n, t) => slide({
       ['Prompt', '內容與長度；送出的時機'],
       ['回合判斷', 'Server VAD、Semantic VAD、Push-to-talk'],
       ['<strong style="color: #15324a;">實作一</strong>', '調整 Prompt，比較前後回答'],
-      ['<strong style="color: #15324a;">實作二</strong>', '用語音測試回合控制'],
+      ['<strong style="color: #15324a;">實作二</strong>', '聲音導演：改演法、換聲線，戴耳機聽'],
+      ['<strong style="color: #15324a;">實作三</strong>', '用語音測試回合控制'],
       ['Prompt 的限制', '同一句話問五次'],
     ],
     { accent: A, size: 20, pad: 11 },
@@ -191,29 +193,6 @@ add('LabOne.dc.html', '實作一', (n, t) => slide({
   ], { gap: 32 }),
 }));
 
-add('VoiceVsPrompt.dc.html', '聲線與 Prompt', (n, t) => slide({
-  eyebrow: EB, num: n, total: t, accent: A,
-  title: '聲線與 Prompt',
-  body: stack([
-    row([
-      card({
-        grow: true, accent: A, kicker: 'A 區 · 聲線',
-        title: '音色',
-        body: '10 種可選，預設 sage。',
-      }),
-      card({
-        grow: true, accent: C.green, kicker: 'A 區 · 個性與聲音分塊',
-        title: '用字、節奏、態度',
-        body: '修改分塊不會換聲音；換聲線也不會改變態度。',
-      }),
-    ]),
-    row([
-      `<div style="flex: 1 1 0;">${band('程式不會從形容詞推測語速。', { accent: C.apricot, tone: 'sky' })}</div>`,
-      `<div style="flex: 1 1 0;">${band('用聲音回答過後就不能換聲線；改聲線後按「套用」會重新連線。', { accent: C.apricot })}</div>`,
-    ], { gap: 22 }),
-  ], { gap: 24 }),
-}));
-
 add('Preamble.dc.html', '工具前開場', (n, t) => slide({
   eyebrow: EB, num: n, total: t, accent: A,
   title: '工具前開場（Preamble）',
@@ -240,10 +219,56 @@ add('Preamble.dc.html', '工具前開場', (n, t) => slide({
   ], { gap: 34 }),
 }));
 
-add('LabTwo.dc.html', '實作二', (n, t) => slide({
+add('VoiceVsPrompt.dc.html', '聲線與 Prompt', (n, t) => slide({
   eyebrow: EB, num: n, total: t, accent: A,
-  title: '實作二：回合控制',
-  lede: '「系統設定」把輸入與輸出都改成語音，按「檢查麥克風」後儲存。B 區會先變成 Push-to-talk，第 1 步再改。每一步講 30 秒，再安靜 30 秒觀察結果。',
+  title: '聲線與 Prompt',
+  body: stack([
+    row([
+      card({
+        grow: true, accent: A, kicker: 'A 區 · 聲線',
+        title: '音色',
+        body: '10 種可選，預設 sage。',
+      }),
+      card({
+        grow: true, accent: C.green, kicker: 'A 區 · 個性與聲音分塊',
+        title: '用字、節奏、態度',
+        body: '修改分塊不會換聲音；換聲線也不會改變態度。',
+      }),
+    ]),
+    row([
+      `<div style="flex: 1 1 0;">${band('程式不會從形容詞推測語速。', { accent: C.apricot, tone: 'sky' })}</div>`,
+      `<div style="flex: 1 1 0;">${band('用聲音回答過後就不能換聲線；改聲線後按「套用」會重新連線。', { accent: C.apricot })}</div>`,
+    ], { gap: 22 }),
+  ], { gap: 24 }),
+}));
+
+add('LabVoice.dc.html', '實作二', (n, t) => slide({
+  eyebrow: EB, num: n, total: t, accent: A,
+  title: '實作二：聲音導演',
+  lede: '「系統設定」把輸出改成語音，輸入維持打字，戴上耳機。不用麥克風。',
+  body: row([
+    steps([
+      '輸入「講一個 30 秒的睡前故事給我聽。」先聽預設的講法。',
+      '只改「個性與聲音」，換成右邊其中一種演法，按「套用」。',
+      '輸入<strong>同一句話</strong>，聽語氣、速度、停頓差在哪。',
+      '分塊不動，只換「Dodo 的聲線」，按「套用」（會重新連線），再問同一句。',
+      '演法和聲線自己搭一組，系統會記成「自訂」。',
+    ], { accent: A, size: 22, gap: 14 }),
+    `<div style="flex: 0 0 520px; display: flex; flex-direction: column; gap: 16px;">
+      ${card({
+        accent: C.apricot, bg: C.paper, kicker: '演法範例',
+        title: '貼進「個性與聲音」',
+        body: '悄悄話：用氣音、很小聲，像怕吵醒旁邊的人。<br>夜市叫賣：大聲、有精神，尾音拉長。<br>深夜電台 DJ：低沉、慢，每句話中間停一下。<br>廟口講古：抑揚頓挫，講到關鍵處故意停住。',
+      })}
+    </div>`,
+  ], { gap: 32 }),
+  foot: '聲線換的是音色，分塊換的是演法，兩個各管各的。',
+}));
+
+add('LabTwo.dc.html', '實作三', (n, t) => slide({
+  eyebrow: EB, num: n, total: t, accent: A,
+  title: '實作三：回合控制',
+  lede: '「系統設定」把輸入也改成語音，按「檢查麥克風」後儲存。B 區會先變成 Push-to-talk，第 1 步再改。每一步講 30 秒，再安靜 30 秒觀察結果。',
   body: table(
     [
       { label: '步', w: '56px' },
@@ -291,7 +316,8 @@ add('DoneCriteria.dc.html', '完成標準', (n, t) => slide({
     '打字與語音的回答都來自 OpenAI Realtime API。',
     '問「你叫什麼？我叫什麼？」時，答得出「角色與身分」設定的名字與稱呼。',
     '修改過至少一個 A 區分塊並套用，比較過前後回答。',
-    '有耳麥：完成實作二的五個步驟。',
+    '有耳機：做過實作二，聽過同一句話換演法、換聲線的差別。',
+    '有耳麥：完成實作三的五個步驟。',
     '按「下載我的 Dodo」帶走這一堂的成果（my-dodo.json），檔案裡<strong>不含</strong> API Key；回家用「匯入」就能接著玩。',
   ], { accent: C.green, size: 24, gap: 18 }),
   foot: '參考：OpenAI Realtime 官方文件中的文字輸入、連線時送出 Prompt、工具呼叫與回合判斷。',

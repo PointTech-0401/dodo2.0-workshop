@@ -6,7 +6,7 @@
 
 | 路徑 | 是什麼 |
 |---|---|
-| `workshop-1/*.dc.html` · `workshop-2/*.dc.html` | 一張投影片一個檔案（17 / 23 張），`canvas.json` 決定順序與標題 |
+| `workshop-1/*.dc.html` · `workshop-2/*.dc.html` | 一張投影片一個檔案（18 / 19 張），`canvas.json` 決定順序與標題 |
 | `workshop-1-listen-then-answer-slides.html` | 放映版：一次一張滿螢幕，方向鍵翻頁 |
 | `workshop-2-remember-and-stay-quiet-slides.html` | 同上 |
 | `workshop-1-listen-then-answer-notes.md` · `workshop-2-remember-and-stay-quiet-notes.md` | 講者備註的列印版，跟放映版裡的備註同一份來源 |

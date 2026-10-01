@@ -41,148 +41,116 @@
       "title": "05 · 前置作業：API Key 與連線檢查"
     },
     {
-      "file": "Opening.dc.html",
+      "file": "ProjectMap.dc.html",
       "x": 1760,
       "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "06 · 開場"
-    },
-    {
-      "file": "ProjectMap.dc.html",
-      "x": 3520,
-      "y": 1140,
-      "w": 1600,
-      "h": 900,
-      "title": "07 · 專案架構"
+      "title": "06 · 專案架構"
     },
     {
       "file": "WhoWrites.dc.html",
+      "x": 3520,
+      "y": 1140,
+      "w": 1600,
+      "h": 900,
+      "title": "07 · 誰能寫入記憶"
+    },
+    {
+      "file": "HerWords.dc.html",
       "x": 5280,
       "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "08 · 誰能寫入記憶"
-    },
-    {
-      "file": "HerWords.dc.html",
-      "x": 0,
-      "y": 2280,
-      "w": 1600,
-      "h": 900,
-      "title": "09 · 訪談稿"
+      "title": "08 · 訪談稿"
     },
     {
       "file": "LabIntake.dc.html",
-      "x": 1760,
+      "x": 0,
       "y": 2280,
       "w": 1600,
       "h": 900,
-      "title": "10 · 實作一：建檔 1–3 區"
+      "title": "09 · 實作一：建檔 1–3 區"
     },
     {
       "file": "LabIntakeMore.dc.html",
-      "x": 3520,
+      "x": 1760,
       "y": 2280,
       "w": 1600,
       "h": 900,
-      "title": "11 · 實作一：建檔 4–6 區"
+      "title": "10 · 實作一：建檔 4–6 區"
     },
     {
       "file": "RedTeam.dc.html",
+      "x": 3520,
+      "y": 2280,
+      "w": 1600,
+      "h": 900,
+      "title": "11 · 紅隊測試"
+    },
+    {
+      "file": "MemoryLayers.dc.html",
       "x": 5280,
       "y": 2280,
       "w": 1600,
       "h": 900,
-      "title": "12 · 紅隊測試"
-    },
-    {
-      "file": "MemoryLayers.dc.html",
-      "x": 0,
-      "y": 3420,
-      "w": 1600,
-      "h": 900,
-      "title": "13 · 三層記憶"
+      "title": "12 · 三層記憶"
     },
     {
       "file": "MemoryViewer.dc.html",
-      "x": 1760,
+      "x": 0,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "14 · 記憶清單"
+      "title": "13 · 記憶清單"
     },
     {
       "file": "PromptLayer.dc.html",
-      "x": 3520,
+      "x": 1760,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "15 · 對話規範"
+      "title": "14 · 對話規範"
     },
     {
       "file": "ProactiveRules.dc.html",
-      "x": 5280,
+      "x": 3520,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "16 · 實作二：主動規則"
-    },
-    {
-      "file": "OneDay.dc.html",
-      "x": 0,
-      "y": 4560,
-      "w": 1600,
-      "h": 900,
-      "title": "17 · 跑她的一天"
-    },
-    {
-      "file": "OneDayResults.dc.html",
-      "x": 1760,
-      "y": 4560,
-      "w": 1600,
-      "h": 900,
-      "title": "18 · 模擬結果"
-    },
-    {
-      "file": "NoPerfectScore.dc.html",
-      "x": 3520,
-      "y": 4560,
-      "w": 1600,
-      "h": 900,
-      "title": "19 · 取捨"
+      "title": "15 · 實作二：主動規則"
     },
     {
       "file": "LiveTalk.dc.html",
       "x": 5280,
-      "y": 4560,
+      "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "20 · 實作三：主動對話"
+      "title": "16 · 實作三：主動對話"
     },
     {
       "file": "Dilemmas.dc.html",
       "x": 0,
-      "y": 5700,
+      "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "21 · 倫理問題"
+      "title": "17 · 倫理問題"
     },
     {
       "file": "TodaySummary.dc.html",
       "x": 1760,
-      "y": 5700,
+      "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "22 · 今日摘要"
+      "title": "18 · 今日摘要"
     },
     {
       "file": "ThreeIdeas.dc.html",
       "x": 3520,
-      "y": 5700,
+      "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "23 · 重點回顧"
+      "title": "19 · 重點回顧"
     }
   ],
   "launch": {

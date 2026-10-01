@@ -97,23 +97,23 @@
       "title": "12 · 實作一"
     },
     {
-      "file": "VoiceVsPrompt.dc.html",
+      "file": "Preamble.dc.html",
       "x": 0,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "13 · 聲線與 Prompt"
+      "title": "13 · 工具前開場"
     },
     {
-      "file": "Preamble.dc.html",
+      "file": "VoiceVsPrompt.dc.html",
       "x": 1760,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "14 · 工具前開場"
+      "title": "14 · 聲線與 Prompt"
     },
     {
-      "file": "LabTwo.dc.html",
+      "file": "LabVoice.dc.html",
       "x": 3520,
       "y": 3420,
       "w": 1600,
@@ -121,20 +121,28 @@
       "title": "15 · 實作二"
     },
     {
-      "file": "PromptRequest.dc.html",
+      "file": "LabTwo.dc.html",
       "x": 5280,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "16 · Prompt 的限制"
+      "title": "16 · 實作三"
     },
     {
-      "file": "DoneCriteria.dc.html",
+      "file": "PromptRequest.dc.html",
       "x": 0,
       "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "17 · 完成標準"
+      "title": "17 · Prompt 的限制"
+    },
+    {
+      "file": "DoneCriteria.dc.html",
+      "x": 1760,
+      "y": 4560,
+      "w": 1600,
+      "h": 900,
+      "title": "18 · 完成標準"
     }
   ],
   "launch": {
