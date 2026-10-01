@@ -8,6 +8,8 @@ const PROJECT_KEY = "dodo-workshop.project";
 // Which stage the student is actually on. Progress flags used to decide this,
 // which meant 套用 in Workshop 1 + F5 threw them into Workshop 2.
 const STAGE_KEY = "dodo-workshop.stage";
+// Which start of start-w2.bat this browser's data belongs to. See initialize().
+const LAUNCH_KEY = "dodo-workshop.launch";
 // Only written when the student drags or arrow-keys the divider. With nothing
 // stored the CSS default wins, and that default is an exact 1:1 split.
 const LAB_WIDTH_KEY = "dodo-workshop.labWidth";
@@ -238,6 +240,8 @@ let audioBlocked = false;
 let panelResizePointerId = null;
 // Voice baked into the live session, so applyWorkshop1 can tell a change happened.
 let connectedVoice = "";
+// The stage on screen, set by switchStage(). It decides what the session is told.
+let currentStage = 1;
 
 function readStored(key) {
   try {
@@ -375,6 +379,101 @@ function clampPanelWidths() {
 
 function saveProject() {
   localStorage.setItem(PROJECT_KEY, JSON.stringify(workspace));
+  scheduleAutosave();
+}
+
+// --- The record file ---------------------------------------------------------
+// localStorage alone is lost with the browser's site data, and session 2 clears
+// it on every start. So every save also goes to this session's file on disk
+// (runtime/, through the server); a restart offers it back. Off until the page
+// has decided what to load, or the starter would overwrite the record first.
+let autosaveReady = false;
+let autosaveTimer;
+const AUTOSAVE_DELAY_MS = 800;
+
+function scheduleAutosave() {
+  if (!autosaveReady) return;
+  window.clearTimeout(autosaveTimer);
+  autosaveTimer = window.setTimeout(() => {
+    autosaveTimer = undefined;
+    postAutosave();
+  }, AUTOSAVE_DELAY_MS);
+}
+
+function postAutosave() {
+  return fetch("/api/autosave", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ workspace }),
+  }).catch(() => {}); // The Terminal is closed; localStorage still has it.
+}
+
+/** The tab is going away: send what the debounce has not sent yet. */
+function flushAutosave() {
+  if (!autosaveReady || autosaveTimer === undefined) return;
+  window.clearTimeout(autosaveTimer);
+  autosaveTimer = undefined;
+  const body = new Blob([JSON.stringify({ workspace })], { type: "application/json" });
+  if (!navigator.sendBeacon?.("/api/autosave", body)) postAutosave();
+}
+
+async function readAutosave() {
+  try {
+    const payload = await fetch("/api/autosave").then((response) => response.json());
+    return payload?.workspace?.profile ? payload : null;
+  } catch {
+    return null;
+  }
+}
+
+/** 「你確定嗎？」 for anything that overwrites the student's work. Resolves true
+ *  only for the OK button; 取消 and Esc resolve false. */
+function askConfirm({ title, body, ok }) {
+  $("#confirmTitle").textContent = title;
+  $("#confirmBody").textContent = body;
+  $("#confirmOk").textContent = ok;
+  $("#confirmPrompt").hidden = false;
+  $("#confirmCancel").focus();
+  return new Promise((resolve) => {
+    const answer = (yes) => {
+      $("#confirmPrompt").hidden = true;
+      $("#confirmOk").removeEventListener("click", onOk);
+      $("#confirmCancel").removeEventListener("click", onCancel);
+      document.removeEventListener("keydown", onKey);
+      resolve(yes);
+    };
+    const onOk = () => answer(true);
+    const onCancel = () => answer(false);
+    const onKey = (event) => { if (event.key === "Escape") answer(false); };
+    $("#confirmOk").addEventListener("click", onOk);
+    $("#confirmCancel").addEventListener("click", onCancel);
+    document.addEventListener("keydown", onKey);
+  });
+}
+
+/** 「要載入上次的資料嗎？」 Resolves true for 載入, false for 重新開始. */
+function askRestore(record) {
+  const saved = new Date(record.saved_at);
+  const when = Number.isNaN(saved.getTime())
+    ? ""
+    : `${saved.getMonth() + 1}/${saved.getDate()} ${saved.toTimeString().slice(0, 5)} `;
+  const { agent = {}, elder_profile: elder = {} } = record.workspace.profile;
+  const address = elder.address || agent.address;
+  $("#restoreSummary").textContent =
+    `${when}存的紀錄：${agent.name || "豆豆"}${address ? `，稱呼「${address}」` : ""}。載入就從那裡接著做；重新開始會刪掉這份紀錄。`;
+  $("#restorePrompt").hidden = false;
+  return new Promise((resolve) => {
+    const answer = (load) => {
+      $("#restorePrompt").hidden = true;
+      $("#restoreLoad").removeEventListener("click", onLoad);
+      $("#restoreDiscard").removeEventListener("click", onDiscard);
+      resolve(load);
+    };
+    const onLoad = () => answer(true);
+    const onDiscard = () => answer(false);
+    $("#restoreLoad").addEventListener("click", onLoad);
+    $("#restoreDiscard").addEventListener("click", onDiscard);
+  });
 }
 
 /** The one migration path. localStorage hydration and 匯入 both post whatever
@@ -398,6 +497,34 @@ async function normalizeWorkspace(raw) {
 function setState(name, note) {
   $$(".state-list li").forEach((item) => item.classList.toggle("is-current", item.dataset.state === name));
   if (note) $("#connectionNote").textContent = note;
+  avatarStateName = name;
+  syncAvatar();
+}
+
+// --- 豆豆's face -------------------------------------------------------------
+// The state bar's three states, plus 被打斷, which the bar has no word for. The
+// face follows the sound, not the bar: audio keeps draining for seconds after
+// `response.done` has already set the bar back to 收聽中.
+const INTERRUPTED_MS = 1400;
+let avatarStateName = "listening";
+let interruptedUntil = 0;
+let interruptedTimer;
+
+function syncAvatar() {
+  const avatar = $("#dodoAvatar");
+  if (!avatar) return;
+  let state = avatarStateName;
+  if (Date.now() < interruptedUntil) state = "interrupted";
+  else if (audioPlaying) state = "speaking";
+  else if (dataChannel?.readyState !== "open") state = "idle";
+  avatar.dataset.state = state;
+}
+
+function showInterrupted() {
+  interruptedUntil = Date.now() + INTERRUPTED_MS;
+  window.clearTimeout(interruptedTimer);
+  interruptedTimer = window.setTimeout(syncAvatar, INTERRUPTED_MS + 20);
+  syncAvatar();
 }
 
 // `tool` rows are workshop status, not something 豆豆 said. They used to render
@@ -525,10 +652,21 @@ function loadFields() {
   markApplied();
 }
 
-function composeInstructions(source) {
-  return [W1.buildSystemPrompt(source.profile.agent), W2.buildWorkshop2Prompt(source)]
+/** What the Realtime session is told on one stage. Workshop 1 is the persona and
+ *  nothing else. Workshop 2 always runs on the default 溫柔陪伴 persona (her name
+ *  and 稱呼 kept) followed by its own sections: the persona is the first lesson's
+ *  subject, and an edited one would only blur what the second lesson changes. */
+function composeInstructions(source, stage = currentStage) {
+  if (stage === 1) return W1.buildSystemPrompt(source.profile.agent);
+  const persona = W1.buildSystemPrompt({ ...source.profile.agent, prompt_blocks: W1.DEFAULT_PROMPT_BLOCKS });
+  return [persona, W2.buildWorkshop2Prompt(source)]
     .filter((part) => part.trim())
     .join("\n\n");
+}
+
+/** Workshop 1 has no memory, so it is not handed the two memory tools either. */
+function realtimeTools(stage = currentStage) {
+  return stage === 1 ? REALTIME_TOOLS.filter((tool) => tool.name === "get_weather") : REALTIME_TOOLS;
 }
 
 const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => (
@@ -545,6 +683,10 @@ function switchStage(stage) {
   $("#workshop1Panel").hidden = !isFirst;
   $("#workshop2Panel").hidden = isFirst;
   $$(".stage-button").forEach((button) => button.classList.toggle("is-active", Number(button.dataset.stage) === shown));
+  $("#stageEyebrow").textContent = isFirst ? "第一堂" : "第二堂";
+  // The face is for hearing 豆豆 get cut off, which is a first-lesson thing;
+  // the second lesson is typed and read.
+  $("#dodoAvatar").hidden = !isFirst;
   $("#conversationTitle").textContent = isFirst ? "讓 Dodo 聽完，再回答" : "再讓它記得你，適時主動關心";
   // 第二堂的標題長一倍，預設字級一定會折行。`.is-long` 讓它縮到剛好一行。用
   // container query 而不是 vw，因為聊天區的寬度是拖曳出來的，不是視窗寬度。
@@ -555,6 +697,13 @@ function switchStage(stage) {
   // Every entry point routes through here, so remembering the stage here is what
   // makes F5 keep the student where they were.
   localStorage.setItem(STAGE_KEY, isFirst ? "1" : "2");
+  // The two stages tell the session different things. Only a plain `app.py
+  // serve` can switch with a session already open, and then it is told at once.
+  const changed = currentStage !== shown;
+  currentStage = shown;
+  if (changed && dataChannel?.readyState === "open") {
+    dataChannel.send(JSON.stringify({ type: "session.update", session: realtimeSessionUpdate() }));
+  }
 }
 
 function storedStage() {
@@ -569,15 +718,22 @@ function applyLaunchMode() {
   const mode = bootstrapData.workshop_mode;
   if (!mode) return;
   $$(".stage-button").forEach((button) => { button.hidden = Number(button.dataset.stage) !== mode; });
-  if (mode === 1) $('input[name="entry"][value="workshop2"]').closest(".choice").hidden = true;
-  // Nothing to pick in session 2: initialize() has already carried on this
-  // browser's project or loaded the Workshop 2 starter.
-  if (mode === 2) $("#entryChoice").hidden = true;
+  // Nothing to pick: initialize() has already loaded this session's starting
+  // point, or the record 「要載入上次的資料嗎？」 offered. That question replaced
+  // 繼續我的 Dodo.
+  $("#entryChoice").hidden = true;
+  // Session 2 carries nothing in or out, so 匯入 and 下載 are session 1's only
+  // (for carrying on at home).
+  if (mode === 2) {
+    $("#importButton").hidden = true;
+    $("#exportButton").hidden = true;
+  }
   // 「何時算說完」is a Workshop 1 tab, out of reach from start-w2.bat.
   if (mode === 2) $("#introMessage").textContent = "先把系統設定填好。改完右邊的設定按「套用」，再問同一句話，比比看前後差在哪。";
   if (!bootstrapData.allow_voice) {
     $("#inputModeChoice").hidden = true;
     $("#outputModeChoice").hidden = true;
+    $("#onboardingTitle").textContent = "填入金鑰";
     $("#onboardingLead").textContent = "先填好 OpenAI 和天氣的 Key。這一堂都用打字，答案直接印在畫面上。";
   }
 }
@@ -892,6 +1048,8 @@ async function finishOnboarding() {
     saveProject();
     loadFields();
   }
+  // After the entry choice, which may just have replaced the whole workspace.
+  if (inputMode === "voice" && setup?.inputMode !== "voice") W1.startOnPushToTalk();
   const modeChanged = setup?.inputMode !== inputMode || setup?.outputMode !== outputMode;
   if (modeChanged) disconnectRealtime();
   setup = { version: 2, inputMode, outputMode, audioInputDeviceId: null, completed: true };
@@ -971,6 +1129,7 @@ function interruptResponse() {
   responseActive = false;
   audioPlaying = false;
   finalizeVoiceDraft();
+  showInterrupted();
   return true;
 }
 
@@ -1054,7 +1213,7 @@ function realtimeSessionUpdate() {
     // session.update — see the `error` branch in handleRealtimeEvent.)
     output_modalities: [setup?.outputMode === "voice" ? "audio" : "text"],
     reasoning: { effort: "low" },
-    tools: REALTIME_TOOLS,
+    tools: realtimeTools(),
     tool_choice: "auto",
     audio: {
       input: {
@@ -1209,9 +1368,16 @@ async function handleRealtimeEvent(event) {
   }
   // WebRTC-only playback lifecycle. Without these, barge-in during playout has
   // nothing to detect and silently no-ops.
-  if (event.type === "output_audio_buffer.started") audioPlaying = true;
+  if (event.type === "output_audio_buffer.started") {
+    audioPlaying = true;
+    syncAvatar();
+  }
   if (["output_audio_buffer.stopped", "output_audio_buffer.cleared"].includes(event.type)) {
     audioPlaying = false;
+    // `cleared` is a cut, not an ending: the server does it when she talks over
+    // 豆豆 (VAD barge-in), and it echoes our own clear after a typed one.
+    if (event.type === "output_audio_buffer.cleared") showInterrupted();
+    else syncAvatar();
   }
   if (event.type === "conversation.item.input_audio_transcription.delta") {
     userVoiceDraft += event.delta || "";
@@ -1311,6 +1477,7 @@ function disconnectRealtime() {
     remoteAudio.remove();
   }
   remoteAudio = undefined;
+  syncAvatar();
   $("#pushToTalk").hidden = true;
 }
 
@@ -1405,7 +1572,7 @@ async function openRealtimeConnection() {
         output_mode: setup.outputMode,
         instructions: realtimeInstructions(),
         turn_detection: realtimeTurnDetection(),
-        tools: REALTIME_TOOLS,
+        tools: realtimeTools(),
         voice: workspace.profile.agent.voice,
       }),
     });
@@ -1495,7 +1662,30 @@ async function initialize() {
   apiConfigured = bootstrapData.api_configured;
   weatherConfigured = bootstrapData.weather_configured;
   applyLaunchMode();
-  const storedProject = readStored(PROJECT_KEY);
+  // start-w1.bat／start-w2.bat: a new server start is a new class. What this
+  // browser kept from an earlier start (a rehearsal, a click on start-w2.bat
+  // during session 1) is set aside, and the record file below is offered
+  // instead. Session 2 also drops the saved setup, so its sheet asks for the key;
+  // session 1 keeps the device choices (打字／語音). An F5 keeps the same id.
+  const freshStartId = bootstrapData.fresh_start_id;
+  if (freshStartId && localStorage.getItem(LAUNCH_KEY) !== freshStartId) {
+    const dropped = bootstrapData.workshop_mode === 2 ? [PROJECT_KEY, SETUP_KEY, STAGE_KEY] : [PROJECT_KEY, STAGE_KEY];
+    dropped.forEach((key) => localStorage.removeItem(key));
+    localStorage.setItem(LAUNCH_KEY, freshStartId);
+  }
+  let storedProject = readStored(PROJECT_KEY);
+  // Nothing in this browser (session 2's fresh start, or site data that was
+  // cleared): offer this session's record file, if the server has one.
+  if (!storedProject) {
+    const record = await readAutosave();
+    if (record) {
+      if (await askRestore(record)) storedProject = record.workspace;
+      else fetch("/api/autosave", { method: "DELETE" }).catch(() => {});
+      // Answered here, so the first-run sheet must not ask again: its
+      // default 「參加 Workshop 1」 would replace what was just loaded.
+      $("#entryChoice").hidden = true;
+    }
+  }
   // Same one path as 匯入. A stored project that the server rejects is one no
   // longer readable at all, so starting clean beats rendering schema-1 data
   // through schema-2 fields — and the student is told, not silently reset.
@@ -1503,8 +1693,8 @@ async function initialize() {
   // and `bootstrapData.default_workspace` is read back as the pristine default by
   // intakeFromFields() and by the prompt composer's block fallbacks.
   // start-w2.bat offers no entry choice, so its fresh start is the Workshop 2
-  // starter, the file 只參加 Workshop 2 loads. A project already in this browser
-  // (the black window was restarted mid-class) carries on as usual.
+  // starter, the file 只參加 Workshop 2 loads. Its project only survives an F5 of
+  // the same server run (cleared just above otherwise).
   const freshWorkspace = bootstrapData.workshop_mode === 2
     ? bootstrapData.workshop2_starter
     : bootstrapData.default_workspace;
@@ -1516,6 +1706,9 @@ async function initialize() {
     workspace = structuredClone(freshWorkspace);
     addMessage("system", "上次保存的作品讀不進來，已從預設開始。");
   }
+  // A restored record goes back into localStorage for the next F5. Not into the
+  // file: it is already there, and nothing has changed yet.
+  if (storedProject) localStorage.setItem(PROJECT_KEY, JSON.stringify(workspace));
   setup = normalizeSetup(readStored(SETUP_KEY));
   // start-w2.bat is 打字／文字 only. A voice setup can still be stored for this
   // address by an --allow-voice run, and left alone it would open a microphone
@@ -1556,6 +1749,10 @@ async function initialize() {
   const stage = storedStage()
     ?? (workspace.progress.workshop_1_completed && !workspace.progress.workshop_2_completed ? 2 : 1);
   switchStage(stage);
+  // Only now: the saves made while the page was being drawn are not changes, and
+  // posting them would recreate a record 「重新開始」 just deleted.
+  autosaveReady = true;
+  window.addEventListener("pagehide", flushAutosave);
 
   const forceInit = new URLSearchParams(location.search).has("init");
   if (forceInit || !setup?.completed) showOnboarding(forceInit);

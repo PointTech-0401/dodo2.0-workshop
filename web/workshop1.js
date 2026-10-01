@@ -118,6 +118,7 @@ registerApplyGroup("workshop1", {
         $("#agentAddress").value = agent.address;
         PROMPT_BLOCKS.forEach(([key, , selector]) => { $(selector).value = agent.prompt_blocks[key]; });
         $("#agentVoice").value = agent.voice;
+        syncCustomPreset();
       },
     },
     tabTurn: {
@@ -175,29 +176,73 @@ function renderVoiceOptions() {
     .join("");
 }
 
+// The three presets are the system's versions and never change. Whatever the
+// five boxes and the voice hold that is not one of them is the student's 自訂,
+// kept in `agent.custom` the moment it exists, so trying a system preset to
+// compare never costs them their own version.
+const CUSTOM_PRESET = "custom";
+
 function renderPresetButtons() {
   $("#promptPresets").innerHTML = PROMPT_PRESETS
     .map((preset) => `<button type="button" class="preset-button" data-preset="${preset.id}" title="${preset.hint}">${preset.label}<small>${preset.voice}</small></button>`)
-    .join("");
+    .join("")
+    + `<button type="button" class="preset-button preset-custom" data-preset="${CUSTOM_PRESET}" title="你自己改過的版本：改一個字就會記在這裡，換去試別的範例也不會不見">自訂<small>還沒改過</small></button>`;
   $$("#promptPresets .preset-button").forEach((button) => {
     button.addEventListener("click", () => applyPreset(button.dataset.preset));
   });
 }
 
-/** Load a preset into the 5 textareas + the voice picker. Deliberately does not
- *  touch the Dodo name or 稱呼 — those are the student's own. Nothing is sent to
- *  OpenAI until they press 套用. */
+/** Which version the five boxes and the voice show right now. */
+function currentPresetId() {
+  const blocks = promptBlocksFromFields();
+  const voice = selectedVoice();
+  const match = PROMPT_PRESETS.find((preset) => preset.voice === voice
+    && PROMPT_BLOCKS.every(([key]) => preset.blocks[key].trim() === blocks[key]));
+  return match ? match.id : CUSTOM_PRESET;
+}
+
+/** Record the boxes as 自訂 when they are not a system preset, then light up
+ *  the button for whatever is on screen. Called on every edit, load and revert. */
+function syncCustomPreset() {
+  const active = currentPresetId();
+  if (active === CUSTOM_PRESET) {
+    const custom = { prompt_blocks: promptBlocksFromFields(), voice: selectedVoice() };
+    if (JSON.stringify(custom) !== JSON.stringify(workspace.profile.agent.custom)) {
+      workspace.profile.agent = { ...workspace.profile.agent, custom };
+      saveProject();
+    }
+  }
+  const custom = workspace.profile.agent.custom;
+  $$("#promptPresets .preset-button").forEach((button) => {
+    const on = button.dataset.preset === active;
+    button.classList.toggle("is-active", on);
+    button.setAttribute("aria-pressed", String(on));
+  });
+  const customButton = $(`#promptPresets [data-preset="${CUSTOM_PRESET}"]`);
+  if (!customButton) return; // drawn by renderPresetButtons(), after bootstrap
+  customButton.disabled = !custom;
+  customButton.querySelector("small").textContent = custom ? custom.voice : "還沒改過";
+}
+
+/** Load a preset, or the student's 自訂, into the 5 textareas + the voice picker.
+ *  Deliberately does not touch the Dodo name or 稱呼 — those are the student's
+ *  own. Nothing is sent to OpenAI until they press 套用. */
 function applyPreset(id) {
-  const preset = PROMPT_PRESETS.find((item) => item.id === id);
+  const custom = workspace.profile.agent.custom;
+  const preset = id === CUSTOM_PRESET
+    ? custom && { label: "自訂", blocks: custom.prompt_blocks, voice: custom.voice }
+    : PROMPT_PRESETS.find((item) => item.id === id);
   if (!preset) return;
   PROMPT_BLOCKS.forEach(([key, , selector]) => {
-    $(selector).value = preset.blocks[key];
+    $(selector).value = preset.blocks[key] ?? "";
   });
   $("#agentVoice").value = preset.voice;
   rebuildSystemPrompt();
+  syncCustomPreset();
   // Assigning .value fires no input event, so the 套用 button has to be told.
   refreshApplyState();
-  notify(`已載入「${preset.label}」範例（聲線 ${preset.voice}）。可以繼續編輯，按「套用」才會生效。`);
+  const what = id === CUSTOM_PRESET ? "你的自訂版本" : `「${preset.label}」範例`;
+  notify(`已載入${what}（聲線 ${preset.voice}）。可以繼續編輯，按「套用」才會生效。`);
 }
 
 const EMPTY_PROMPT_NOTICE =
@@ -226,8 +271,8 @@ function buildSystemPrompt(agent) {
 function rebuildSystemPrompt() {
   const prompt = buildSystemPrompt(agentFromFields());
   const preview = $("#agentSystemPrompt");
-  // This is exactly the Workshop 1 half of what gets sent, including "nothing".
-  // Workshop 2 appends its own sections; its VIEW panel shows the whole thing.
+  // This is exactly what Workshop 1 sends, including "nothing". Workshop 2 sends
+  // the default persona instead, plus its own sections; its VIEW panel shows that.
   preview.textContent = prompt || EMPTY_PROMPT_NOTICE;
   preview.classList.toggle("is-empty", !prompt);
   W2.rebuildWorkshop2Prompt();
@@ -248,15 +293,18 @@ function loadFields() {
   $("#semanticEagerness").value = turn.eagerness;
   $("#silenceDuration").value = turn.silence_duration_ms;
   $("#interruptResponse").checked = turn.interrupt_response;
+  syncCustomPreset();
 }
 
 function collectWorkshop1() {
+  const { custom } = workspace.profile.agent;
   workspace.profile.agent = {
     name: $("#agentName").value.trim() || "豆豆",
     address: $("#agentAddress").value.trim() || "王奶奶",
     prompt_blocks: promptBlocksFromFields(),
     system_prompt: buildSystemPrompt(agentFromFields()),
     voice: selectedVoice(),
+    ...(custom ? { custom } : {}),
   };
   workspace.profile.realtime = { turn_detection: turnDetectionFromFields() };
   saveProject();
@@ -272,6 +320,20 @@ function updateTurnFields() {
     push_to_talk: "完全不猜。按著才錄音，放開按鈕才送出去，現場最好控制。",
   };
   $("#turnModeNotice").textContent = explanations[mode];
+}
+
+/** Choosing voice input starts on Push-to-talk: fifty open microphones in one
+ *  room would otherwise keep answering each other. 實作二 turns VAD on on purpose.
+ *  Only the turn setting moves, and it counts as applied (the connection that
+ *  follows uses it); a persona edit waiting for 套用 keeps waiting. */
+function startOnPushToTalk() {
+  const turn = { ...workspace.profile.realtime.turn_detection, type: "push_to_talk" };
+  workspace.profile.realtime = { ...workspace.profile.realtime, turn_detection: turn };
+  $("#turnDetectionMode").value = "push_to_talk";
+  updateTurnFields();
+  appliedSnapshots.tabTurn = tabSnapshot("tabTurn");
+  refreshApplyState();
+  saveProject();
 }
 
 async function applyWorkshop1() {
@@ -316,6 +378,7 @@ function init() {
   $("#turnDetectionMode").addEventListener("change", updateTurnFields);
   bindFieldEvents(WORKSHOP1_FIELDS, () => {
     rebuildSystemPrompt();
+    syncCustomPreset();
     refreshApplyState();
   });
   $("#saveWorkshop1").addEventListener("click", applyWorkshop1);
@@ -331,9 +394,11 @@ globalThis.W1 = {
   collect: collectWorkshop1,
   agentFromFields,
   buildSystemPrompt,
+  DEFAULT_PROMPT_BLOCKS,
   rebuildSystemPrompt,
   renderVoiceOptions,
   renderPresetButtons,
   updateTurnFields,
+  startOnPushToTalk,
 };
 })();

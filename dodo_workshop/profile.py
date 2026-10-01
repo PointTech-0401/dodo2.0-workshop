@@ -233,11 +233,17 @@ def compose_workshop2_prompt(workspace: dict[str, Any]) -> str:
 
 
 def compose_full_instructions(workspace: dict[str, Any]) -> str:
-    """The exact instructions the Realtime session receives: Workshop 1 + 2."""
+    """The exact instructions a Workshop 2 session receives.
+
+    The persona half is always the default 溫柔陪伴 blocks, with this workspace's
+    name and 稱呼; whatever blocks the file carries are ignored. Workshop 1 sends
+    `compose_agent_prompt` alone. Mirrored by `composeInstructions` in core.js.
+    """
 
     profile = workspace.get("profile") or {}
+    agent = {**(profile.get("agent") or {}), "prompt_blocks": dict(DEFAULT_PROMPT_BLOCKS)}
     parts = [
-        compose_agent_prompt(profile.get("agent") or {}),
+        compose_agent_prompt(agent),
         compose_workshop2_prompt(workspace),
     ]
     return "\n\n".join(part for part in parts if part.strip())
@@ -410,6 +416,13 @@ def normalize_workspace(value: dict[str, Any] | None) -> dict[str, Any]:
     # memory and is composed at send time by `compose_full_instructions`.
     agent["system_prompt"] = compose_agent_prompt(agent)
     agent["voice"] = resolve_voice(agent.get("voice"))
+    # 自訂: the student's own version of the five blocks and the voice, kept next
+    # to the three system presets. Optional; anything that is not an object goes.
+    custom = agent.get("custom")
+    if isinstance(custom, dict):
+        agent["custom"] = {"prompt_blocks": prompt_blocks_for(custom), "voice": resolve_voice(custom.get("voice"))}
+    else:
+        agent.pop("custom", None)
 
     # Dead schema-1 sections, same reasoning as `max_output_tokens`.
     profile.pop("memory_policy", None)

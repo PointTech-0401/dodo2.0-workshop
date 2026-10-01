@@ -88,3 +88,25 @@ def test_bootstrap_reports_how_the_server_was_launched(
 
     data = web_module.bootstrap()
     assert {key: data[key] for key in expected} == expected
+
+
+@pytest.mark.parametrize(("workshop", "fresh"), [(None, False), (1, True), (2, True)])
+def test_both_launchers_ask_the_page_to_start_over(
+    monkeypatch: pytest.MonkeyPatch, workshop: int | None, fresh: bool
+) -> None:
+    """兩個啟動檔每次開都重新來過，再問要不要載入這一堂上次的紀錄；沒帶 --workshop 的照舊接著用。"""
+
+    import uvicorn
+
+    monkeypatch.setattr(web_module, "_workshop_mode", web_module._workshop_mode)
+    monkeypatch.setattr(web_module, "_allow_voice", web_module._allow_voice)
+    monkeypatch.setattr(uvicorn, "run", lambda *args, **kwargs: None)
+
+    web_module.run_server("127.0.0.1", 8001, open_browser=False, workshop=workshop)
+
+    first, again = web_module.bootstrap()["fresh_start_id"], web_module.bootstrap()["fresh_start_id"]
+    if fresh:
+        # Same id on every F5 of one server run, or the page would wipe the work it just saved.
+        assert first and first == again
+    else:
+        assert first is None

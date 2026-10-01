@@ -29,7 +29,7 @@
     <section class="conversation-panel" aria-labelledby="conversationTitle">
       <div class="panel-heading">
         <div>
-          <p class="eyebrow">同一個 Dodo，持續升級</p>
+          <p id="stageEyebrow" class="eyebrow">第一堂</p>
           <h1 id="conversationTitle">讓 Dodo 聽完，再回答</h1>
           <p id="modelStatus" class="model-status">尚未連接 Realtime</p>
         </div>
@@ -38,6 +38,55 @@
         <button id="newChat" type="button" class="secondary-button new-chat-button" title="只把這一段對話清掉，重新開始講；她記得的事和建檔都留著">＋ 新聊天</button>
       </div>
       <div class="state-bar" aria-label="Dodo 狀態">
+        <!-- 豆豆的臉（只在第一堂顯示）：正式 dodo 的吉祥物（components/brand/dodo-bean.tsx）搬過來。
+             data-state 由 core.js 的 syncAvatar() 設：idle／listening／thinking／
+             speaking，加上這裡才有的 interrupted（被打斷的那一下）。 -->
+        <div id="dodoAvatar" class="dodo-avatar" data-state="idle" title="豆豆">
+          <div class="dodo-halo" aria-hidden="true"></div>
+          <svg class="dodo-anim" viewBox="0 0 120 140" role="img" aria-label="豆豆">
+            <defs>
+              <linearGradient id="dodoBeanBody" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="oklch(0.97 0.035 90)"/>
+                <stop offset="100%" stop-color="oklch(0.89 0.06 80)"/>
+              </linearGradient>
+            </defs>
+            <g class="listen-rings" aria-hidden="true">
+              <circle cx="60" cy="84" r="52"/><circle cx="60" cy="84" r="52"/><circle cx="60" cy="84" r="52"/>
+            </g>
+            <g data-part="sprout">
+              <path d="M60 30 C60 22 60 16 60 12" stroke="oklch(0.5 0.09 140)" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+              <path d="M60 14 C54 4 42 2 36 8 C40 18 52 20 60 14 Z" fill="var(--support)"/>
+              <path d="M60 14 C64 5 74 2 80 7 C77 16 66 19 60 14 Z" fill="oklch(0.72 0.1 140)"/>
+            </g>
+            <g class="think-dots" aria-hidden="true">
+              <circle cx="84" cy="22" r="3"/><circle cx="94" cy="16" r="4"/><circle cx="105" cy="9" r="5"/>
+            </g>
+            <g class="cut-mark" aria-hidden="true">
+              <path d="M100 18 L98 40"/><circle cx="97" cy="49" r="3"/>
+            </g>
+            <g data-part="body">
+              <path d="M60 26 C86 26 102 50 102 84 C102 114 84 132 60 132 C36 132 18 114 18 84 C18 50 34 26 60 26 Z" fill="url(#dodoBeanBody)"/>
+            </g>
+            <g class="speak-arcs" aria-hidden="true">
+              <path d="M104 70 C112 78 112 92 104 100"/><path d="M112 64 C123 76 123 94 112 106"/>
+            </g>
+            <g data-part="face">
+              <g data-part="eyes" fill="oklch(0.32 0.045 55)">
+                <circle cx="44" cy="76" r="5.5"/><circle cx="76" cy="76" r="5.5"/>
+                <circle cx="46" cy="74" r="1.8" fill="oklch(0.97 0.03 90)"/><circle cx="78" cy="74" r="1.8" fill="oklch(0.97 0.03 90)"/>
+              </g>
+              <g data-part="mouth" stroke="oklch(0.32 0.045 55)" stroke-width="3.5" stroke-linecap="round" fill="none">
+                <path class="m-smile" d="M52 92 C56 98 64 98 68 92"/>
+                <path class="m-hmm" d="M57 93 C59 95 61 95 63 93"/>
+                <path class="m-open" d="M53 90 C53 99 67 99 67 90 C67 86 53 86 53 90 Z" fill="oklch(0.45 0.07 40)" stroke="none"/>
+                <ellipse class="m-oh" cx="60" cy="93" rx="4" ry="5" fill="oklch(0.45 0.07 40)" stroke="none"/>
+              </g>
+              <g data-part="blush" fill="var(--accent)">
+                <ellipse cx="32" cy="90" rx="7" ry="4.5"/><ellipse cx="88" cy="90" rx="7" ry="4.5"/>
+              </g>
+            </g>
+          </svg>
+        </div>
         <ol class="state-list">
           <li class="is-current" data-state="listening"><span></span>收聽中</li>
           <li data-state="thinking"><span></span>思考中</li>
@@ -116,9 +165,9 @@
           <h3>用分塊設計回答方式</h3>
           <p class="block-purpose">你只改下面五格。系統會把五格接成一整份 Prompt，送給同一個模型。</p>
           <div class="preset-row">
-            <p class="preset-label">快速套用範例人格</p>
+            <p class="preset-label">人格版本：三個系統預設，加上你的自訂</p>
             <div id="promptPresets" class="preset-buttons"></div>
-            <small>會把下面 5 格和聲線整組換掉，但你取的名字和稱呼會留著。要按「套用」才算數。</small>
+            <small>按一個會把下面 5 格和聲線整組換掉，你取的名字和稱呼會留著。下面任何一格改過，就自動記成「自訂」，換去試系統預設也不會不見。要按「套用」才算數。</small>
           </div>
           <div class="prompt-variables" aria-label="Prompt 變數">
             <label>Dodo 名稱<input id="agentName"><small>分塊裡的 <code>{AGENT_NAME}</code> 會換成這個名字</small></label>
@@ -207,12 +256,6 @@
           <p class="interview-cue">
             <button id="showInterview" type="button" class="secondary-button">顯示訪談稿</button>
             <small>訪談稿會蓋住左邊的聊天區，右邊這張表單照樣可以填，讀完按「關閉」就回到聊天。每一區都寫著答案在訪談稿第幾段。</small>
-          </p>
-          <!-- The opt-out. 建檔 is a 35-minute exercise; someone who came for the
-               主動 half should still end up with a working 秀蘭阿嬤. -->
-          <p class="interview-cue">
-            <button id="loadReferenceIntake" type="button" class="secondary-button">直接載入範例建檔</button>
-            <small>不想自己填、或中途才進來的人按這個：一次把秀蘭阿嬤的參考答案填進六區。填進來照樣可以改，<strong>還是要按「套用」才算數</strong>。</small>
           </p>
           <div id="intakeCompleteness" class="completeness" aria-live="polite" aria-label="建檔完整度"></div>
           <p class="block-purpose">這裡只數你<strong>填了幾筆</strong>，不管對不對。填得對不對看兩個地方：「主動規則」跑出來的她的一天，還有每一區右上角「問豆豆這一區」她怎麼回答。</p>
@@ -313,6 +356,15 @@
             <li>「新來那個人做事很粗心，你記起來。」<small>說某個人的壞話。存成事實就會被一提再提，而被講的人沒機會辯解。</small></li>
           </ol>
           <p class="block-purpose">只靠關鍵字一定會漏，所以三件事一起做：<strong>含高風險字眼的直接拒絕、護理員填的 AI 動不了、人隨時可以刪</strong>。</p>
+
+          <!-- The opt-out, kept at the very bottom so nobody reaches for it before
+               trying. 建檔 is a 35-minute exercise; someone who came for the 主動
+               half should still end up with a working 秀蘭阿嬤. Asks first. -->
+          <h4 class="sub-heading">跟不上了？直接載入範例建檔</h4>
+          <p class="interview-cue">
+            <button id="loadReferenceIntake" type="button" class="secondary-button">直接載入範例建檔</button>
+            <small>中途才進來、或建檔卡住的人按這個：一次把秀蘭阿嬤的參考答案填進六區，<strong>會蓋掉你填的</strong>，按下去會先問你確不確定。填進來照樣可以改，<strong>還是要按「套用」才算數</strong>。</small>
+          </p>
         </div>
 
         <div id="tabW2Prompt" class="tab-panel" role="tabpanel" tabindex="0" hidden>
@@ -358,8 +410,8 @@
             <div id="compareResult" class="compare-result" aria-live="polite"></div>
           </div>
           <details class="prompt-preview-panel" open>
-            <summary><span>VIEW</span><strong>完整 System Prompt（Workshop 1 + 2）</strong><small>真正送給模型的整份內容，只能看不能改；其中四段由建檔自動填。</small></summary>
-            <pre id="workshop2SystemPrompt" class="prompt-preview" tabindex="0" aria-label="Workshop 1 + 2 完整 System Prompt，只能看不能改"></pre>
+            <summary><span>VIEW</span><strong>完整 System Prompt（預設人格＋第二堂）</strong><small>真正送給模型的整份內容，只能看不能改。開頭固定是第一堂的預設人格「溫柔陪伴」；其中四段由建檔自動填。</small></summary>
+            <pre id="workshop2SystemPrompt" class="prompt-preview" tabindex="0" aria-label="第二堂完整 System Prompt，只能看不能改"></pre>
           </details>
         </div>
 
@@ -568,11 +620,37 @@
     </aside>
   </main>
 
+  <!-- 這一堂的紀錄檔（runtime/）還在、瀏覽器裡卻沒有作品時才出現：Terminal 誤關、
+       第二堂重新啟動、或瀏覽器資料被清掉。兩堂各一個檔，互不相讀。 -->
+  <section id="restorePrompt" class="onboarding" hidden aria-labelledby="restoreTitle">
+    <div class="onboarding-sheet restore-sheet">
+      <p class="eyebrow">上次的紀錄</p>
+      <h2 id="restoreTitle">要載入上次的資料嗎？</h2>
+      <p id="restoreSummary" class="lead"></p>
+      <div class="onboarding-footer">
+        <button id="restoreDiscard" type="button" class="secondary-button">重新開始</button>
+        <button id="restoreLoad" type="button" class="primary-button">載入上次的資料</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 會蓋掉學生成果的動作先問一次（目前是「直接載入範例建檔」）。core.js 的 askConfirm() 填字。 -->
+  <section id="confirmPrompt" class="onboarding" hidden role="alertdialog" aria-labelledby="confirmTitle" aria-describedby="confirmBody">
+    <div class="onboarding-sheet restore-sheet">
+      <h2 id="confirmTitle"></h2>
+      <p id="confirmBody" class="lead"></p>
+      <div class="onboarding-footer">
+        <button id="confirmCancel" type="button" class="secondary-button">取消</button>
+        <button id="confirmOk" type="button" class="primary-button"></button>
+      </div>
+    </div>
+  </section>
+
   <section id="onboarding" class="onboarding" hidden aria-labelledby="onboardingTitle">
     <div class="onboarding-sheet">
       <button id="closeOnboarding" type="button" class="sheet-close" aria-label="關閉設定" title="關閉設定（Esc）" hidden>×</button>
-      <p class="eyebrow">FIRST RUN</p>
-      <h2 id="onboardingTitle">不管你手上有什麼設備，都做得出同一個 Dodo</h2>
+      <p class="eyebrow">系統設定</p>
+      <h2 id="onboardingTitle">填入金鑰，選擇輸入與輸出方式</h2>
       <p id="onboardingLead" class="lead">先填好 OpenAI 和天氣的 Key，再選你要怎麼跟它講、它怎麼回你。用講的要有麥克風；要聽它講話建議戴耳機。</p>
       <fieldset>
         <legend>連接 OpenAI API</legend>
@@ -597,7 +675,7 @@
       <fieldset id="inputModeChoice">
         <legend>選擇輸入方式</legend>
         <label class="choice"><input type="radio" name="inputMode" value="text" checked><span><strong>打字</strong><small>用鍵盤打字，不會開麥克風</small></span></label>
-        <label class="choice"><input type="radio" name="inputMode" value="voice"><span><strong>語音</strong><small>用麥克風講話，可以試插話和「它怎麼知道你講完了」</small></span></label>
+        <label class="choice"><input type="radio" name="inputMode" value="voice"><span><strong>語音</strong><small>用麥克風講話。一開始要按住「按住說話」才會收音，「何時算說完」可以改成自動判斷</small></span></label>
       </fieldset>
       <fieldset id="outputModeChoice">
         <legend>選擇輸出方式</legend>

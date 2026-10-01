@@ -34,7 +34,8 @@ def test_shared_client_and_bootstrap_are_available() -> None:
     script = client_script()
     data = bootstrap()
 
-    assert "同一個 Dodo，持續升級" in page
+    assert '<p id="stageEyebrow" class="eyebrow">第一堂</p>' in page
+    assert "同一個 Dodo" not in page
     assert "Prompt 與 Realtime 是兩層" in page
     assert "API Key" in page
     assert "用分塊設計回答方式" in page
@@ -686,7 +687,7 @@ def test_workshop2_has_its_own_viewable_editable_prompt_layer() -> None:
         assert f'<textarea id="{block}"' in page, block
     # The schema-1 block that mixed rules and data in one box is retired.
     assert 'id="promptProactive"' not in page
-    assert "完整 System Prompt（Workshop 1 + 2）" in page
+    assert "完整 System Prompt（預設人格＋第二堂）" in page
     assert '<pre id="workshop2SystemPrompt"' in page
     assert '<textarea id="workshop2SystemPrompt"' not in page
     assert 'id="elderCity"' in page
@@ -1507,3 +1508,28 @@ def test_layer_c_is_grown_from_the_conversation_not_typed() -> None:
     assert 'classList.contains("assistant") ? "dodo"' in transcript
     # The endpoint caps both fields; sending more would 422 the whole summary.
     assert "text.slice(0, 2000)" in transcript and "slice(-200)" in transcript
+
+
+def test_dodo_has_a_face_that_follows_what_it_is_doing() -> None:
+    """豆豆的臉：正式 dodo 的吉祥物，跟著聆聽／思考／講話切換，被打斷時會愣一下。
+    行為在 tests/browser/narrationcheck.js 的 I 段實跑；這裡只擋「整個被拿掉」。"""
+
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
+    script = client_script()
+
+    assert 'id="dodoAvatar" class="dodo-avatar" data-state="idle"' in page
+    for state in ("listening", "thinking", "speaking", "interrupted"):
+        assert f".dodo-avatar[data-state='{state}']" in styles, state
+    assert "prefers-reduced-motion" in styles
+    assert "function syncAvatar()" in script
+    assert "showInterrupted();" in script
+
+
+def test_every_change_also_reaches_this_sessions_record_file() -> None:
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    script = client_script()
+
+    assert 'id="restorePrompt"' in page and "要載入上次的資料嗎？" in page
+    assert 'fetch("/api/autosave"' in script
+    assert 'window.addEventListener("pagehide", flushAutosave)' in script

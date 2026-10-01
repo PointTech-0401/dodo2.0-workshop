@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 import os
 import re
-from datetime import date
+import uuid
+from datetime import date, datetime
+from pathlib import Path
 from typing import Any, Literal
 
 import httpx
@@ -38,6 +40,8 @@ from dodo_workshop.weather import get_weather
 
 WEB_DIR = ROOT / "web"
 INTERVIEW_PATH = ROOT / "scenarios" / "interview.md"
+# Where each session keeps its record file (gitignored, so never in the ZIP).
+AUTOSAVE_DIR = ROOT / "runtime"
 # The answer key is server-side by default: 建檔 is the exercise, so the browser
 # gets the interview, the expected counts and the results, not the filled form.
 # `/api/reference-intake` is the one deliberate exception — an opt-out for people
@@ -51,6 +55,10 @@ load_dotenv(ROOT / ".env")
 STT_TRANSCRIPTION_PROMPT = (
     "請使用臺灣繁體中文記錄逐字稿，採用臺灣慣用詞，不要使用簡體字。"
 )
+# Same model as the main dodo project. gpt-realtime-2.1-mini was tried for cost on
+# 2026-10-01 and dropped the same day: it answered in Simplified Chinese with a
+# mainland accent despite the 語言 block. OPENAI_REALTIME_MODEL still overrides.
+DEFAULT_REALTIME_MODEL = "gpt-realtime-2"
 HHMM = re.compile(r"^([01]?\d|2[0-3]):[0-5]\d$")
 # What the production orchestrator hard-codes today (dodo spec §7.2): a fixed
 # do-not-disturb window that only medication crosses, and meal windows. The
@@ -76,6 +84,15 @@ _runtime_weather_api_key: str | None = None
 # instructor's machine, so `_allow_voice` is already the answer the page needs.
 _workshop_mode: int | None = None
 _allow_voice = True
+# A new id every time the server starts. Both launchers hand it to the page, and
+# the page sets aside what this browser kept from an earlier start, then asks
+# 「要載入上次的資料嗎？」 from this session's record file. An F5 keeps the id, so
+# it keeps the work without asking.
+_launch_id = uuid.uuid4().hex
+
+
+def realtime_model() -> str:
+    return os.getenv("OPENAI_REALTIME_MODEL", DEFAULT_REALTIME_MODEL)
 
 
 def selected_realtime_voice() -> str:
@@ -216,7 +233,7 @@ def bootstrap() -> dict[str, Any]:
         "rule_labels": RULE_LABELS,
         "api_configured": bool(api_key),
         "api_key_source": "session" if _runtime_api_key else ("environment" if api_key else None),
-        "realtime_model": os.getenv("OPENAI_REALTIME_MODEL", "gpt-realtime-2"),
+        "realtime_model": realtime_model(),
         "realtime_voice": selected_realtime_voice(),
         "realtime_voices": list(REALTIME_VOICES),
         "weather_configured": bool(active_weather_api_key()),
@@ -227,7 +244,61 @@ def bootstrap() -> dict[str, Any]:
         ),
         "workshop_mode": _workshop_mode,
         "allow_voice": _allow_voice,
+        # Every launch asks whether to load the last record. A plain `app.py serve`
+        # (instructor, development) just carries on.
+        "fresh_start_id": _launch_id if _workshop_mode else None,
     }
+
+
+def autosave_path() -> Path:
+    """One record file per session, so session 2 never offers session 1's work.
+
+    A plain `app.py serve` (instructor, development) gets a third file of its own.
+    """
+
+    name = f"workshop{_workshop_mode}-autosave.json" if _workshop_mode else "autosave.json"
+    return AUTOSAVE_DIR / name
+
+
+@app.get("/api/autosave")
+def read_autosave() -> dict[str, Any]:
+    """What this session last saved, for the 「要載入上次的資料嗎？」 question."""
+
+    path = autosave_path()
+    try:
+        workspace = json.loads(path.read_text(encoding="utf-8"))
+        saved_at = datetime.fromtimestamp(path.stat().st_mtime).astimezone().isoformat(timespec="seconds")
+    except (OSError, ValueError):
+        return {"workspace": None, "saved_at": None}
+    if not isinstance(workspace, dict):
+        return {"workspace": None, "saved_at": None}
+    return {"workspace": workspace, "saved_at": saved_at}
+
+
+@app.post("/api/autosave")
+def write_autosave(payload: WorkspaceRequest) -> dict[str, Any]:
+    """The browser posts the project after every change. The key is never in it.
+
+    Written to a temporary file and swapped in, so a Terminal closed mid-write
+    leaves the previous save rather than half a file.
+    """
+
+    if not isinstance(payload.workspace.get("profile"), dict):
+        raise HTTPException(status_code=400, detail="這不是一份 Dodo 作品，沒有存檔。")
+    path = autosave_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(".tmp")
+    temporary.write_text(json.dumps(payload.workspace, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    os.replace(temporary, path)
+    return {"saved": True}
+
+
+@app.delete("/api/autosave")
+def delete_autosave() -> dict[str, Any]:
+    """「重新開始」: forget the record, so the next start does not ask again."""
+
+    autosave_path().unlink(missing_ok=True)
+    return {"deleted": True}
 
 
 @app.post("/api/workspace/normalize")
@@ -265,7 +336,7 @@ def configure_api_key(payload: ApiKeyRequest) -> dict[str, Any]:
     return {
         "configured": True,
         "source": "session",
-        "realtime_model": os.getenv("OPENAI_REALTIME_MODEL", "gpt-realtime-2"),
+        "realtime_model": realtime_model(),
         "realtime_voice": selected_realtime_voice(),
         "weather_configured": bool(active_weather_api_key()),
     }
@@ -474,7 +545,7 @@ async def realtime_session(payload: RealtimeSessionRequest) -> Response:
 
     session: dict[str, Any] = {
         "type": "realtime",
-        "model": os.getenv("OPENAI_REALTIME_MODEL", "gpt-realtime-2"),
+        "model": realtime_model(),
         "reasoning": {"effort": "low"},
         "audio": {
             "input": {

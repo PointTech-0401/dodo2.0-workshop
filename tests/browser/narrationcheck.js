@@ -36,8 +36,9 @@ const ok = (label, cond, extra = "") => {
 };
 
 const EXPOSE = `
-globalThis.__n = { handleRealtimeEvent, markNarrationFromResponse, startNewChat,
-  setSetup: (value) => { setup = value; } };
+globalThis.__n = { handleRealtimeEvent, markNarrationFromResponse, startNewChat, sendText,
+  setSetup: (value) => { setup = value; },
+  setChannel: (value) => { dataChannel = value; apiConfigured = Boolean(value); } };
 initialize();`;
 try { eval(script + EXPOSE); } catch (e) { failures.push(`client threw: ${e.message}`); console.log(e); }
 await new Promise((r) => setTimeout(r, 400));
@@ -141,6 +142,39 @@ ok("H 同一輪兩個 item，只有旁白那顆被標",
 ok("H 真正的答案留給前後對照",
    answers.length === 1 && answers[0].querySelector("p").textContent === "你上次說喜歡唱歌。",
    answers.map((b) => b.querySelector("p").textContent).join(" | "));
+
+// --- I. 豆豆's face follows what it is doing, and flinches when cut off -----
+const { sendText, setChannel } = globalThis.__n;
+const face = () => document.querySelector("#dodoAvatar").dataset.state;
+const sent = [];
+setChannel({ readyState: "open", send: (data) => sent.push(JSON.parse(data).type), close: () => {} });
+await fire({ type: "response.done", response: { output: [] } });
+await new Promise((r) => setTimeout(r, 600));
+ok("I 連上線、沒事做：聆聽", face() === "listening", face());
+await fire({ type: "response.created" });
+ok("I 收到回合：思考", face() === "thinking", face());
+await fire({ type: "response.output_text.delta", item_id: "item_i", delta: "我跟你講一個" });
+ok("I 文字一出來：講話", face() === "speaking", face());
+await sendText("等一下");
+ok("I 打字插話：被打斷", face() === "interrupted" && sent.includes("response.cancel"), `${face()} ${sent.join(",")}`);
+await new Promise((r) => setTimeout(r, 1500));
+ok("I 一下子之後回到現在的狀態", face() === "thinking", face());
+// Voice output: the bar goes back to 收聽中 at response.done, the face keeps
+// talking until the audio buffer actually stops.
+setSetup({ completed: true, inputMode: "text", outputMode: "voice" });
+await fire({ type: "output_audio_buffer.started" });
+await fire({ type: "response.done", response: { output: [] } });
+await new Promise((r) => setTimeout(r, 600));
+ok("I 聲音還在播：還在講話", face() === "speaking", face());
+await fire({ type: "output_audio_buffer.stopped" });
+ok("I 播完：聆聽", face() === "listening", face());
+await fire({ type: "output_audio_buffer.started" });
+await fire({ type: "output_audio_buffer.cleared" });
+ok("I 她開口把聲音切掉（VAD 插話）：被打斷", face() === "interrupted", face());
+setChannel(undefined);
+await fire({ type: "output_audio_buffer.stopped" });
+await new Promise((r) => setTimeout(r, 1500));
+ok("I 斷線：沒醒", face() === "idle", face());
 
 console.log(failures.length ? `\n${failures.length} FAILED: ${failures.join(", ")}` : "\nall narration checks passed");
 process.exit(failures.length ? 1 : 0);

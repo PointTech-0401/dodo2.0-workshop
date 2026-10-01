@@ -176,6 +176,25 @@ ok("revert re-hides the mode-specific field", $("#silenceDurationField").hidden)
 ok("revert rebuilt the preview", !$("#agentSystemPrompt").textContent.includes("又改了一次"));
 ok("both buttons hide after revert", $("#revertWorkshop1").hidden && $("#saveWorkshop1").hidden);
 ok("revert cleared the W1 dots", document.querySelectorAll("#workshop1Panel .tab-button.is-dirty").length === 0);
+
+// --- 自訂: the student's own version survives trying a system preset --------
+const presetButton = (id) => $(`#promptPresets .preset-button[data-preset="${id}"]`);
+ok("溫柔陪伴 is lit for the default blocks", presetButton("gentle").classList.contains("is-active"));
+ok("the edit 取消變更 just undid is still kept as 自訂",
+   !presetButton("custom").disabled
+   && JSON.parse(localStorage.getItem("dodo-workshop.project")).profile.agent.custom?.prompt_blocks.identity === "又改了一次");
+$("#promptIdentity").value = "我是自己寫的豆豆"; fire("#promptIdentity", "input");
+ok("an edit turns it into 自訂", presetButton("custom").classList.contains("is-active") && !presetButton("custom").disabled);
+ok("...kept in the project at once",
+   JSON.parse(localStorage.getItem("dodo-workshop.project")).profile.agent.custom?.prompt_blocks.identity === "我是自己寫的豆豆");
+presetButton("neural").click();
+ok("a system preset still loads", presetButton("neural").classList.contains("is-active") && $("#promptIdentity").value !== "我是自己寫的豆豆");
+ok("...without touching the 自訂",
+   JSON.parse(localStorage.getItem("dodo-workshop.project")).profile.agent.custom?.prompt_blocks.identity === "我是自己寫的豆豆");
+presetButton("custom").click();
+ok("自訂 brings the student's version back", $("#promptIdentity").value === "我是自己寫的豆豆" && presetButton("custom").classList.contains("is-active"));
+$("#revertWorkshop1").click();
+ok("取消變更 goes back to what was applied", presetButton("gentle").classList.contains("is-active") && $("#saveWorkshop1").hidden);
 // The W2 policy edit further up is deliberately still pending: reverting one
 // group must not touch the other.
 ok("revert left the other group alone", $('.tab-button[data-tab="tabW2Policy"]').classList.contains("is-dirty"));
@@ -291,19 +310,23 @@ ok("...and clears the dot for good", !intakeDirty());
 const savedRoutineCount = () => (JSON.parse(localStorage.getItem("dodo-workshop.project") || "{}")
   .profile?.elder_profile?.routines || []).length;
 const appliedRoutines = savedRoutineCount();
+const confirmUp = () => !$("#confirmPrompt").hidden;
 $("#loadReferenceIntake").click();
 await new Promise((r) => setTimeout(r, 200));
-ok("a filled form arms first instead of overwriting",
-   $("#loadReferenceIntake").textContent.includes("再按一次") && routineRows() === 1,
+ok("it asks before overwriting", confirmUp() && $("#confirmTitle").textContent.includes("確定") && routineRows() === 1,
    `${routineRows()} rows`);
+$("#confirmCancel").click();
+await new Promise((r) => setTimeout(r, 200));
+ok("取消 leaves the form alone", !confirmUp() && routineRows() === 1, `${routineRows()} rows`);
 $("#loadReferenceIntake").click();
+await new Promise((r) => setTimeout(r, 200));
+$("#confirmOk").click();
 await new Promise((r) => setTimeout(r, 300));
-ok("the second press fills 建檔 from the reference", routineRows() >= 6, `${routineRows()} rows`);
+ok("確定 fills 建檔 from the reference", !confirmUp() && routineRows() >= 6, `${routineRows()} rows`);
 ok("...including the scalars", $("#elderAddress").value === "秀蘭阿嬤" && $("#elderBed").value === "21:30");
 ok("...and the caregiver-written memory rows",
    $("#factRows").querySelectorAll(".row-item").length >= 4
    && $("#symptomRows").querySelectorAll(".row-item").length >= 3);
-ok("...and the button disarms itself", !$("#loadReferenceIntake").textContent.includes("再按一次"));
 ok("it is an unapplied edit, not a write", intakeDirty() && !$("#saveWorkshop2").hidden);
 ok("...so nothing reached the saved project yet", savedRoutineCount() === appliedRoutines,
    `${savedRoutineCount()} saved`);

@@ -186,6 +186,11 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .preset-button { display: grid; gap: 2px; padding: 9px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--white); color: var(--ink); font-size: 13px; font-weight: 700; }
 .preset-button small { color: var(--ink-soft); font-size: 10px; font-weight: 400; letter-spacing: .06em; }
 .preset-button:hover { border-color: var(--blue); background: var(--sky); }
+/* 正在用哪一版：三個系統預設或學生的自訂。自訂還沒有內容時不能按。 */
+.preset-button.is-active { border-color: var(--blue); background: var(--sky); box-shadow: inset 0 0 0 1px var(--blue); }
+.preset-custom { border-style: dashed; }
+.preset-custom.is-active { border-style: solid; }
+.preset-button:disabled { opacity: .5; cursor: not-allowed; background: var(--white); border-color: var(--line); }
 .preset-row > small { display: block; margin-top: 8px; color: var(--ink-soft); font-size: 11px; line-height: 1.5; }
 /* The preview sits on a dark panel, so the warning needs a light accent. */
 .prompt-preview.is-empty { color: var(--apricot); font-style: italic; }
@@ -522,7 +527,6 @@ legend { margin-bottom: 10px; font-weight: 800; }
    wears off — otherwise it reads as a permanent mute. */
 .decline-state { display: block; margin-top: 3px; color: var(--ink-soft); font-size: 10px; line-height: 1.4; }
 #declineChat.is-active { border: 1px solid var(--danger); background: var(--white); color: var(--danger); }
-#loadReferenceIntake.is-armed { border: 1px solid var(--danger); background: var(--white); color: var(--danger); }
 
 /* 先預測再跑: the guess is the point, so it sits above the button, not beside
    the result it is about to be compared with. */
@@ -551,3 +555,81 @@ legend { margin-bottom: 10px; font-weight: 800; }
 
 /* The timeline's topic column carries the wording, so it takes the slack. */
 .day-topic { flex: 1 1 40%; min-width: 0; overflow-wrap: anywhere; }
+
+/* 「要載入上次的資料嗎？」：跟首次設定同一種遮罩，窄一點，兩顆按鈕靠右。 */
+.restore-sheet { width: min(560px, 100%); }
+.restore-sheet .onboarding-footer { justify-content: flex-end; }
+
+/* ── 豆豆的臉 ──────────────────────────────────────────────────────────────
+   正式 dodo 的 avatar 狀態機（apps/web/src/app/globals.css 的 7.1 區）搬過來：
+   各狀態的圖層一直在 DOM 裡，只切 display。多了一個 interrupted：被打斷時嘴巴
+   變成小圓、眼睛睜大、頭上冒驚嘆號，停一下再回到現在的狀態。打字也能插話，
+   沒戴耳機的人看這張臉就知道它被打斷了。 */
+.dodo-avatar {
+  --support: oklch(0.62 0.09 140);
+  --accent: oklch(0.66 0.155 40);
+  --breath-dur: 4.2s;
+  --halo-color: oklch(0.66 0.155 40 / 0.12);
+  position: relative; flex: 0 0 auto; width: 78px;
+}
+.dodo-avatar svg { display: block; width: 100%; height: auto; overflow: visible; }
+.dodo-avatar .dodo-halo {
+  position: absolute; inset: -12%; border-radius: 50%;
+  background: radial-gradient(50% 50% at 50% 55%, var(--halo-color), transparent 70%);
+  animation: dodo-halo-breath var(--breath-dur) ease-in-out infinite;
+}
+@keyframes dodo-halo-breath { 50% { transform: scale(1.06); opacity: .8; } }
+@keyframes dodo-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.dodo-avatar .dodo-anim { position: relative; animation: dodo-float var(--breath-dur) ease-in-out infinite; }
+.dodo-avatar [data-part='blush'] { opacity: .35; }
+.dodo-avatar [data-part='eyes'] { transform-origin: 60px 76px; animation: dodo-blink 5.5s linear infinite; }
+@keyframes dodo-blink { 0%, 94%, 100% { transform: scaleY(1); } 96.5% { transform: scaleY(.08); } }
+.dodo-avatar .listen-rings, .dodo-avatar .think-dots, .dodo-avatar .speak-arcs, .dodo-avatar .cut-mark,
+.dodo-avatar .m-hmm, .dodo-avatar .m-open, .dodo-avatar .m-oh { display: none; }
+
+/* idle：還沒連線。不呼吸、半透明，看得出它還沒醒。 */
+.dodo-avatar[data-state='idle'] { opacity: .55; }
+.dodo-avatar[data-state='idle'] .dodo-anim, .dodo-avatar[data-state='idle'] .dodo-halo { animation: none; }
+
+/* listening：葉芽豎起、同心聆聽圈 */
+.dodo-avatar[data-state='listening'] .dodo-anim { animation-duration: 2.6s; }
+.dodo-avatar[data-state='listening'] [data-part='sprout'] { transform-origin: 60px 26px; animation: dodo-sprout-perk 1.4s ease-in-out infinite alternate; }
+@keyframes dodo-sprout-perk { from { transform: rotate(-3deg); } to { transform: rotate(4deg); } }
+.dodo-avatar[data-state='listening'] .listen-rings { display: block; }
+.dodo-avatar .listen-rings circle { fill: none; stroke: var(--support); stroke-width: 2; transform-origin: 60px 84px; opacity: 0; animation: dodo-ring-out 2.2s ease-out infinite; }
+.dodo-avatar .listen-rings circle:nth-child(2) { animation-delay: .7s; }
+.dodo-avatar .listen-rings circle:nth-child(3) { animation-delay: 1.4s; }
+@keyframes dodo-ring-out { 0% { transform: scale(.78); opacity: 0; } 25% { opacity: .5; } 100% { transform: scale(1.22); opacity: 0; } }
+
+/* thinking：眼睛往上飄、嘴變小、頭頂三點 */
+.dodo-avatar[data-state='thinking'] [data-part='eyes'] { animation: none; transform: translate(3px, -4px); }
+.dodo-avatar[data-state='thinking'] .m-smile { display: none; }
+.dodo-avatar[data-state='thinking'] .m-hmm, .dodo-avatar[data-state='thinking'] .think-dots { display: block; }
+.dodo-avatar .think-dots circle { fill: var(--accent); animation: dodo-dot-bob 1.3s ease-in-out infinite; }
+.dodo-avatar .think-dots circle:nth-child(2) { animation-delay: .18s; }
+.dodo-avatar .think-dots circle:nth-child(3) { animation-delay: .36s; }
+@keyframes dodo-dot-bob { 30% { transform: translateY(-5px); opacity: 1; } 0%, 60%, 100% { transform: translateY(0); opacity: .45; } }
+
+/* speaking：嘴巴開合、兩側聲弧、講話的小彈跳 */
+.dodo-avatar[data-state='speaking'] .dodo-anim { animation: dodo-talk .62s ease-in-out infinite; }
+@keyframes dodo-talk { 50% { transform: translateY(-1.2%) scale(1.012); } }
+.dodo-avatar[data-state='speaking'] .m-smile { display: none; }
+.dodo-avatar[data-state='speaking'] .m-open { display: block; transform-origin: 60px 93px; animation: dodo-mouth-talk .31s ease-in-out infinite alternate; }
+@keyframes dodo-mouth-talk { from { transform: scaleY(1); } to { transform: scaleY(.45); } }
+.dodo-avatar[data-state='speaking'] .speak-arcs { display: block; }
+.dodo-avatar .speak-arcs path { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; opacity: 0; animation: dodo-arc-fade .9s ease-out infinite; }
+.dodo-avatar .speak-arcs path:nth-child(2) { animation-delay: .3s; }
+@keyframes dodo-arc-fade { 20% { opacity: .55; } 100% { opacity: 0; } }
+
+/* interrupted：被打斷的那一下 */
+.dodo-avatar[data-state='interrupted'] .dodo-anim { animation: dodo-flinch .45s ease-out 1; }
+@keyframes dodo-flinch { 0% { transform: translateY(0); } 30% { transform: translateY(3px) scale(.97); } 100% { transform: translateY(0); } }
+.dodo-avatar[data-state='interrupted'] [data-part='eyes'] { animation: none; transform: scale(1.18); }
+.dodo-avatar[data-state='interrupted'] .m-smile { display: none; }
+.dodo-avatar[data-state='interrupted'] .m-oh, .dodo-avatar[data-state='interrupted'] .cut-mark { display: block; }
+.dodo-avatar .cut-mark path { fill: none; stroke: var(--danger); stroke-width: 5; stroke-linecap: round; }
+.dodo-avatar .cut-mark circle { fill: var(--danger); }
+
+@media (prefers-reduced-motion: reduce) {
+  .dodo-avatar, .dodo-avatar * { animation: none !important; }
+}

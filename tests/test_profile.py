@@ -162,6 +162,19 @@ def test_full_instructions_are_workshop1_then_workshop2() -> None:
     assert "# 記憶使用規則" not in workspace["profile"]["agent"]["system_prompt"]
 
 
+def test_workshop2_always_runs_on_the_default_persona() -> None:
+    """第二堂固定用第一堂的預設人格（溫柔陪伴），檔案裡改過的分塊不算數；名字和稱呼照用。"""
+
+    workspace = workshop2_starter()
+    workspace["profile"]["agent"]["name"] = "小暖"
+    workspace["profile"]["agent"]["prompt_blocks"] = dict.fromkeys(DEFAULT_PROMPT_BLOCKS, "你很嗆。")
+    instructions = compose_full_instructions(workspace)
+
+    assert "你很嗆" not in instructions
+    assert instructions.startswith(compose_agent_prompt({"name": "小暖", "address": "秀蘭阿嬤"}))
+    assert "陪伴 秀蘭阿嬤 的虛擬孫女" in instructions
+
+
 # --- Workshop 2 prompt: four attitude blocks + four generated sections -------
 
 
@@ -438,3 +451,23 @@ def test_shipped_project_files_are_already_schema_two() -> None:
         shipped = json.loads((ROOT / name).read_text(encoding="utf-8"))
         assert shipped["schema_version"] == 2, name
         assert normalize_workspace(shipped) == shipped, f"{name} must be normalized"
+
+
+def test_the_students_own_version_survives_a_round_trip() -> None:
+    """第一堂的「自訂」：學生自己的五格與聲線，跟三個系統預設放在一起，存檔、匯入都要帶著。"""
+
+    custom = {"prompt_blocks": {**DEFAULT_PROMPT_BLOCKS, "identity": "我是自己寫的豆豆"}, "voice": "marin"}
+    workspace = normalize_workspace({"schema_version": 2, "profile": {"agent": {"custom": custom}}})
+
+    assert workspace["profile"]["agent"]["custom"] == custom
+    assert normalize_workspace(workspace) == workspace
+    # Missing blocks fill in like any older file; a bad voice falls back.
+    partial = normalize_workspace(
+        {"schema_version": 2, "profile": {"agent": {"custom": {"prompt_blocks": {"identity": "只改這格"}, "voice": "nope"}}}}
+    )["profile"]["agent"]["custom"]
+    assert partial["prompt_blocks"]["identity"] == "只改這格"
+    assert partial["prompt_blocks"]["language"] == DEFAULT_PROMPT_BLOCKS["language"]
+    assert partial["voice"] == "sage"
+    # No 自訂 is no key at all, not an empty one.
+    assert "custom" not in normalize_workspace(None)["profile"]["agent"]
+    assert "custom" not in normalize_workspace({"schema_version": 2, "profile": {"agent": {"custom": "x"}}})["profile"]["agent"]

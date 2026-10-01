@@ -339,56 +339,17 @@ function hideInterview() {
   if (!$("#workshop2Panel").hidden && !$("#tabW2Intake").hidden) $("#showInterview").focus();
 }
 
-// 直接載入範例建檔 overwrites the whole form, so a form with anything in it gets
-// one press to think about it first. Same idiom as 她剛說不想聊 — the button says
-// what the next press will do, rather than a dialog nothing else here uses.
-const LOAD_REFERENCE_LABEL = "直接載入範例建檔";
-let referenceIntakeArmed = false;
-
-function resetReferenceIntakeButton() {
-  if (!referenceIntakeArmed) return;
-  referenceIntakeArmed = false;
-  $("#loadReferenceIntake").textContent = LOAD_REFERENCE_LABEL;
-  $("#loadReferenceIntake").classList.remove("is-armed");
-  document.removeEventListener("pointerdown", disarmReferenceIntake, true);
-  document.removeEventListener("focusin", disarmReferenceIntake, true);
-}
-
-/** 武裝狀態不該活得比學生的注意力久：按了一次「會蓋掉你填的」，然後跑去點別的
- *  地方，那句警告就已經沒人在讀了 —— 下一次按下去會直接覆蓋，而他根本不記得自己
- *  同意過什麼。所以只要焦點或指標離開這顆按鈕，就收回武裝。 */
-function disarmReferenceIntake(event) {
-  if (event.target?.closest?.("#loadReferenceIntake")) return;
-  resetReferenceIntakeButton();
-}
-
-function armReferenceIntake() {
-  referenceIntakeArmed = true;
-  $("#loadReferenceIntake").textContent = "會蓋掉你填的，再按一次";
-  $("#loadReferenceIntake").classList.add("is-armed");
-  // Capture phase: a field that stops propagation must not keep it armed.
-  document.addEventListener("pointerdown", disarmReferenceIntake, true);
-  document.addEventListener("focusin", disarmReferenceIntake, true);
-}
-
-function intakeHasContent() {
-  const { elder, facts, events } = intakeFromFields();
-  return Boolean(
-    elder.name || elder.address || elder.room || elder.city || elder.background || elder.expertise.length
-    || elder.routines.length || elder.medications.length || elder.appointments.length
-    || elder.taboos.length || elder.declined_notes.length || elder.emergency_contact.name
-    || facts.length || events.length,
-  );
-}
-
-/** The opt-out from a 35-minute form. It fills the fields and stops there: the
- *  student still presses 套用, so this takes exactly the path a typed 建檔 takes
- *  and 取消變更 still undoes it. Nothing is written to `workspace` from here. */
+/** The opt-out from a 35-minute form. It overwrites all six sections, so it
+ *  always asks first. Then it fills the fields and stops there: the student still
+ *  presses 套用, so this takes exactly the path a typed 建檔 takes and 取消變更
+ *  still undoes it. Nothing is written to `workspace` from here. */
 async function loadReferenceIntake() {
-  if (intakeHasContent() && !referenceIntakeArmed) {
-    armReferenceIntake();
-    return;
-  }
+  const sure = await askConfirm({
+    title: "確定要載入範例建檔嗎？",
+    body: "六區會換成秀蘭阿嬤的參考答案，你填的內容會被蓋掉。載入後還是要按「套用」才算數；按「取消變更」可以還原。",
+    ok: "確定，載入範例",
+  });
+  if (!sure) return;
   let data;
   try {
     const response = await fetch("/api/reference-intake");
@@ -399,7 +360,6 @@ async function loadReferenceIntake() {
     return;
   }
   writeIntake({ elder: data.elder_profile, facts: data.memory.facts, events: data.memory.events });
-  resetReferenceIntakeButton();
   onIntakeChange();
   notify("範例建檔只填進表單，還沒生效，要按「套用」才會送給豆豆。");
 }
@@ -797,7 +757,7 @@ function workshop2Draft() {
 }
 
 function rebuildWorkshop2Prompt() {
-  $("#workshop2SystemPrompt").textContent = composeInstructions(workshop2Draft());
+  $("#workshop2SystemPrompt").textContent = composeInstructions(workshop2Draft(), 2);
 }
 
 // =====================================================================
@@ -1897,9 +1857,6 @@ const WORKSHOP2_FIELDS = [
 ];
 
 function onIntakeChange() {
-  // Typing anything is an answer to 「會蓋掉你填的」 — disarm rather than leave a
-  // primed overwrite sitting on a button.
-  resetReferenceIntakeButton();
   rebuildWorkshop2Prompt();
   refreshApplyState();
   renderIntakeHints();
