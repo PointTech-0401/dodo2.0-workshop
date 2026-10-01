@@ -23,17 +23,17 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 ### 3. 開啟
 
 - **第一堂**：對 `start-w1.bat` 點兩下。
-- **第二堂**：對 `start-w2.bat` 點兩下，不用再裝一次。講師說開始再點。
+- **第二堂**：對 `start-w2.bat` 點兩下，不用再裝一次。第二堂從同一份起始檔開始；如果被問「要載入上次的資料嗎？」，開場時選「重新開始」。
 
 第一次會下載套件，要等幾分鐘。如果跳出「無法驗證發行者」，按「執行」。
 
-黑色視窗上課期間不要關。關掉的話，再對同一個檔點兩下。
+跳出來的 Terminal 上課期間不要關。關掉的話，再對同一個檔點兩下；畫面問「要載入上次的資料嗎？」時選「載入上次的資料」，就能接著做。兩堂的紀錄各存一個檔，放在 `runtime/` 資料夾。
 
-瀏覽器會自動打開。沒有的話，把黑色視窗裡「已啟動」那一行的網址貼到 Chrome 或 Edge。
+瀏覽器會自動打開。沒有的話，把 Terminal 裡「已啟動」那一行的網址貼到 Chrome 或 Edge。
 
 ### 4. 第一次的畫面
 
-照講師的指示貼上金鑰。金鑰只留在這台電腦的記憶體，程式一關就沒了。黑色視窗被關掉之後，要到右上角「系統設定」再貼一次。第二堂開的是另一支程式，金鑰也要再貼一次。
+照講師的指示貼上這一堂的金鑰。金鑰只留在這台電腦的記憶體，程式一關就沒了。Terminal 被關掉之後，要到右上角「系統設定」再貼一次。第二堂開的是另一支程式，要貼第二堂的金鑰。
 
 ### 卡住了
 
@@ -56,8 +56,8 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 - 一個共用瀏覽器客端：兩堂課、文字與語音都從同一個畫面進入。
 - 第一堂：分開調整 Model instructions 與 Realtime 回合設定，並實際套用到同一個 Realtime session。
 - 第二堂：讀一份訪談稿，幫秀蘭阿嬤建檔（六區＋每區「問豆豆這一區」），用三組範例或自己寫的四個分塊定下對話規範，用兩個數字跑完她的星期二，並排一筆待提醒讓豆豆在真實時間到達時自己開口一次；課尾從對話長出一筆 C 層今日摘要。
-- 一個作品檔 `my-dodo.json`：每一堂最後下載，帶回家。
-- 兩個啟動檔：`start-w1.bat` 只開第一堂；`start-w2.bat` 只開第二堂，固定用打字與文字，每個人都從 `starter/workshop2-default-dodo.json` 這份起始檔開始。
+- 一個作品檔 `my-dodo.json`：第一堂最後下載，帶回家；回家用「匯入」就能接著玩。第二堂沒有匯入與下載。
+- 兩個啟動檔：`start-w1.bat` 只開第一堂；`start-w2.bat` 只開第二堂，固定用打字與文字，每次啟動都從 `starter/workshop2-default-dodo.json` 這份起始檔開始；有這一堂上次的紀錄時，會先問要不要載入。
 - 真實模型回覆：沒有 API Key 時會明確停用聊天，不用固定回聲假裝成 AI。
 
 ## 共用客端規格
@@ -108,7 +108,7 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 2. **輸入方式**：選擇「打字」或「語音」。
 3. **輸出方式**：獨立選擇「文字」或「語音」。
 4. **裝置檢查**：只有語音輸入才要求麥克風權限；語音輸出建議使用耳機。
-5. **課程入口**：選擇從 Workshop 1 開始、繼續本機作品，或只參加 Workshop 2。用 `--workshop 1` 啟動時沒有「只參加 Workshop 2」；用 `--workshop 2` 啟動時不問輸入輸出方式、也不問入口，直接載入起始檔（這個網址已經有進度時接著用）。
+5. **課程入口**：不帶 `--workshop` 啟動時，選擇從 Workshop 1 開始、繼續本機作品，或只參加 Workshop 2。用兩個啟動檔（`--workshop 1`／`--workshop 2`）時不問入口：每次啟動都先把這個網址上一次留下的作品放到一邊，`runtime/` 裡有這一堂上次的紀錄就問「要載入上次的資料嗎？」；選「載入上次的資料」接著做，選「重新開始」會刪掉那份紀錄。同一次啟動裡按 F5 不會問。第二堂另外不問輸入輸出方式，而且每次都要重貼金鑰；第一堂會記得打字／語音的選擇，金鑰一樣要到「系統設定」重貼。
 6. **完成**：保存模式與裝置偏好後進入共用聊天畫面。
 
 建議保存格式：
@@ -206,7 +206,7 @@ uv run python app.py
 | `uv run python app.py serve --workshop 2`（`start-w2.bat`） | 學生，第二堂 | 只有 02；固定打字與文字，系統設定沒有語音選項 | `http://127.0.0.1:8001/` |
 | `uv run python app.py serve --workshop 2 --allow-voice` | 講師機，第二堂 | 只有 02；可以把輸出切成語音接喇叭 | `http://127.0.0.1:8001/` |
 
-第二堂用另一個 port，瀏覽器資料就跟第一堂分開：第一次開啟時直接載入起始檔，不會讀第一堂的設定；中途關掉再開，會接著這一堂上次的進度。
+第二堂用另一個 port，瀏覽器資料就跟第一堂分開，不會讀第一堂的設定。每次啟動都從起始檔開始。作品除了存在瀏覽器，每次改動也會存一份到 `runtime/`：第一堂是 `workshop1-autosave.json`，第二堂是 `workshop2-autosave.json`，兩堂互不相讀，金鑰不會寫進去。重開時有紀錄，會先問要不要載入。
 
 需要重新選擇輸入／輸出方式時：
 
@@ -232,9 +232,9 @@ uv run pytest
 右側分成兩個分頁，對應兩個明確層次：
 
 - A「用分塊設計回答方式」：名稱、使用者稱呼與五個 Prompt 分塊會即時組成完整 System Prompt。學生只能編輯「角色與身分、個性與聲音、對話方式、語言、邊界與安全」分塊；完整 Prompt 僅提供唯讀預覽。這份組裝結果在**建立連線時就隨 SDP offer 送給 OpenAI**，所以第一句話就已經是豆豆；按「套用」會再用 `session.update` 更新一次。回覆長度不設 API 上限，由「對話方式」分塊描述。
-- B「何時算說完」：`semantic_vad`、`server_vad`、`silence_duration_ms`、`interrupt_response` 或 Push-to-talk 會真正送進 Realtime session（mint 與 `session.update` 都會帶）。
+- B「何時算說完」：`semantic_vad`、`server_vad`、`silence_duration_ms`、`interrupt_response` 或 Push-to-talk 會真正送進 Realtime session（mint 與 `session.update` 都會帶）。預設是 Semantic VAD；在系統設定改成語音輸入的那一刻會切到 Push-to-talk，免得一間教室幾十支麥克風互相觸發。
 
-Realtime 預設使用 `gpt-realtime-2` 與 `sage`（A 區可改成其他 10 種內建聲線，並附三組現成人格範例：溫柔陪伴／神經模式／啦啦隊長，各自配一個聲線）。OpenAI 不允許在同一個 session 換聲線，所以按「套用」改聲線時客端會自動重新連線。其餘設定：低 reasoning effort、`gpt-4o-transcribe`、`near_field` 收音降噪和臺灣繁體中文虛擬孫女提示。轉錄服務也另有臺灣繁體中文 prompt，避免使用者語音逐字稿混入簡體。**不設定音訊 `speed`，也不設 `max_output_tokens`**：語速與長度都由「個性與聲音」「對話方式」分塊以具體指令描述，不以「沉重」等關鍵字觸發程式分支，也不用 API 參數硬切。
+Realtime 預設使用 `gpt-realtime-2` 與 `sage`（A 區可改成其他 10 種內建聲線，並附三組系統預設人格：溫柔陪伴／神經模式／啦啦隊長，各自配一個聲線；學生改過任何一格就自動記成第四個「自訂」，存在 `agent.custom`，換去試系統預設也不會不見）。OpenAI 不允許在同一個 session 換聲線，所以按「套用」改聲線時客端會自動重新連線。其餘設定：低 reasoning effort、`gpt-4o-transcribe`、`near_field` 收音降噪和臺灣繁體中文虛擬孫女提示。轉錄服務也另有臺灣繁體中文 prompt，避免使用者語音逐字稿混入簡體。**不設定音訊 `speed`，也不設 `max_output_tokens`**：語速與長度都由「個性與聲音」「對話方式」分塊以具體指令描述，不以「沉重」等關鍵字觸發程式分支，也不用 API 參數硬切。
 
 Realtime 若回報設定錯誤（例如送出 GA 不接受的欄位），聊天室會直接顯示錯誤，瀏覽器 console 也會印出 `[realtime error]`。這類錯誤過去是靜默的：session 會退回 OpenAI 預設人格，豆豆就會用英文、用預設語調回答。
 
@@ -242,9 +242,9 @@ Realtime 若回報設定錯誤（例如送出 GA 不接受的欄位），聊天�
 
 ### 沿用 Workshop 1.0 工具
 
-Realtime session 會註冊 1.0 的 `get_weather`、`read_memory`、`update_memory`。模型決定查天氣後，瀏覽器呼叫本機 `/api/tools/weather`，後端使用 OpenWeatherMap 查詢，再以 `function_call_output` 放回同一段 Realtime 對話。可在首次啟動畫面輸入 1.0 使用的天氣 API Key，或由講師預先設定 `WEATHER_API_KEY`；設定完成後即可詢問「臺北今天天氣如何？」。中文城市名會先由 `dodo_workshop/weather.py` 的 `CITY_ALIASES` 對應成 OpenWeatherMap 認得的英文名稱（OpenWeatherMap 查不到「臺北」）。工具執行狀態會以 `TOOL` 標籤獨立顯示，不會混進豆豆的對話泡泡。Key 不會寫入 localStorage 或 `my-dodo.json`。
+Realtime session 會註冊 1.0 的 `get_weather`；第二堂再加上 `read_memory`、`update_memory`（第一堂沒有記憶，不給這兩個工具）。模型決定查天氣後，瀏覽器呼叫本機 `/api/tools/weather`，後端使用 OpenWeatherMap 查詢，再以 `function_call_output` 放回同一段 Realtime 對話。可在首次啟動畫面輸入 1.0 使用的天氣 API Key，或由講師預先設定 `WEATHER_API_KEY`；設定完成後即可詢問「臺北今天天氣如何？」。中文城市名會先由 `dodo_workshop/weather.py` 的 `CITY_ALIASES` 對應成 OpenWeatherMap 認得的英文名稱（OpenWeatherMap 查不到「臺北」）。工具執行狀態會以 `TOOL` 標籤獨立顯示，不會混進豆豆的對話泡泡。Key 不會寫入 localStorage 或 `my-dodo.json`。
 
-記憶工具直接讀寫 2.0 的 `workspace.memory`，因此會跟著自動保存與 `my-dodo.json` 匯出，在兩堂課之間延續。`update_memory` 帶 `layer` 參數（A／B／C），決定寫進 `memory.facts`、`memory.events` 還是 `memory.summaries`；密碼、API Key、金融帳號、驗證碼、第三人的健康狀況與對家人的情緒性評價屬於 X，一律拒絕保存。護理員建檔寫的 A 層事實 `update_memory` 不能改也不能刪。
+記憶工具直接讀寫 2.0 的 `workspace.memory`，跟著這一堂的自動保存。`update_memory` 帶 `layer` 參數（A／B／C），決定寫進 `memory.facts`、`memory.events` 還是 `memory.summaries`；密碼、API Key、金融帳號、驗證碼、第三人的健康狀況與對家人的情緒性評價屬於 X，一律拒絕保存。護理員建檔寫的 A 層事實 `update_memory` 不能改也不能刪。
 
 **同一個 key 再存一次時，每一層的行為不同**，這才是 A／B／C 真正的差別（保存天數只是標籤）：A 重要事實**累加**，所以「興趣：唱歌」不會被「興趣：跳舞」蓋掉；B 近期事件**只留同一個 key 的最新一筆**，整層並有 16 筆上限（與 Prompt 視窗同值：參考建檔光 A 層就有 13 筆事實，整份都必須進得了模型）；C 跨日摘要**直接重寫**。key 與 value 完全相同只會更新時間，不會多一筆。長期偏好（喜歡的音樂、食物）因此屬於 A 而不是 B：偏好會累積，放進取代語意的 B 會讓每一句新偏好吃掉上一句。
 
@@ -272,7 +272,7 @@ Realtime session 會註冊 1.0 的 `get_weather`、`read_memory`、`update_memor
 
 ### 建檔：學生是護理員
 
-最上面一顆「顯示訪談稿」，按下去訪談稿會蓋住左邊的聊天區（約 1,500 字），右邊表單照樣可填，「關閉」或 Esc 回到聊天；下面六區表單，每區都寫著【落點】【誰寫】【訪談 §幾找】，右上一顆**「問豆豆這一區」**，按下去會先套用，再送一句只有剛填的那一區能回答的問題。六個小回饋圈，取代一次 35 分鐘後才知道對不對的表單。另有一顆**「直接載入範例建檔」**（`GET /api/reference-intake`）給不想自己填、或中途才加入的人：只填表單，仍要按套用，取消變更也還原得掉。
+最上面一顆「顯示訪談稿」，按下去訪談稿會蓋住左邊的聊天區（約 1,500 字），右邊表單照樣可填，「關閉」或 Esc 回到聊天；下面六區表單，每區都寫著【落點】【誰寫】【訪談 §幾找】，右上一顆**「問豆豆這一區」**，按下去會先套用，再送一句只有剛填的那一區能回答的問題。六個小回饋圈，取代一次 35 分鐘後才知道對不對的表單。建檔分頁最下面另有一顆**「直接載入範例建檔」**（`GET /api/reference-intake`）給不想自己填、或中途才加入的人：按了會先問「確定要載入範例建檔嗎？」，確定才蓋掉表單；只填表單，仍要按套用，取消變更也還原得掉。
 
 訪談稿刻意不乾淨：有離題、有前後矛盾（「四點多醒、五點起來」），還有一個模糊地帶（她吃了人家給的糖，並說「不要跟護理師講」）。完整度清單只算**數量**，不判對錯。
 
@@ -324,11 +324,12 @@ Realtime session 會註冊 1.0 的 `get_weather`、`read_memory`、`update_memor
 Workshop 1（start-w1.bat，port 8000）：agent.prompt_blocks + realtime.turn_detection
 Workshop 2（start-w2.bat，port 8001）：從 starter/workshop2-default-dodo.json 開始
               workshop2_blocks + elder_profile + proactive_policy + memory + proactive_state
-instructions = Workshop 1 的 5 個分塊 + Workshop 2 的 4 個對話規範分塊與 4 個生成段落
+instructions：第一堂 = Workshop 1 的 5 個分塊
+              第二堂 = 預設人格「溫柔陪伴」的 5 個分塊 + 4 個對話規範分塊與 4 個生成段落
 ```
 
 - 兩堂用不同的網址，瀏覽器裡的資料彼此分開。第二堂每個人都從同一份起始檔開始（第一堂的分塊是出廠預設、稱呼是秀蘭阿嬤），講師講的結果才會跟每一台的畫面一樣。只上第二堂的人也一樣，直接點 `start-w2.bat`。
-- 第二堂中途關掉黑色視窗：再點一次 `start-w2.bat`、重貼金鑰，接著上次的進度。
+- 第二堂中途關掉 Terminal：再點一次 `start-w2.bat`，選「載入上次的資料」，重貼金鑰。
 - 不帶 `--workshop` 啟動時兩堂都看得到，首次引導仍有「只參加 Workshop 2」這個入口，會載入同一份起始檔。
 - `init` 只重新選擇輸入／輸出方式與系統設定，不會清除作品與課程進度。
 

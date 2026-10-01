@@ -38,7 +38,7 @@
       "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "05 · 安裝"
+      "title": "05 · 前置作業：安裝"
     },
     {
       "file": "ApiKeys.dc.html",
@@ -46,7 +46,7 @@
       "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "06 · API Key 與連線"
+      "title": "06 · 前置作業：API Key 與連線檢查"
     },
     {
       "file": "ThreeLayers.dc.html",

@@ -1,14 +1,12 @@
 import {
   C, SANS,
-  cover, slide, card, row, stack, table, band, bullets, steps, code, darkPanel, emit,
+  cover, slide, card, row, stack, table, band, bullets, steps, code, emit,
 } from './kit.mjs';
 import { w1Architecture, w1Flow } from './diagrams.mjs';
+import { installSlide, apiKeySlide } from './prework.mjs';
 
 const A = C.blue;
 const EB = 'WORKSHOP 01 · 讓 DODO 聽完，再回答';
-// The course ZIP lives on Google Drive behind a short link. Fill it in before
-// class; the Install slide prints it as-is.
-const ZIP_URL = '短網址（課前填入）';
 const S = [];
 const add = (file, title, make) => S.push({ file, title, make });
 
@@ -40,16 +38,13 @@ add('Timetable.dc.html', '課程流程', (n, t) => slide({
   body: table(
     [{ label: '段落', w: '240px' }, { label: '內容', w: '1fr' }],
     [
-      ['示範', '打字送出，與用講的有什麼不同'],
-      ['安裝與連線', '金鑰放在哪裡；安裝、貼上金鑰、送出第一句'],
+      ['前置作業', '安裝、貼上金鑰、連線檢查'],
       ['三個層次', 'Prompt、回合控制、回答長度；一句話的處理流程'],
       ['Prompt', '內容與長度；送出的時機'],
       ['回合判斷', 'Server VAD、Semantic VAD、Push-to-talk'],
-      ['休息', ''],
       ['<strong style="color: #15324a;">實作一</strong>', '調整 Prompt，比較前後回答'],
       ['<strong style="color: #15324a;">實作二</strong>', '用語音測試回合控制'],
       ['Prompt 的限制', '同一句話問五次'],
-      ['收尾', '下載這一堂的成果；第二堂怎麼開始'],
     ],
     { accent: A, size: 20, pad: 11 },
   ),
@@ -61,53 +56,9 @@ add('ProjectMap.dc.html', '專案架構', (n, t) => slide({
   body: w1Architecture,
 }));
 
-add('Install.dc.html', '安裝', (n, t) => slide({
-  eyebrow: EB, num: n, total: t, accent: A,
-  title: '安裝',
-  lede: '約 15 分鐘，兩堂共用。步驟也寫在專案 README 的最上面。',
-  body: stack([
-    row([
-      steps([
-        `按 Win + R，輸入 powershell，貼上下面的指令並執行。重開 PowerShell，輸入 <span style="white-space: nowrap;">${code('uv --version')}</span> 確認版本號。`,
-        `打開 <span style="white-space: nowrap;">${code(ZIP_URL)}</span> 下載課程 ZIP，按右鍵「解壓縮全部」。資料夾裡要直接看到 ${code('start-w1.bat')}。`,
-        `對 ${code('start-w1.bat')} 點兩下。第一次會下載套件；出現「無法驗證發行者」時按「執行」。黑色視窗不要關。`,
-        '瀏覽器開啟後，貼上課堂用的金鑰。',
-      ], { accent: A, size: 21, gap: 14 }),
-      `<div style="flex: 0 0 470px;">${card({
-        accent: C.apricot, bg: C.paper, kicker: '常見問題',
-        title: '裝不起來時',
-        body: '只看到另一個資料夾：再點進去一層。「uv 不是內部或外部命令」：重開 PowerShell。start-w1.bat 被擋：在資料夾網址列輸入 cmd，執行 <span style="white-space: nowrap;">uv run python app.py serve --workshop 1</span>。',
-      })}</div>`,
-    ], { gap: 32 }),
-    darkPanel('POWERSHELL', '第 1 步的指令', [
-      'powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"',
-    ]),
-  ], { gap: 22 }),
-}));
+add('Install.dc.html', '前置作業：安裝', installSlide({ eyebrow: EB, accent: A, workshop: 1 }));
 
-add('ApiKeys.dc.html', 'API Key 與連線', (n, t) => slide({
-  eyebrow: EB, num: n, total: t, accent: A,
-  title: 'API Key 與連線檢查',
-  body: stack([
-    row([
-      stack([
-        bullets([
-          '第一次啟動時填入 OpenAI Key 與天氣 Key。',
-          '「測試」只檢查 Key 是否有效；按最下方的按鈕才會儲存。',
-          '天氣 Key 可以不填，問天氣時會回覆「還沒設定」。',
-          '沒有 OpenAI Key 時，聊天功能停用。',
-        ], { accent: A, size: 22, gap: 16 }),
-      ]),
-      `<div style="flex: 0 0 560px;">${card({
-        accent: C.green, bg: C.sky, kicker: 'KEY 存放位置',
-        title: '只存在這台電腦的程式裡',
-        body: '程式關閉後就消失。不存進瀏覽器，也不寫進 my-dodo.json。設定視窗按 × 或 Esc 關閉時，未儲存的內容不會保留。',
-      })}</div>`,
-    ], { gap: 34 }),
-    band('連線檢查：輸入「你叫什麼？我叫什麼？」，豆豆用中文答出名字與稱呼即完成。', { accent: C.apricot }),
-  ], { gap: 26 }),
-  foot: '完成後可試「神經模式」：套用後問同一句，再換回「溫柔陪伴」。',
-}));
+add('ApiKeys.dc.html', '前置作業：API Key 與連線檢查', apiKeySlide({ eyebrow: EB, accent: A, workshop: 1 }));
 
 add('ThreeLayers.dc.html', '三個層次', (n, t) => slide({
   eyebrow: EB, num: n, total: t, accent: A,
@@ -204,6 +155,7 @@ add('TurnModes.dc.html', '三種回合判斷', (n, t) => slide({
         grow: true, accent: C.apricot, kicker: 'PUSH TO TALK',
         title: '按住講，放開送出',
         body: '不需要判斷，適合吵雜的環境。',
+        note: '選語音輸入時先用這個',
       }),
     ]),
     band('插話時中斷回答的是回合偵測，不是 Prompt。', { accent: C.apricot }),
@@ -226,9 +178,9 @@ add('LabOne.dc.html', '實作一', (n, t) => slide({
     ], { accent: A, size: 22, gap: 12 }),
     `<div style="flex: 0 0 500px; display: flex; flex-direction: column; gap: 16px;">
       ${card({
-        accent: C.apricot, bg: C.paper, kicker: '範例人格',
-        title: '快速套用',
-        body: '溫柔陪伴／神經模式／啦啦隊長：替換 5 個分塊與聲線，名字與稱呼保留。',
+        accent: C.apricot, bg: C.paper, kicker: '人格版本',
+        title: '三個系統預設＋自訂',
+        body: '溫柔陪伴／神經模式／啦啦隊長替換 5 個分塊與聲線，名字與稱呼保留。改過任何一格就記成「自訂」，換去試預設也不會不見。',
       })}
       ${card({
         accent: C.danger, bg: C.paper, kicker: '注意',
@@ -291,7 +243,7 @@ add('Preamble.dc.html', '工具前開場', (n, t) => slide({
 add('LabTwo.dc.html', '實作二', (n, t) => slide({
   eyebrow: EB, num: n, total: t, accent: A,
   title: '實作二：回合控制',
-  lede: '「系統設定」把輸入與輸出都改成語音，按「檢查麥克風」後儲存。每一步講 30 秒，再安靜 30 秒觀察結果。',
+  lede: '「系統設定」把輸入與輸出都改成語音，按「檢查麥克風」後儲存。B 區會先變成 Push-to-talk，第 1 步再改。每一步講 30 秒，再安靜 30 秒觀察結果。',
   body: table(
     [
       { label: '步', w: '56px' },
@@ -300,11 +252,11 @@ add('LabTwo.dc.html', '實作二', (n, t) => slide({
       { label: '觀察', w: '330px' },
     ],
     [
-      ['1', 'Semantic VAD，等待傾向 low（預設）', '「我今天早上去……（停一秒）……市場買了一把青菜。」', '講完才回答'],
+      ['1', '改成 Semantic VAD，等待傾向 low', '「我今天早上去……（停一秒）……市場買了一把青菜。」', '講完才回答'],
       ['2', 'Server VAD，安靜 800 毫秒', '同一句，在同一個地方停一秒', '停頓時就開始回答'],
       ['3', '維持 Server VAD', '「講一個你最喜歡的故事給我聽。」回答到一半時說「等一下」', '回答中斷'],
       ['4', '取消勾選「你一開口，就讓 Dodo 停下它正在講的話」', '同第 3 步', '回答不中斷'],
-      ['5', 'Push-to-talk', '按住畫面上的按鈕講，講完放開', '放開才送出，不受旁邊聲音影響'],
+      ['5', '改回 Push-to-talk', '按住畫面上的按鈕講，講完放開', '放開才送出，不受旁邊聲音影響'],
     ],
     { accent: A, size: 19, pad: 11 },
   ),
@@ -340,7 +292,7 @@ add('DoneCriteria.dc.html', '完成標準', (n, t) => slide({
     '問「你叫什麼？我叫什麼？」時，答得出「角色與身分」設定的名字與稱呼。',
     '修改過至少一個 A 區分塊並套用，比較過前後回答。',
     '有耳麥：完成實作二的五個步驟。',
-    '按「下載我的 Dodo」帶走這一堂的成果（my-dodo.json），檔案裡<strong>不含</strong> API Key。',
+    '按「下載我的 Dodo」帶走這一堂的成果（my-dodo.json），檔案裡<strong>不含</strong> API Key；回家用「匯入」就能接著玩。',
   ], { accent: C.green, size: 24, gap: 18 }),
   foot: '參考：OpenAI Realtime 官方文件中的文字輸入、連線時送出 Prompt、工具呼叫與回合判斷。',
 }));

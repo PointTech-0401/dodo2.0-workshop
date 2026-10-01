@@ -3,6 +3,7 @@ import {
   cover, slide, card, row, stack, table, band, bullets, steps, code, darkPanel, bubble, emit,
 } from './kit.mjs';
 import { w2Architecture } from './diagrams.mjs';
+import { installSlide, apiKeySlide } from './prework.mjs';
 
 const A = C.green;
 const EB = 'WORKSHOP 02 · 會記得、會主動，也知道何時閉嘴';
@@ -41,35 +42,31 @@ add('Timetable.dc.html', '課程流程', (n, t) => slide({
   body: table(
     [{ label: '段落', w: '240px' }, { label: '內容', w: '1fr' }],
     [
-      ['開場', '開啟第二堂；豆豆主動開口；專案架構'],
+      ['前置作業', '安裝、貼上金鑰、連線檢查'],
+      ['開場', '豆豆主動開口；專案架構'],
       ['誰能寫入記憶', '護理員、豆豆、系統；兩個角色'],
       ['訪談稿', '秀蘭阿嬤的三段話'],
       ['<strong style="color: #15324a;">實作一</strong>', '建檔，每一區問豆豆一句'],
       ['紅隊測試', '嘗試讓它記下不該記的內容'],
       ['記憶的規則', '三層記憶、護理員鎖、關鍵字過濾'],
-      ['休息', ''],
       ['對話規範', '更換規範範例，比較同一句話的回答'],
       ['<strong style="color: #15324a;">實作二</strong>', '主動規則與「她的一天」模擬'],
       ['<strong style="color: #15324a;">實作三</strong>', '主動對話'],
       ['倫理問題', '規則已處理的，與需要人判斷的'],
-      ['收尾', '今日摘要、下載、重點回顧'],
     ],
     { accent: A, size: 19, pad: 9 },
   ),
 }));
 
+add('Install.dc.html', '前置作業：安裝', installSlide({ eyebrow: EB, accent: A, workshop: 2 }));
+
+add('ApiKeys.dc.html', '前置作業：API Key 與連線檢查', apiKeySlide({ eyebrow: EB, accent: A, workshop: 2 }));
+
 add('Opening.dc.html', '開場', (n, t) => slide({
   eyebrow: EB, num: n, total: t, accent: A,
-  title: '開場',
-  body: stack([
-    steps([
-      `對課程資料夾裡的 ${code('start-w2.bat')} 點兩下，會開一個新的黑色視窗和新的網頁。第一堂的黑色視窗可以關掉。`,
-      '貼上金鑰，按最下面的按鈕。畫面上只有「02 記憶與主動」，這一堂全部用打字。',
-      '看投影：豆豆自己先開口。',
-    ], { accent: A, size: 23, gap: 18 }),
-    band('今天要決定的是：豆豆什麼時候可以先開口，什麼時候必須閉嘴。', { accent: C.apricot }),
-  ], { gap: 30 }),
-  foot: '只上這一堂：先照 README 最上面的步驟裝好 uv、解壓縮課程 ZIP，再點 start-w2.bat。',
+  title: '開場：豆豆自己先開口',
+  lede: '看投影。沒有人跟它說話，它自己先開口。',
+  body: band('今天要決定的是：豆豆什麼時候可以先開口，什麼時候必須閉嘴。', { accent: C.apricot }),
 }));
 
 add('ProjectMap.dc.html', '專案架構', (n, t) => slide({
@@ -407,13 +404,12 @@ add('Dilemmas.dc.html', '倫理問題', (n, t) => slide({
   ], { gap: 26 }),
 }));
 
-add('TodaySummary.dc.html', '今日摘要與下載', (n, t) => slide({
+add('TodaySummary.dc.html', '今日摘要', (n, t) => slide({
   eyebrow: EB, num: n, total: t, accent: A,
-  title: '今日摘要與下載',
+  title: '今日摘要',
   body: stack([
     steps([
       '「主動對話」分頁按「產生今日摘要」，再到建檔的記憶清單，確認多了一筆標著「系統整理」的。',
-      '按「下載我的 Dodo」，把 my-dodo.json 帶回家。',
     ], { accent: A, size: 23, gap: 18 }),
     band('今日摘要是唯一由系統整理出來的記憶（C 層）。再按一次，會蓋掉前一筆。', { accent: C.apricot }),
   ], { gap: 30 }),

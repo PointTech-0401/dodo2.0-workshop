@@ -18,7 +18,7 @@ export const w1Architecture = diagram({
   w: 1400,
   h: 490,
   label: '專案架構圖：瀏覽器與本機 Python 後端在同一台電腦，建立連線經後端代理，之後的音訊與文字由瀏覽器直連 OpenAI',
-  caption: 'API Key 只存在本機後端（黑色視窗），網頁讀不到。建立連線時經後端代理，之後的音訊與文字由瀏覽器直接連到 OpenAI。',
+  caption: 'API Key 只存在本機後端（Terminal），網頁讀不到。建立連線時經後端代理，之後的音訊與文字由瀏覽器直接連到 OpenAI。',
   children: [
     dzone({ x: 8, y: 138, w: 845, h: 330, label: '這台電腦' }),
     dzone({ x: 958, y: 138, w: 434, h: 330, label: '外部服務', fill: ZONE_COOL }),
@@ -26,7 +26,7 @@ export const w1Architecture = diagram({
     dnode({
       x: 40, y: 170, w: 300, h: 150, tone: 'sky', accent: C.blue,
       kicker: '瀏覽器', title: 'web/ 前端',
-      lines: ['core · workshop1 · workshop2', '組 Prompt · 連線', '記憶工具'],
+      lines: ['第一堂、第二堂的畫面', '組 Prompt、建立連線', '記憶工具'],
     }),
     dnode({
       x: 515, y: 170, w: 300, h: 150, tone: 'white', accent: C.green, emph: true,
@@ -35,8 +35,8 @@ export const w1Architecture = diagram({
     }),
     dnode({
       x: 515, y: 372, w: 220, h: 76, tone: 'white', accent: C.inkSoft,
-      title: 'student/my-dodo.json', titleSize: 16,
-      lines: ['scenarios/ 的訪談稿'],
+      title: 'runtime/ · scenarios/', titleSize: 16,
+      lines: ['自動存檔 · 訪談稿'],
     }),
     dnode({
       x: 990, y: 170, w: 300, h: 150, tone: 'white', accent: C.apricot,
@@ -50,7 +50,7 @@ export const w1Architecture = diagram({
     }),
 
     dflow('w1arch', [[350, 245], [505, 245]], { both: true }),
-    dlabelBlock(427, 214, ['① SDP offer', '與 instructions']),
+    dlabelBlock(427, 214, ['① 連線請求', '與 Prompt']),
     dflow('w1arch', [[825, 245], [980, 245]]),
     dlabelBlock(902, 214, ['② 補上 API Key', '後代理']),
     darc('w1arch', [190, 160], [1140, 160], 52),
@@ -69,11 +69,11 @@ export const w1Flow = diagram({
   w: 1400,
   h: 470,
   label: '系統流程圖：連線只發生一次，之後每個回合視需不需要工具，產生一個或兩個 response',
-  caption: 'instructions 在第 ① 步就隨 offer 送出，所以第一句話已經是豆豆。需要工具時，preamble 和 function_call 在同一個 response 裡，正式回答要等下一個。',
+  caption: 'Prompt 在第 ① 步就跟著連線請求送出，所以第一句話已經是豆豆。需要工具時，開場白和工具呼叫在同一次回覆裡，正式回答要等下一次回覆。',
   children: [
     dlabel(0, 30, '連線 · 只發生一次', { colour: C.inkSoft, size: 14, weight: 800 }),
-    dnode({ x: 8, y: 48, w: 286, h: 112, n: 1, accent: C.blue, title: '開啟畫面', lines: ['core.js 建立 WebRTC offer'] }),
-    dnode({ x: 374, y: 48, w: 286, h: 112, n: 2, accent: C.blue, title: '送到本機後端', lines: ['offer 與 instructions 同行'] }),
+    dnode({ x: 8, y: 48, w: 286, h: 112, n: 1, accent: C.blue, title: '開啟畫面', lines: ['core.js 準備 WebRTC 連線'] }),
+    dnode({ x: 374, y: 48, w: 286, h: 112, n: 2, accent: C.blue, title: '送到本機後端', lines: ['連線請求與 Prompt 一起送'] }),
     dnode({ x: 740, y: 48, w: 286, h: 112, n: 3, accent: C.green, title: '後端補上 API Key', lines: ['轉送 /v1/realtime/calls'] }),
     dnode({ x: 1106, y: 48, w: 286, h: 112, n: 4, accent: C.apricot, title: '連線建立', lines: ['第一句話就已經是豆豆'] }),
     dflow('w1flow', [[302, 104], [366, 104]]),
@@ -89,8 +89,8 @@ export const w1Flow = diagram({
     }),
     dnode({
       x: 740, y: 318, w: 286, h: 118, tone: 'white', accent: C.apricot,
-      kicker: '需要工具', title: 'preamble + function_call', titleSize: 18,
-      lines: ['兩者在同一個 response 裡'],
+      kicker: '需要工具', title: '先講開場，同時呼叫工具', titleSize: 18,
+      lines: ['這句開場就是 preamble'],
     }),
     dnode({
       x: 1106, y: 318, w: 286, h: 118, tone: 'paper', accent: C.apricot,
@@ -129,8 +129,8 @@ export const w2Architecture = diagram({
     }),
     dnode({
       x: 515, y: 372, w: 300, h: 76, tone: 'white', accent: C.inkSoft,
-      title: 'scenarios/ · my-dodo.json', titleSize: 17,
-      lines: ['秀蘭阿嬤的資料'],
+      title: 'scenarios/ · runtime/', titleSize: 17,
+      lines: ['秀蘭阿嬤的資料 · 自動存檔'],
     }),
     dnode({
       x: 990, y: 170, w: 300, h: 150, tone: 'white', accent: C.apricot,
