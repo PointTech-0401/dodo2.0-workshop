@@ -203,7 +203,7 @@
             <select id="agentVoice"></select>
             <small>豆豆用聲音回答過之後就不能換聲音，這是 OpenAI 的規定。改了聲線按「套用」會斷線重接，剛才的對話豆豆就不記得了。</small>
           </label>
-          <p class="voice-fact"><strong>沿用第一版的三個工具：查天氣（<code>get_weather</code>）、讀記憶（<code>read_memory</code>）、寫記憶（<code>update_memory</code>）</strong><span id="weatherToolStatus">正在檢查 WEATHER_API_KEY…</span></p>
+          <p class="voice-fact"><strong>這一堂豆豆只有一個工具：查天氣（<code>get_weather</code>）</strong><span id="weatherToolStatus">正在檢查 WEATHER_API_KEY…</span></p>
         </div>
 
         <div id="tabTurn" class="tab-panel" role="tabpanel" tabindex="0" hidden>
@@ -258,7 +258,7 @@
             <small>訪談稿會蓋住左邊的聊天區，右邊這張表單照樣可以填，讀完按「關閉」就回到聊天。每一區都寫著答案在訪談稿第幾段。</small>
           </p>
           <div id="intakeCompleteness" class="completeness" aria-live="polite" aria-label="建檔完整度"></div>
-          <p class="block-purpose">這裡只數你<strong>填了幾筆</strong>，不管對不對。填得對不對看兩個地方：「主動規則」跑出來的她的一天，還有每一區右上角「問豆豆這一區」她怎麼回答。</p>
+          <p class="block-purpose">這裡只數你<strong>填了幾筆</strong>，不管對不對。填得對不對，看每一區右上角「問豆豆這一區」她怎麼回答。</p>
 
           <section class="intake-section" data-intake="basics">
             <header>
@@ -270,7 +270,7 @@
               <label>姓名<input id="elderName"></label>
               <label>房號<input id="elderRoom"></label>
               <label>居住城市<input id="elderCity" placeholder="問天氣用"></label>
-              <label>語言<input id="elderLanguage" placeholder="國語為主、夾雜客語…"></label>
+              <label>語言<input id="elderLanguage" placeholder="國語為主、夾雜台語…"></label>
             </div>
             <label>背景（一句話）<textarea id="elderBackground" rows="2" placeholder="以前做什麼、家裡有誰…"></textarea></label>
             <label>她會的事（可以請教她；用「、」分隔）<input id="elderExpertise" placeholder="煮麵、熬湯頭、做生意記客人"><small>閒聊時拿這些去「請教」她，換她當老師。</small></label>
@@ -377,19 +377,19 @@
           </div>
           <div class="prompt-stack" aria-label="可編輯的 Workshop 2 分塊">
             <article class="prompt-block">
-              <header><span>06</span><div><h4 id="promptMemoryUseLabel">記憶使用規則</h4><p>三層怎麼讀、怎麼寫、什麼絕對不能寫、護理員填的不能改。</p></div><em>EDIT</em></header>
+              <header><span>01</span><div><h4 id="promptMemoryUseLabel">記憶使用規則</h4><p>三層怎麼讀、怎麼寫、什麼絕對不能寫、護理員填的不能改。</p></div><em>EDIT</em></header>
               <textarea id="promptMemoryUse" rows="7" aria-labelledby="promptMemoryUseLabel" spellcheck="false"></textarea>
             </article>
             <article class="prompt-block">
-              <header><span>07</span><div><h4 id="promptAttitudeReminderLabel">重要提醒怎麼講</h4><p>一句話講完時間和要做的事；不解釋，不催。</p></div><em>EDIT</em></header>
+              <header><span>02</span><div><h4 id="promptAttitudeReminderLabel">重要提醒怎麼講</h4><p>一句話講完時間和要做的事；不解釋，不催。</p></div><em>EDIT</em></header>
               <textarea id="promptAttitudeReminder" rows="2" aria-labelledby="promptAttitudeReminderLabel" spellcheck="false"></textarea>
             </article>
             <article class="prompt-block">
-              <header><span>08</span><div><h4 id="promptAttitudeHealthLabel">健康關心怎麼問</h4><p>先問她感覺怎麼樣；她說好了就把那一筆換掉。</p></div><em>EDIT</em></header>
+              <header><span>03</span><div><h4 id="promptAttitudeHealthLabel">健康關心怎麼問</h4><p>先問她感覺怎麼樣；她說好了就把那一筆換掉。</p></div><em>EDIT</em></header>
               <textarea id="promptAttitudeHealth" rows="3" aria-labelledby="promptAttitudeHealthLabel" spellcheck="false"></textarea>
             </article>
             <article class="prompt-block">
-              <header><span>09</span><div><h4 id="promptAttitudeChatLabel">閒聊從哪裡開始</h4><p>從她喜歡的事情開頭；也可以請教她會的事。</p></div><em>EDIT</em></header>
+              <header><span>04</span><div><h4 id="promptAttitudeChatLabel">閒聊從哪裡開始</h4><p>從她喜歡的事情開頭；也可以請教她會的事。</p></div><em>EDIT</em></header>
               <textarea id="promptAttitudeChat" rows="3" aria-labelledby="promptAttitudeChatLabel" spellcheck="false"></textarea>
             </article>
           </div>
@@ -416,8 +416,8 @@
         </div>
 
         <div id="tabW2Policy" class="tab-panel policy-block" role="tabpanel" tabindex="0" hidden>
-          <h3>實作二：她的一天</h3>
-          <p class="block-purpose"><strong>要不要開口，是程式決定的；模型只負責怎麼講。</strong>下面七條就是程式的全部規則，由上往下一條一條檢查，被任何一條擋下就不開口（只有重要提醒例外）。每一條下面的灰字寫「拿掉這條會出什麼事」，那是「跑她的一天」真的會跑出來的結果。這一頁只調規則、只跑模擬，<strong>豆豆一句話都不會說</strong>；要它真的開口在下一頁。</p>
+          <h3>實作二：主動規則</h3>
+          <p class="block-purpose"><strong>要不要開口，是程式決定的；模型只負責怎麼講。</strong>下面七條就是程式的全部規則，由上往下一條一條檢查，被任何一條擋下就不開口（只有重要提醒例外）。每一條下面的灰字寫「拿掉這條會出什麼事」。這一頁只調規則，<strong>豆豆一句話都不會說</strong>；要它真的開口在下一頁。</p>
           <details class="why-details">
             <summary>為什麼「會自己開口」的 AI 一定要有規則？</summary>
             <div>
@@ -426,7 +426,7 @@
             </div>
           </details>
 
-          <h4 class="sub-heading">一、你只有兩個旋鈕</h4>
+          <h4 class="sub-heading">你只有兩個旋鈕</h4>
           <p class="block-purpose">七條裡只有第 5、6 條是你能調的數字。「安靜」和「不打擾」不在這裡改，它們<strong>從建檔的作息算出來</strong>，那是她的生活，不是設定值。每一條下面的灰字，是<strong>拿掉這一條會發生什麼事</strong>。</p>
           <div class="rule-table">
             <div class="rule-row is-head"><span>#</span><span>規則</span><span>你的設定</span></div>
@@ -436,7 +436,7 @@
               <span class="rule-set"><em>永遠放行</em></span>
               <span class="rule-why">拿掉它：21:00 的安眠藥因為「今天已經講四則了」而不提醒，她整晚沒吃藥。</span>
             </div>
-            <div class="rule-row">
+            <div class="rule-row is-decline">
               <span class="rule-order">2</span>
               <span class="rule-name">她剛說不想聊</span>
               <span class="rule-set">
@@ -484,8 +484,8 @@
           </div>
 
           <!-- The band is derived, not typed: `buildScheduleWindows()` is the
-               browser's twin of build_schedule(), and a day run's own
-               `schedule` is compared against it in tests/browser/uicheck.js. -->
+               browser's twin of build_schedule(), and tests/browser/uicheck.js
+               compares it against the `schedule` the server computes. -->
           <div class="policy-preview">
             <p class="preview-label">她今天的 24 小時，哪些時段不能主動開口<small>一格半小時，左邊 0 點、右邊 24 點，整條就是一整天。它<strong>從建檔的作息算出來</strong>，不是設定值。改作息，這一條就跟著變。點一下跳到建檔的作息區。</small></p>
             <div id="quietBand" class="quiet-band is-derived" role="button" tabindex="0" data-goto-intake aria-label="24 小時帶狀圖，點一下跳到建檔的作息區"></div>
@@ -499,40 +499,7 @@
             <p id="policyBinding" class="policy-binding" aria-live="polite"></p>
           </div>
 
-          <h4 class="sub-heading">二、跑她的一天（星期二）</h4>
-          <p class="block-purpose">用你剛剛設的兩個數字，把她星期二的事從早到晚跑一遍，一件一件對那七條規則。最後給你兩個互相打架的數字：<strong>漏掉的健康關心</strong>和<strong>打擾</strong>。<strong>沒有滿分答案。</strong></p>
-          <details class="why-details">
-            <summary>這一天是哪來的？誰決定她星期二要發生什麼？</summary>
-            <div>
-              <p><strong>這一天的事件從秀蘭阿嬤的參考建檔長出來，全班跑同一天</strong>，數字才比得起來：用藥和回診 → <b>重要提醒</b>；近期狀況裡標「症狀」的那幾筆 → <b>健康關心</b>（一天最多問三次）；興趣和「她會的事」 → <b>閒聊</b>的話題。</p>
-              <p><strong>你的建檔決定兩件事</strong>：哪些時段不能開口（從你填的作息算），以及你漏掉了哪些用藥或回診（結果裡會列出來）。改作息，結果就跟著變。</p>
-              <p>時刻表也是固定的：閒聊十三個時段、健康關心三個時段。選星期二是因為<b>那天有歌唱班，復健（三）和回診（五）都不在</b>，三種事剛好都出現。</p>
-            </div>
-          </details>
-          <details class="why-details">
-            <summary>先猜再跑：那兩個數字要怎麼猜</summary>
-            <div>
-              <p><b>漏掉的健康關心</b>＝該問她身體、卻被規則擋掉的次數（越少越好）。<b>打擾</b>＝豆豆自己先開口的閒聊，真的講出口的次數（越多越吵；她來找豆豆聊不算）。同一組設定不可能兩個都小，這一題就是這件事。</p>
-              <p><strong>怎麼猜：</strong>① 看上面那行算好的「可以開口幾小時 ÷ 間隔 ＝ 一天最多塞得下幾則」，再跟每日上限比，<strong>小的那個</strong>才是這一天真正能講的次數。② 這些次數<strong>先到先用</strong>：閒聊從 05:30 就開始搶，健康關心最後一次要等到 16:30，次數撐不到那時候就是漏掉一次。③ 再扣掉落在灰色那幾段（她在睡覺或不想被打擾）裡的，那些輪不到講。④ 重要提醒不算次數，但講完之後間隔也從那一刻重新算。</p>
-              <p>先寫下你猜的數字再按下去。<strong>猜錯的地方就是你理解錯的地方</strong>。直接看答案容易變成「喔，原來是這樣」，猜過才記得住為什麼。一整天不是十幾件互不相干的事：間隔和每天能講幾次會<strong>一路累積</strong>，早上多聊一句，傍晚的健康關心就少一次機會。</p>
-            </div>
-          </details>
-          <div class="predict-row">
-            <label>我猜會漏掉<input id="predictMissed" type="number" min="0" max="20" placeholder="?"><span>次健康關心</span></label>
-            <label>我猜會打擾<input id="predictNoise" type="number" min="0" max="20" placeholder="?"><span>次</span></label>
-          </div>
-          <div class="lab-actions">
-            <button id="runDaySimulation" class="primary-button">跑她的一天</button>
-            <label class="toggle-row"><input id="dayGatesFixed" type="checkbox">改用固定時段跑（22:00–08:00 加上用餐時間）</label>
-          </div>
-          <details id="dayOutcome" class="result-panel" hidden>
-            <summary><span id="dayScore" class="single-result"></span><em>收合／展開</em></summary>
-            <div id="dayPredictEcho" class="predict-echo" aria-live="polite"></div>
-            <div id="daySummary" class="day-summary" aria-live="polite"></div>
-            <div id="dayMissing" class="day-missing" aria-live="polite"></div>
-            <div id="dayTimeline" class="day-timeline"></div>
-          </details>
-          <p class="block-purpose">這兩個數字調到你滿意了，就去<button type="button" class="link-to-intake" data-goto-live>主動對話</button>，讓豆豆照它真的開口一次。</p>
+          <p class="block-purpose">兩個數字設好了，就去<button type="button" class="link-to-intake" data-goto-live>主動對話</button>，讓豆豆照這些規則真的開口一次。</p>
         </div>
 
         <div id="tabW2Live" class="tab-panel policy-block" role="tabpanel" tabindex="0" hidden>

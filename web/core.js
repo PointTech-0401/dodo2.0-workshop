@@ -1064,16 +1064,6 @@ async function finishOnboarding() {
   await connectRealtime();
 }
 
-/** Reveal a collapsible result panel and put its headline in the <summary>, so
- *  the number survives collapsing — a closed panel still says what the last run
- *  scored. Results used to pile up unclosable under the buttons that made them. */
-function showResult(panelSelector, headlineSelector, headline) {
-  $(headlineSelector).textContent = headline;
-  const panel = $(panelSelector);
-  panel.hidden = false;
-  panel.open = true;
-}
-
 async function sendText(message) {
   if (!apiConfigured) {
     addMessage("system", "目前沒有連接 OpenAI 模型。請先點右上角「系統設定」。");

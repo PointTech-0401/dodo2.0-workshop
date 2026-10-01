@@ -195,15 +195,6 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 /* The preview sits on a dark panel, so the warning needs a light accent. */
 .prompt-preview.is-empty { color: var(--apricot); font-style: italic; }
 .single-result { margin-top: 12px; font-weight: 700; }
-/* Results used to pile up under the button that made them with no way to close
-   them. Collapsed still shows the headline, so the score survives the collapse. */
-.result-panel { margin-top: 14px; border: 1px solid var(--line); border-radius: 4px 12px 12px 4px; background: var(--white); }
-.result-panel > summary { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; padding: 11px 13px; cursor: pointer; list-style: none; }
-.result-panel > summary::-webkit-details-marker { display: none; }
-.result-panel > summary .single-result { margin: 0; }
-.result-panel > summary em { flex: 0 0 auto; color: var(--ink-soft); font-style: normal; font-weight: 400; }
-.result-panel[open] > summary { border-bottom: 1px solid var(--line); }
-.result-panel > :not(summary) { padding: 0 13px 13px; }
 .block-purpose { margin: 0 0 14px; padding: 11px 12px; border-left: 4px solid var(--blue); background: var(--white); color: var(--ink-soft); line-height: 1.6; }
 .block-purpose code { color: var(--blue); }
 .sub-heading { margin: 26px 0 8px; font-size: 15px; }
@@ -362,6 +353,11 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .rule-set .rule-dash, .rule-set .rule-unit { flex: 0 0 auto; color: var(--ink-soft); font-size: 12px !important; }
 /* 她剛說不想聊: the expiry line belongs under its button, not beside it. */
 .rule-set .decline-state, .rule-set .link-to-intake { flex: 1 0 100%; text-align: right; }
+/* Both of that row's labels are whole sentences (「取消（她願意聊了）」「到 16:42 之前只送
+   重要提醒。」). Squeezed into the 148px column each broke onto two lines, so this
+   row sizes the column to its content instead. */
+.rule-row.is-decline { grid-template-columns: 22px minmax(0, 1fr) auto; }
+.rule-row.is-decline .rule-set > * { white-space: nowrap; }
 /* The two hardwired rules have no field — saying so is the point. */
 .rule-row.is-fixed { background: #fbf7ef; }
 .rule-row.is-fixed .rule-set em { padding: 3px 6px; border: 1px solid var(--line); border-radius: 3px; color: var(--ink-soft); font-size: 11px !important; font-style: normal; white-space: nowrap; }
@@ -437,23 +433,6 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .schedule-delete:hover { border-color: var(--danger); color: var(--danger); }
 .schedule-reason { grid-column: 2 / -1; color: var(--ink-soft); font-size: 12px !important; line-height: 1.45; }
 
-/* One simulated day. Two competing numbers, never one grade. */
-.day-summary { margin-top: 14px; }
-.day-score { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--white); }
-.day-score b { font-size: 17px; }
-.is-better { color: #287653; }
-.is-worse { color: var(--danger); }
-.day-blockers { margin: 8px 0 0; padding: 9px 12px; border-left: 4px solid var(--apricot); background: var(--white); line-height: 1.55; }
-.day-blockers b { font-variant-numeric: tabular-nums; }
-.day-delta { margin: 8px 0 0; padding: 9px 12px; background: var(--sky); line-height: 1.55; }
-.day-hint { margin: 8px 0 0; color: var(--ink-soft); line-height: 1.55; }
-.day-timeline { margin-top: 12px; display: grid; gap: 2px; }
-.day-row { display: grid; grid-template-columns: 46px 84px minmax(0, 1fr); gap: 4px 8px; padding: 7px 9px; border-left: 3px solid var(--line); background: var(--white); line-height: 1.45; }
-.day-row.is-spoken { border-left-color: var(--blue); }
-.day-row.is-blocked { background: transparent; color: var(--ink-soft); }
-.day-row.is-critical .day-kind { color: var(--danger); font-weight: 700; }
-.day-row time { font-variant-numeric: tabular-nums; color: var(--ink-soft); }
-.day-row .day-verdict { grid-column: 2 / -1; color: var(--ink-soft); font-size: 13px !important; }
 .lab-panel, .lab-panel * { font-family: "Microsoft JhengHei", sans-serif !important; }
 .lab-panel :where(p, label, small, input, textarea, select, button, code, em, span, pre, summary, strong) { font-size: 14px !important; }
 
@@ -527,34 +506,6 @@ legend { margin-bottom: 10px; font-weight: 800; }
    wears off — otherwise it reads as a permanent mute. */
 .decline-state { display: block; margin-top: 3px; color: var(--ink-soft); font-size: 10px; line-height: 1.4; }
 #declineChat.is-active { border: 1px solid var(--danger); background: var(--white); color: var(--danger); }
-
-/* 先預測再跑: the guess is the point, so it sits above the button, not beside
-   the result it is about to be compared with. */
-.predict-row { display: flex; flex-wrap: wrap; gap: 14px; margin: 0 0 12px; padding: 11px 12px; border: 1px dashed var(--line); border-radius: 6px; background: var(--white); }
-.predict-row label { display: flex; gap: 6px; align-items: center; font-size: 13px; }
-.predict-row input { width: 62px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; text-align: center; font-variant-numeric: tabular-nums; }
-.predict-echo:empty { display: none; }
-.predict-line { margin: 0 0 10px; padding: 9px 11px; border-left: 3px solid var(--apricot); background: var(--white); line-height: 1.7; }
-.predict-none { margin: 0 0 10px; color: var(--ink-soft); font-size: 12px; }
-
-/* Which schedule the run actually used. Without this the 對照 switch is a
-   checkbox that changes two numbers for no visible reason. */
-.day-gates { margin: 0 0 10px; color: var(--ink-soft); font-size: 12px; line-height: 1.55; }
-.day-gates.is-fixed { color: var(--ink); }
-.day-gates.is-fixed strong { color: var(--danger); }
-
-/* 漏掉的用藥／回診: the consequence of an incomplete 建檔, named per row. */
-.day-missing { margin: 0 0 12px; }
-.day-missing-head { margin: 0 0 6px; line-height: 1.6; }
-.day-missing-none { margin: 0 0 6px; color: #287653; font-size: 12px; }
-.day-missing-list { margin: 0 0 6px; padding: 0; list-style: none; display: grid; gap: 4px; }
-.day-missing-list li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; padding: 6px 9px; border-left: 3px solid var(--danger); border-radius: 0 4px 4px 0; background: var(--white); }
-.day-missing-list time { color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.day-missing-list em { color: var(--ink-soft); font-size: 11px; font-style: normal; }
-.day-missing-note { margin: 0; color: var(--ink-soft); font-size: 11px; }
-
-/* The timeline's topic column carries the wording, so it takes the slack. */
-.day-topic { flex: 1 1 40%; min-width: 0; overflow-wrap: anywhere; }
 
 /* 「要載入上次的資料嗎？」：跟首次設定同一種遮罩，窄一點，兩顆按鈕靠右。 */
 .restore-sheet { width: min(560px, 100%); }

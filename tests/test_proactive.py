@@ -240,38 +240,18 @@ def test_malformed_times_drop_the_row_instead_of_the_day() -> None:
     day = build_day(sloppy, {"facts": [], "events": []}, 3)
     assert [event["time"] for event in day if event["type"] == "reminder"] == ["7:00"]
 
-def test_the_docs_quote_the_numbers_this_engine_actually_produces() -> None:
-    """docs/workshop-2.md and the instructor guide both print the four-row
-    comparison table, and the instructor reads those numbers out loud. If the
-    event table or a gate ever changes, the documents become confidently wrong —
-    so the rows are generated here and matched against the prose. Bold markers
-    are stripped first: which row is emphasised is an editorial choice, the
-    numbers are not."""
+def test_the_fixed_gates_lose_on_both_axes_for_her() -> None:
+    """The 對照 claim: the production gates (22:00–08:00 plus meals) are worse on
+    BOTH axes for her, which is the whole argument for deriving them from 作息.
 
-    from pathlib import Path
+    跑她的一天 left the classroom on 2026-10-01, so the docs no longer print the
+    four-row table this used to check them against; the engine claim stays."""
 
-    root = Path(__file__).resolve().parents[1]
-    docs = {
-        name: (root / name).read_text(encoding="utf-8").replace("**", "")
-        for name in ("docs/workshop-2.md", "docs/instructor-guide.md")
-    }
-    feed = build_day(PROFILE, MEMORY, TUESDAY)
-    schedule = build_schedule(PROFILE, TUESDAY)
-    for interval, limit in ((30, 4), (30, 2), (0, 20), (60, 4)):
-        day = simulate_day(feed, {"interval_minutes": interval, "daily_limit": limit}, schedule)
-        row = f"| {day['missed_health']} / {day['health_total']} | {day['noise']} / {day['chat_total']} |"
-        for name, text in docs.items():
-            assert row in text, f"{name} has no row matching {interval}/{limit} → {row}"
-
-    # The 對照 claim: the production gates are worse on BOTH axes for her, which
-    # is the whole argument for deriving them from 作息 instead.
     from dodo_workshop.web import DODO_FIXED_SCHEDULE
 
+    feed = build_day(PROFILE, MEMORY, TUESDAY)
+    schedule = build_schedule(PROFILE, TUESDAY)
     hers = simulate_day(feed, {"interval_minutes": 30, "daily_limit": 4}, schedule)
     fixed = simulate_day(feed, {"interval_minutes": 30, "daily_limit": 4}, DODO_FIXED_SCHEDULE)
     assert fixed["missed_health"] > hers["missed_health"]
     assert fixed["noise"] > hers["noise"]
-
-    # And the event count both documents state.
-    assert f"{len(feed)} 個事件" in docs["docs/workshop-2.md"]
-    assert f"{len(feed)} 個事件" in (root / "README.md").read_text(encoding="utf-8")

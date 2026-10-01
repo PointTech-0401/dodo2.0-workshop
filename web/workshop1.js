@@ -13,7 +13,7 @@ const DEFAULT_PROMPT_BLOCKS = {
   conversation_style: `自然地聊天、傾聽與回應，不要像客服或問卷。
 先回應對方真正關心的事；資訊不足時先簡短確認，不自行猜測。
 一次只問一件事，避免連續追問；回答要適合直接朗讀，不使用表格。
-需要查天氣或讀寫記憶之前，先用一句話說明你正要做什麼，再去查（這句開場叫 preamble）。`,
+需要查天氣之前，先用一句話說明你正要做什麼，再去查（這句開場叫 preamble）。`,
   language: `臺灣國語（繁體中文）為主要語言，一律使用臺灣人日常講話的詞彙與說法。
 用「影片、資訊、網路、品質、伺服器、馬鈴薯、腳踏車、計程車、早安」，不要用「視頻、信息、網絡、質量、服務器、土豆、自行車、出租車、早上好」這類中國大陸用語；也不要用年輕世代的網路流行語。
 不要主動把整段回答切換成英文、日文或其他語言；即使工具內容或專有名詞夾雜其他語言，回答仍以臺灣國語與繁體中文為主。
@@ -323,7 +323,7 @@ function updateTurnFields() {
 }
 
 /** Choosing voice input starts on Push-to-talk: fifty open microphones in one
- *  room would otherwise keep answering each other. 實作二 turns VAD on on purpose.
+ *  room would otherwise keep answering each other. 實作三 turns VAD on on purpose.
  *  Only the turn setting moves, and it counts as applied (the connection that
  *  follows uses it); a persona edit waiting for 套用 keeps waiting. */
 function startOnPushToTalk() {

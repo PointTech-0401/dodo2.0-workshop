@@ -60,9 +60,6 @@ globalThis.__t = {
   buildWorkshop2Prompt: W2.buildWorkshop2Prompt, intakeFromFields: W2.intakeFromFields,
   // §7.1 #8: the band's own window maths, pinned against the server's below.
   buildScheduleWindows: W2.buildScheduleWindows, windowContains: W2.windowContains,
-  // The last /api/proactive-simulate response, so a test can compare the
-  // schedule the server used against the one the band drew.
-  lastDayRun: () => W2.lastDayRun,
   // 新聊天 and addMessage are core top-level bindings, reachable only from in here.
   startNewChat, addMessage,
   get workspace() { return workspace; },
@@ -362,10 +359,10 @@ ok("...with the routine actually saved", (() => {
   return (stored.profile?.elder_profile?.routines || []).some((r) => r.label === "書法班");
 })());
 
-// --- collapsible results --------------------------------------------------
-// 記憶分類 was a quiz with a score and 執行 6 個情境 was a unit test with a
-// tally; 建檔 counts, and 她的一天 is the only run left that collapses.
-ok("day result starts hidden", $("#dayOutcome").hidden);
+// --- no scored runs left ---------------------------------------------------
+// 記憶分類 was a quiz, 執行 6 個情境 a unit test with a tally, and 跑她的一天 the
+// last run with a score. 建檔 counts; nothing else is graded.
+ok("the day run is gone from the page", $("#dayOutcome") === null && $("#runDaySimulation") === null);
 ok("the 6-scenario panel is gone with its runner", $("#proactiveOutcome") === null
    && !script.includes("runProactiveTests"));
 
@@ -491,7 +488,7 @@ ok("a 不打擾 routine greys its own window too", greyCells() === 23, `${greyCe
 ok("...and the summary names it", $("#policySummary").textContent.includes("午睡 13:00–14:30"));
 
 // §7.1 #8: the band is the browser's own window maths, so it has to mean the
-// same thing as build_schedule. Pinned against a real day run further down.
+// same thing as build_schedule. Pinned against the server's schedule further down.
 const windowsNow = $t.buildScheduleWindows($t.intakeFromFields().elder, 2);
 ok("buildScheduleWindows returns the server's window shape",
    windowsNow.quiet.start === 20 * 60 && windowsNow.quiet.end === 6 * 60
@@ -558,66 +555,24 @@ ok("...and says the last decline已失效 rather than nothing",
    $("#declineState").textContent.includes("失效"), $("#declineState").textContent);
 $("#scheduleAuto").checked = false; fire("#scheduleAuto", "change");
 
-// --- 跑一整天 names the rule that did the blocking ------------------------
-// The most direct answer this page has to 「為什麼要設計這條規則」. The tally is the
-// decider's own `blocked_by`, named through bootstrap's `rule_labels`, so a
-// reworded reason sentence can no longer drop a rule into 「其他」 unnoticed.
-// Guess first: a wrong guess is what names the rule the student misread.
-$("#predictMissed").value = "0";
-$("#predictNoise").value = "9";
-$("#runDaySimulation").click();
-await new Promise((r) => setTimeout(r, 900));
-const daySummary = () => $("#daySummary").textContent;
-ok("跑她的一天 echoes the guess beside the result",
-   /你猜/.test($("#dayPredictEcho").textContent)
-   && /實際/.test($("#dayPredictEcho").textContent), $("#dayPredictEcho").textContent);
-ok("跑一整天 names the rule that blocked the most",
-   daySummary().includes("擋掉最多的是"), daySummary().slice(0, 160));
-ok("...and every rule it names is one the server defined",
-   Object.values(bootstrap.rule_labels).some((label) => daySummary().includes(label)),
-   daySummary().slice(0, 240));
-ok("...with nothing falling through to 其他", !daySummary().includes("其他"));
-// The two scores that pull against each other — neither may read `undefined`.
-ok("both scores are real numbers", /漏掉的健康關心\s*\d+／\d+/.test(daySummary())
-   && /打擾\s*\d+／\d+/.test(daySummary()), daySummary().slice(0, 200));
-ok("the timeline names each event's type", [...$("#dayTimeline").querySelectorAll(".day-kind")]
-   .every((cell) => ["提醒", "健康", "閒聊"].includes(cell.textContent.trim())),
-   [...$("#dayTimeline").querySelectorAll(".day-kind")].map((c) => c.textContent).join(","));
-
 // §7.1 #8, the empirical half: the band's own window maths has to MEAN the same
-// thing as build_schedule. A day run hands back the schedule it actually used,
-// so the two can be compared instead of trusted.
-const runSchedule = $t.lastDayRun().schedule;
-const mine = $t.buildScheduleWindows($t.intakeFromFields().elder, $t.lastDayRun().weekday);
+// thing as build_schedule. The page no longer runs a day, so ask the engine for
+// the schedule it derives from the same 建檔 and compare instead of trusting.
+const serverRun = await (await fetch("/api/proactive-simulate", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    policy: $t.workspace.profile.proactive_policy,
+    elder_profile: $t.intakeFromFields().elder,
+    memory: $t.workspace.memory,
+    gates: "routines",
+  }),
+})).json();
+const mine = $t.buildScheduleWindows($t.intakeFromFields().elder, serverRun.weekday);
 ok("the band's schedule is the server's schedule",
    JSON.stringify({ quiet: mine.quiet, dnd: mine.dnd })
-   === JSON.stringify({ quiet: runSchedule.quiet, dnd: runSchedule.dnd }),
-   `browser ${JSON.stringify(mine.quiet)} / server ${JSON.stringify(runSchedule.quiet)}`);
-
-// 漏掉的用藥／回診: the consequence of an incomplete 建檔, against the shared day.
-ok("an incomplete 建檔 is reported as missing reminders",
-   /漏掉|都有對上/.test($("#dayMissing").textContent), $("#dayMissing").textContent.slice(0, 120));
-
-// 對照 switch: same rules, same day, the schedule the production orchestrator
-// hard-codes today instead of her 作息.
-ok("the day run names which gates it used", daySummary().includes("她建檔的作息"));
-$("#dayGatesFixed").checked = true; fire("#dayGatesFixed", "change");
-$("#runDaySimulation").click();
-await new Promise((r) => setTimeout(r, 900));
-ok("對照 mode runs the production gates instead",
-   daySummary().includes("固定時段") && daySummary().includes("22:00–08:00"),
-   daySummary().slice(0, 200));
-ok("...and it is the fixed schedule the server returned",
-   $t.lastDayRun().gates === "dodo_fixed" && $t.lastDayRun().schedule.dnd.length === 2);
-ok("...while the band still shows HER 作息, not the comparison",
-   $("#policySummary").textContent.includes("20:00–06:00"), $("#policySummary").textContent.slice(0, 120));
-$("#dayGatesFixed").checked = false; fire("#dayGatesFixed", "change");
-$("#runDaySimulation").click();
-await new Promise((r) => setTimeout(r, 900));
-ok("unticking goes back to her 作息", $t.lastDayRun().gates === "routines");
-// A re-run has to say what got better AND what got worse.
-ok("a re-run reports the delta", /和上一次比較/.test(daySummary()), daySummary().slice(0, 200));
-ok("跑她的一天 marks 實作二 complete", $t.workspace.progress.workshop_2_completed === true);
+   === JSON.stringify({ quiet: serverRun.schedule.quiet, dnd: serverRun.schedule.dnd }),
+   `browser ${JSON.stringify(mine.quiet)} / server ${JSON.stringify(serverRun.schedule.quiet)}`);
 
 // --- 觸發主動: one event block, two modes, no A/B headings -----------------
 ok("觸發主動 opens on the real-clock mode",
@@ -918,6 +873,9 @@ ok("...but still resets the interval clock", $t.workspace.proactive_state.last_s
 W2.recordProactiveSpoken("chat");
 ok("a spoken 閒聊 counts toward 今日已發送", $t.workspace.proactive_state.sent_today === 4,
    String($t.workspace.proactive_state.sent_today));
+// 第二堂 is done once 豆豆 has actually spoken first; the day run that used to
+// set this is gone.
+ok("speaking first marks 第二堂 complete", $t.workspace.progress.workshop_2_completed === true);
 
 // --- the header block stays put while the fields scroll -------------------
 ok("both panels have a sticky header", document.querySelectorAll(".lab-sticky").length === 2);

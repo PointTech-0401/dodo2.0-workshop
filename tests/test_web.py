@@ -465,10 +465,10 @@ def test_settings_dry_run_is_gone_and_apply_marks_workshop_one_done() -> None:
     assert "saveProject();" in apply_fn
 
     # 執行 6 個情境 was Workshop 2's only .test-item list; both left with it, and
-    # 跑她的一天 has its own timeline rather than a pass/fail tally.
+    # so did 跑她的一天's timeline.
     styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
     assert ".test-item" not in styles
-    assert 'id="proactiveResults"' not in page and ".day-timeline" in styles
+    assert 'id="proactiveResults"' not in page and ".day-timeline" not in styles
 
 
 def test_voice_is_part_of_the_project_and_needs_a_reconnect_to_change() -> None:
@@ -753,7 +753,11 @@ def test_memory_layers_and_the_caregiver_lock_decide_who_may_write() -> None:
     assert "function markTabApplied(" not in script
 
 
-def test_one_simulated_day_is_reachable_from_the_client() -> None:
+def test_the_simulated_day_stays_in_the_engine_but_left_the_page() -> None:
+    """跑她的一天 was taken out of 第二堂 (2026-10-01). The engine and its endpoint
+    stay: tests/browser/uicheck.js still asks it for the schedule it derives, to
+    check that the band draws the same windows the decider uses."""
+
     from dodo_workshop.web import DaySimulationRequest, proactive_simulate
 
     policy = bootstrap()["workshop2_starter"]["profile"]["proactive_policy"]
@@ -771,21 +775,12 @@ def test_one_simulated_day_is_reachable_from_the_client() -> None:
     script = client_script()
     styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
 
-    assert 'id="runDaySimulation"' in page
-    assert 'id="dayTimeline"' in page and 'id="daySummary"' in page
-    assert 'fetch("/api/proactive-simulate"' in script
-    # Two competing numbers, never combined into one grade. Named for what the
-    # schema-2 engine actually counts: the health check-ins that never happened.
-    assert "漏掉的健康關心" in script and "打擾" in script
-    # Read straight off the decider's own tally, so a reworded reason sentence
-    # can no longer drop a rule into 「其他」 unnoticed.
-    assert "result.blocked_by" in script
-    assert "bootstrapData?.rule_labels" in script
-    assert "沒有滿分答案" in script
-    # A re-run has to say what got better AND what got worse.
-    assert "function renderDayDelta(result)" in script
-    assert "let lastDayRun = null;" in script
-    assert ".day-row.is-blocked" in styles
+    for gone in ('id="runDaySimulation"', 'id="dayTimeline"', 'id="daySummary"', 'id="predictMissed"',
+                 'id="dayGatesFixed"', "跑她的一天", "沒有滿分"):
+        assert gone not in page, gone
+    for gone in ('fetch("/api/proactive-simulate"', "function runDaySimulation(", "lastDayRun", "沒有滿分"):
+        assert gone not in script, gone
+    assert ".day-row" not in styles and ".predict-row" not in styles
 
 
 def test_humans_can_delete_what_the_agent_remembered() -> None:
@@ -1263,23 +1258,18 @@ def test_unapplied_changes_can_be_thrown_away() -> None:
     assert "updateTurnFields();" in script.split("tabTurn: {")[1].split("},\n    },")[0]
 
 
-def test_lab_results_collapse_and_keep_their_score() -> None:
+def test_no_scored_lab_result_is_left() -> None:
     page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
     script = client_script()
     styles = (WEB_DIR / "styles.css").read_text(encoding="utf-8")
 
-    # 記憶分類 was a quiz with a score; 建檔 is a form with a completeness count,
-    # so it has no result panel to collapse. The two lab runs still do.
-    assert '<details id="dayOutcome" class="result-panel" hidden>' in page
-    # 記憶分類 was a quiz and 執行 6 個情境 a unit test; both are gone, so 她的一天
-    # is the only run left with a score worth collapsing.
-    for gone in ("memoryOutcome", "proactiveOutcome", "proactiveResults"):
+    # 記憶分類 was a quiz with a score, 執行 6 個情境 a unit test, and 跑她的一天 the
+    # last run with a score worth collapsing. All three are gone, and so is the
+    # collapsible panel they shared.
+    for gone in ("memoryOutcome", "proactiveOutcome", "proactiveResults", "dayOutcome"):
         assert f'id="{gone}"' not in page, gone
-    for kept in ("daySummary", "dayTimeline", "dayMissing", "dayPredictEcho"):
-        assert f'id="{kept}"' in page, kept
-    assert "function showResult(panelSelector, headlineSelector, headline)" in script
-    assert script.count("showResult(") == 2  # definition + one call site
-    assert ".result-panel > summary" in styles
+    assert "showResult(" not in script
+    assert ".result-panel" not in styles
 
 
 def test_proactive_event_types_come_from_the_server_not_a_priority_list() -> None:
@@ -1308,7 +1298,7 @@ def test_proactive_event_types_come_from_the_server_not_a_priority_list() -> Non
     assert "沒有排程器" in page
 
 
-# --- Workshop 2 endpoints: 建檔 → 她的一天 → 今日摘要 --------------------------
+# --- Workshop 2 endpoints: 建檔 → 主動規則 → 今日摘要 --------------------------
 
 
 def test_intake_check_counts_sections_and_names_missing_reminders() -> None:
@@ -1441,8 +1431,8 @@ def test_the_reference_intake_endpoint_hands_over_the_answer_key_on_purpose() ->
 def test_the_proactive_half_is_rules_then_the_place_they_run() -> None:
     """The 主動 half is two tabs, cut where the risk changes.
 
-    Everything on 主動規則 is a simulation: nothing 豆豆 says there reaches the
-    student, so the rules and 她的一天 can be swept and re-run freely. 主動對話 is
+    Nothing on 主動規則 reaches the student: the two knobs can be changed freely
+    and 豆豆 says nothing. 主動對話 is
     the only place a `response.create` actually goes out — plus 今日摘要, which
     also consumes the live conversation rather than a model of it.
 
@@ -1461,8 +1451,8 @@ def test_the_proactive_half_is_rules_then_the_place_they_run() -> None:
     assert 'id="tabW2Trigger"' not in page and 'data-tab="tabW2Trigger"' not in page
     rules = page.split('<div id="tabW2Policy"')[1].split('<div id="tabW2Live"')[0]
     live = page.split('<div id="tabW2Live"')[1].split("</section>")[0]
-    for heading in ("一、你只有兩個旋鈕", "二、跑她的一天"):
-        assert heading in rules and heading not in live, heading
+    assert "你只有兩個旋鈕" in rules and "你只有兩個旋鈕" not in live
+    assert "跑她的一天" not in rules
     for heading in ("一、真的開口", "二、產生今日摘要"):
         assert heading in live and heading not in rules, heading
     # Nothing on 主動規則 can make 豆豆 speak, and the two knobs stay with it.
@@ -1476,16 +1466,10 @@ def test_the_proactive_half_is_rules_then_the_place_they_run() -> None:
     assert "執行 6 個情境" not in page
     assert "runProactiveTests" not in script and "/api/proactive-check" not in script
 
-    # 先預測再跑, then the comparison.
-    assert 'id="predictMissed"' in page and 'id="predictNoise"' in page
-    assert "function renderPredictEcho(result)" in script
-    # 對照 switch: the student's rules against the gates production hard-codes.
-    assert 'id="dayGatesFixed"' in page
-    assert '"dodo_fixed" : "routines"' in script
-    assert "gates," in script
-    # 漏掉的用藥／回診 as a consequence, not a score.
-    assert 'id="dayMissing"' in page
-    assert "result.missing_reminders" in script
+    # 跑她的一天 left with its guesses, its 對照 switch and its missing-reminder list.
+    for gone in ('id="predictMissed"', 'id="dayGatesFixed"', 'id="dayMissing"'):
+        assert gone not in page, gone
+    assert "function renderPredictEcho(" not in script and "result.missing_reminders" not in script
 
 
 def test_layer_c_is_grown_from_the_conversation_not_typed() -> None:

@@ -1,5 +1,5 @@
 """建檔 feedback: counts per section, and the reminders the reference has that the
-student's file lacks. Not a grade — the consequences (她的一天, 豆豆's own answers)
+student's file lacks. Not a grade — the consequences (豆豆's own answers)
 do the grading; these two are the only automated hints."""
 
 from dodo_workshop.config import load_json

@@ -33,7 +33,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     lesson1 = subparsers.add_parser("lesson1", help="文字模擬語音 Agent 回合控制")
     lesson1.add_argument("--offline", action="store_true", help="不呼叫 OpenAI API")
-    # Workshop 2 has no CLI path any more: 建檔、她的一天 and the live trigger all
+    # Workshop 2 has no CLI path any more: 建檔、主動規則 and the live trigger all
     # need the browser client. The old quiz／lab commands left with the 王奶奶 era.
     return parser
 

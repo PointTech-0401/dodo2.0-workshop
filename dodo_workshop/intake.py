@@ -1,7 +1,7 @@
 """建檔 helpers: how complete is the student's file, and what did they miss.
 
 Deliberately small. The classroom does not grade the 建檔 — the consequences
-(她的一天, 豆豆's own answers) do. These two functions are the only automated
+(豆豆's own answers) do. These two functions are the only automated
 feedback: a count per section, and the reminders the reference 建檔 has that the
 student's does not.
 """

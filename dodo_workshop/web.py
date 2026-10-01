@@ -391,7 +391,7 @@ async def configure_weather_api_key(payload: ApiKeyRequest) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Workshop 2: 建檔 → 她的一天 → 真的開口
+# Workshop 2: 建檔 → 主動規則（the simulated day stays as an engine check） → 真的開口
 # ---------------------------------------------------------------------------
 
 
@@ -488,8 +488,8 @@ def reference_intake() -> dict[str, Any]:
 def intake_check(payload: IntakeCheckRequest) -> dict[str, Any]:
     """Counts per section plus the reminders the reference has and this file lacks.
 
-    Deliberately not a grade: whether the content is right is answered by 她的一天
-    and by 豆豆's own answers, not by an answer key the student never sees.
+    Deliberately not a grade: whether the content is right is answered by 豆豆's
+    own answers, not by an answer key the student never sees.
     """
 
     weekday = int(REFERENCE["simulated_weekday"])

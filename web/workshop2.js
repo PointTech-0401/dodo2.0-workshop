@@ -89,7 +89,8 @@ A 重要事實（layer=A）：過敏、慢性病、醫囑、緊急聯絡人、�
 B 近期事件（layer=B）：這幾天的身體狀況與心情。同一件事新的取代舊的：她說膝蓋好多了，就用 mode="replace" 換掉，並把她的原話一起寫進去。
 C 跨日摘要：由系統整理，不要自己寫。
 不保存：密碼、卡號、帳號、驗證碼；第三人的健康；對任何人的評價。也不要在對話中複誦。
-身體狀況有變化就當場記下來，寫的時候用她自己的說法，不要改寫成醫學名詞。你不是醫護人員：不判斷、不推測原因，該找人的時候請她找護理員。`,
+身體狀況有變化就當場記下來，寫的時候用她自己的說法，不要改寫成醫學名詞。你不是醫護人員：不判斷、不推測原因，該找人的時候請她找護理員。
+讀或寫記憶之前，先用一句話說明你正要做什麼（這句開場叫 preamble）。`,
       attitude_reminder: `先叫她的稱呼，講清楚時間、要做的事、要帶的東西。講完問一句「這樣可以嗎」，確認她聽到了。她說已經做了就回一句知道了，不重複。`,
       attitude_health: `先問感覺，再問一句具體的（什麼時候開始、跟昨天比怎麼樣），問完就停。不給建議、不推測原因、不說「要多注意」。她說好了就用 update_memory 換掉那一筆；她說不好或聽起來不對勁，請她跟護理員說，並告訴她你會記下來。`,
       attitude_chat: `從她的興趣起頭，一次一件，兩句以內。閒聊中聽到身體、睡眠、吃飯的事就記下來，但不要把閒聊變成問診。碰到「不主動提起」清單裡的事，等她自己開口。`,
@@ -269,13 +270,13 @@ function renderIntakeHints() {
   const meds = readRows("medication").length;
   $("#hintRoutines").textContent = quiet
     ? `${quiet} 段不打擾時段會變成主動規則分頁帶狀圖上的灰色；只有重要提醒能穿過。`
-    : "還沒有不打擾時段：現在她的一天裡，豆豆什麼時候都能開口。";
+    : "還沒有不打擾時段：現在豆豆一整天什麼時候都能開口。";
   $("#hintCare").textContent = meds
     ? `${meds} 筆用藥會變成重要提醒，不受間隔與上限限制，也不算今天的次數。`
-    : "還沒有用藥：她的一天裡不會有任何重要提醒。";
+    : "還沒有用藥：豆豆不會有任何重要提醒可以講。";
   $("#hintSymptoms").textContent = symptoms
-    ? `${symptoms} 筆症狀會變成健康關心的題材：豆豆會在一天裡挑時間問「還好嗎」，她說好了就換掉那一筆。標「短期念頭」的不會被拿去問，它們是閒聊的材料。`
-    : "還沒有症狀：她的一天裡不會有健康關心。";
+    ? `${symptoms} 筆症狀會變成健康關心的題材：豆豆會挑時間問「還好嗎」，她說好了就換掉那一筆。標「短期念頭」的不會被拿去問，它們是閒聊的材料。`
+    : "還沒有症狀：豆豆沒有健康關心可以問。";
   $("#hintTaboos").textContent = `${taboos} 個禁區會進 Prompt 的「# 不主動提起」；${declined} 句決定不記，不會進任何地方。`;
 }
 
@@ -286,7 +287,7 @@ function scheduleIntakeCheck() {
 }
 
 /** Counts per section against what the interview actually contains. Not a
- *  grade: whether the content is right is answered by 她的一天 and by 豆豆. */
+ *  grade: whether the content is right is answered by 豆豆's own answers. */
 async function runIntakeCheck() {
   const { elder, facts, events } = intakeFromFields();
   try {
@@ -1004,8 +1005,8 @@ function isoWeekday(date = new Date()) {
  *
  *  It exists ONLY to draw the band and word the hints — every decision still
  *  goes through the server. That the two agree is not left to this comment:
- *  tests/browser/uicheck.js deep-equals this against the `schedule` a real day
- *  run hands back.
+ *  tests/browser/uicheck.js deep-equals this against the `schedule` the server
+ *  computes for the same 建檔.
  *
  *  No 安靜 window until BOTH times are filled in — an empty 建檔 must not quietly
  *  inherit anyone's bedtime — and `bed === wake` also means none. A row with a
@@ -1321,6 +1322,9 @@ function recordProactiveSpoken(type) {
   const state = proactiveState();
   state.last_spoken_at = new Date().toISOString();
   if (type !== "reminder") state.sent_today += 1;
+  // 第二堂 is done the first time 豆豆 actually opens its mouth first: the rules
+  // let it through and it spoke. There is no score to reach.
+  workspace.progress.workshop_2_completed = true;
   budgetFieldsFollowState = true;
   syncBudgetFields();
   saveProject();
@@ -1340,6 +1344,9 @@ function scheduledItems() {
 }
 
 const SCHEDULE_STATUS_LABELS = { pending: "等待中", spoken: "已說出", blocked: "被擋下" };
+// The three types schema 2 decides between — same set as bootstrap's
+// `event_types`, shortened for the list's narrow column.
+const SCHEDULE_KIND_LABELS = { reminder: "提醒", health: "健康", chat: "閒聊" };
 
 function renderScheduleList() {
   const items = scheduledItems();
@@ -1357,7 +1364,7 @@ function renderScheduleList() {
     // is the whole lesson, so it is never truncated away.
     return `<div class="schedule-row is-${item.status}${due ? " is-due" : ""}">
       <time>${escapeHtml(item.time)}</time>
-      <span class="schedule-kind">${escapeHtml(DAY_EVENT_LABELS[item.type] || item.type)}</span>
+      <span class="schedule-kind">${escapeHtml(SCHEDULE_KIND_LABELS[item.type] || item.type)}</span>
       <span class="schedule-topic">${escapeHtml(item.topic || "（未填寫內容）")}</span>
       <span class="schedule-status">${escapeHtml(status)}</span>
       <button type="button" class="schedule-delete" data-schedule-id="${escapeHtml(item.id)}" title="刪除這一筆" aria-label="刪除 ${escapeHtml(item.time)} 的待提醒">×</button>
@@ -1523,163 +1530,6 @@ function switchTriggerMode(mode) {
   renderBudgetFollowState();
 }
 
-// Kept so a re-run can say what got better and what got worse. A student who
-// only sees the latest numbers cannot tell a trade from an improvement.
-let lastDayRun = null;
-
-// The three types schema 2 decides between — same set as bootstrap's
-// `event_types`, shortened for the timeline's narrow column.
-const DAY_EVENT_LABELS = { reminder: "提醒", health: "健康", chat: "閒聊" };
-
-function renderDayDelta(result) {
-  if (!lastDayRun) return "";
-  const describe = (label, before, after, lowerIsBetter = true) => {
-    const change = after - before;
-    if (!change) return `${label} 不變（${after}）`;
-    const better = lowerIsBetter ? change < 0 : change > 0;
-    const arrow = change > 0 ? `+${change}` : `${change}`;
-    return `<b class="${better ? "is-better" : "is-worse"}">${label} ${arrow}（${before} → ${after}）</b>`;
-  };
-  return `<p class="day-delta">和上一次比較：${[
-    describe("漏掉的健康關心", lastDayRun.missed_health, result.missed_health),
-    describe("打擾", lastDayRun.noise, result.noise),
-  ].join("、")}</p>`;
-}
-
-// `choose_event` returns a sentence, not a code. Matching on the distinctive
-// word is enough to total up which rule did the work — and that total is the
-// most direct answer this page has to 「為什麼要設計這條規則」.
-/** Which rule did the blocking, counted by the decider itself.
- *
- *  This used to sniff substrings out of each reason sentence, so a reworded
- *  reason fell through to 「其他」 without saying so. `blocked_by` is the decider's
- *  own tally, keyed by rule code, and `rule_labels` names them — one vocabulary
- *  for the band, the tally and the timeline. */
-function renderDayBlockers(result) {
-  const labels = bootstrapData?.rule_labels || {};
-  const name = (rule) => labels[rule] || rule;
-  const ranked = Object.entries(result.blocked_by || {}).sort((left, right) => right[1] - left[1]);
-  if (!ranked.length) {
-    return `<p class="day-blockers">這一天沒有任何事件被擋下，${result.steps.length} 件全說出去了。</p>`;
-  }
-  const breakdown = ranked.map(([rule, count]) => `${name(rule)} <b>${count}</b> 次`).join("・");
-  return `<p class="day-blockers">這一天擋掉最多的是〈<strong>${name(ranked[0][0])}</strong>〉：${breakdown}。</p>`;
-}
-
-/** Replay one scripted day through the student's rules. Deterministic and
- *  API-free, so the whole class can run it. Deliberately reports two numbers
- *  and no single grade: tightening the rules trades noise for misses, and there
- *  is no 6/6 to converge on. */
-/** What the student guessed, next to what happened. The guess is the point: read
- *  straight off, a result is 「哦，原來是這樣」; guessed first, a wrong guess names
- *  exactly which rule was misunderstood. */
-function renderPredictEcho(result) {
-  const rows = [
-    ["漏掉的健康關心", $("#predictMissed").value, result.missed_health],
-    ["打擾", $("#predictNoise").value, result.noise],
-  ].filter(([, guess]) => String(guess).trim() !== "");
-  if (!rows.length) {
-    $("#dayPredictEcho").innerHTML = '<p class="predict-none">下次先猜一下再按。猜錯的地方就是你理解錯的地方。</p>';
-    return;
-  }
-  $("#dayPredictEcho").innerHTML = `<p class="predict-line">${rows.map(([label, guess, actual]) => {
-    const off = Number(guess) - actual;
-    const verdict = off === 0 ? "猜中了" : `差 ${Math.abs(off)}（${off > 0 ? "比你想的少" : "比你想的多"}）`;
-    return `${label}：你猜 <b>${escapeHtml(String(guess))}</b>，實際 <b>${actual}</b>，${off === 0 ? "<b>猜中了</b>" : verdict}`;
-  }).join("<br>")}</p>`;
-}
-
-/** 「參考建檔 21:00 有安眠藥半顆，你的沒有 → 她今晚沒吃藥」. Matched by time, so a
- *  student who wrote her own wording still has the reminder. Only meaningful
- *  against the shared day, which is why the server returns [] otherwise. */
-function renderDayMissing(result) {
-  const missing = result.missing_reminders || [];
-  if (!missing.length) {
-    $("#dayMissing").innerHTML = '<p class="day-missing-none">✓ 參考建檔裡的用藥與回診，你的建檔都有對上的時間。</p>';
-    return;
-  }
-  $("#dayMissing").innerHTML = `
-    <p class="day-missing-head">你的建檔漏掉 <b>${missing.length}</b> 筆參考建檔有的提醒，這一天她不會被提醒：</p>
-    <ul class="day-missing-list">${missing.map((item) => `
-      <li><time>${escapeHtml(item.time)}</time><span>${escapeHtml(item.topic)}</span><em>${escapeHtml(item.source || "")}</em></li>`).join("")}</ul>
-    <p class="day-missing-note">回建檔 › 用藥與回診補上，再跑一次。</p>`;
-}
-
-async function runDaySimulation() {
-  collectWorkshop2();
-  const button = $("#runDaySimulation");
-  button.disabled = true;
-  // 對照: run the student's two knobs against what the production orchestrator
-  // hard-codes today (22:00–08:00 plus meal windows) instead of against her
-  // 作息. Same rules, same day, a different schedule — which is the cleanest way
-  // to say 「這門課的機制比產品超前一版」 without a slide.
-  const gates = $("#dayGatesFixed").checked ? "dodo_fixed" : "routines";
-  try {
-    const response = await fetch("/api/proactive-simulate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        policy: workspace.profile.proactive_policy,
-        // The shared 星期二 is grown from the reference 建檔, but her own file is
-        // what supplies the schedule the gates read.
-        elder_profile: workspace.profile.elder_profile,
-        memory: workspace.memory,
-        gates,
-      }),
-    });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.detail || "模擬失敗。");
-    const fixed = result.gates === "dodo_fixed";
-    $("#daySummary").innerHTML = `
-      <div class="day-score">
-        <span>說出 <b>${result.spoken}</b> 則</span>
-        <span>擋下 <b>${result.blocked}</b> 則</span>
-        <span class="${result.missed_health ? "is-worse" : "is-better"}">漏掉的健康關心 <b>${result.missed_health}</b>／${result.health_total}</span>
-        <span class="${result.noise > 2 ? "is-worse" : ""}">打擾 <b>${result.noise}</b>／${result.chat_total}</span>
-      </div>
-      <p class="day-gates ${fixed ? "is-fixed" : ""}">閘門：<strong>${fixed ? "固定時段" : "她建檔的作息"}</strong>${describeGates(result.schedule)}</p>
-      ${renderDayBlockers(result)}
-      ${renderDayDelta(result)}
-      <p class="day-hint">兩個數字會互相拉扯：規則放寬，打擾變多；規則收緊，重要的事會被漏掉。沒有滿分答案。</p>`;
-    renderPredictEcho(result);
-    renderDayMissing(result);
-    // 重要提醒 is the type the rules never ration, which is what makes it the
-    // one worth marking on the timeline.
-    $("#dayTimeline").innerHTML = result.steps.map((step) => `
-      <div class="day-row ${step.spoke ? "is-spoken" : "is-blocked"} ${step.type === "reminder" ? "is-critical" : ""}">
-        <time>${step.time}</time>
-        <span class="day-kind">${DAY_EVENT_LABELS[step.type] || step.type}</span>
-        <span class="day-topic">${escapeHtml(step.topic)}</span>
-        <span class="day-verdict">${step.spoke ? "說出" : "擋下"}：${escapeHtml(step.reason)}</span>
-      </div>`).join("");
-    showResult("#dayOutcome", "#dayScore",
-      `漏掉的健康關心 ${result.missed_health}／${result.health_total} · 打擾 ${result.noise}／${result.chat_total}`);
-    lastDayRun = result;
-    // 實作二 is done when she has actually walked a day — there is no quiz to
-    // pass any more, and the two numbers are the deliverable.
-    if (!workspace.progress.workshop_2_completed) {
-      workspace.progress.workshop_2_completed = true;
-      saveProject();
-    }
-  } catch (error) {
-    $("#daySummary").textContent = error.message || "無法連接本機服務。";
-  } finally {
-    button.disabled = false;
-  }
-}
-
-/** The windows the run actually used, named. Without this the 對照 switch is a
- *  checkbox that changes two numbers for no visible reason. */
-function describeGates(schedule) {
-  if (!schedule) return "";
-  const parts = [];
-  if (schedule.quiet) parts.push(`安靜 ${formatMinutes(schedule.quiet.start)}–${formatMinutes(schedule.quiet.end)}`);
-  (schedule.dnd || []).forEach((window) => {
-    parts.push(`${escapeHtml(window.label)} ${formatMinutes(window.start)}–${formatMinutes(window.end)}`);
-  });
-  return parts.length ? `（${parts.join("、")}）` : "（沒有任何安靜或不打擾時段）";
-}
-
 // =====================================================================
 // 今日摘要：the one memory write nobody makes by hand
 // =====================================================================
@@ -1757,7 +1607,7 @@ function proactiveTurnInstructions(event, time) {
   ].filter((part) => part.trim()).join("\n\n");
 }
 
-/** Ask the same `choose_event` 跑她的一天 uses. Returns null on
+/** Ask the server's `choose_event`. Returns null on
  *  a transport failure so callers can tell "the rules said no" apart from "the
  *  question never got asked" — the scheduler must not burn an item on the latter. */
 async function decideProactive(policy, scenario) {
@@ -1938,12 +1788,6 @@ function init() {
   $("#resyncBudget").addEventListener("click", resyncBudgetFields);
 
   $("#saveWorkshop2").addEventListener("click", applyWorkshop2);
-  $("#runDaySimulation").addEventListener("click", runDaySimulation);
-  $("#dayGatesFixed").addEventListener("change", () => {
-    notify($("#dayGatesFixed").checked
-      ? "對照模式：這一次改用固定的 22:00–08:00＋用餐時段，而不是她的作息。"
-      : "回到她建檔的作息當閘門。");
-  });
   $("#runTodaySummary").addEventListener("click", runTodaySummary);
   $("#triggerProactive").addEventListener("click", triggerProactive);
   $("#addSchedule").addEventListener("click", addSchedule);
@@ -2005,8 +1849,5 @@ globalThis.W2 = {
   buildScheduleWindows,
   windowContains,
   recordProactiveSpoken,
-  // The schedule a real run used, so uicheck can compare it against the one
-  // buildScheduleWindows drew instead of trusting a comment that they agree.
-  get lastDayRun() { return lastDayRun; },
 };
 })();
