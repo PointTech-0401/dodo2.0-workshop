@@ -64,6 +64,8 @@ globalThis.__t = {
   startNewChat, addMessage, switchStage, composerLocked,
   // A reply in flight, without a session: what the 第二堂 send lock looks at.
   setReplying: (value) => { responseActive = value; refreshComposerLock(); },
+  // As if a session had been opened with this voice: what 套用 compares against.
+  setConnectedVoice: (value) => { connectedVoice = value; },
   get workspace() { return workspace; },
 };
 // eval() never fires DOMContentLoaded, so start the app by hand — fire and
@@ -879,6 +881,25 @@ ok("only 自己編一個狀況 reads the typed numbers; the scheduler reads the 
    /minutes_since_last: Number\(\$\("#proactiveSinceLast"\)\.value\)/.test(script)
    && /minutes_since_last: minutesSinceLastProactive\(\)/.test(script));
 
+// --- 第一堂改聲線：重新連線，畫面也開一段新對話 --------------------------
+// The new connection does not remember the old one; a transcript left on the
+// screen would read as if 豆豆 did.
+$t.switchStage(1);
+$t.setConnectedVoice("sage");
+$t.addMessage("user", "換聲線前講的一句話");
+$("#agentVoice").value = "marin";
+fire("#agentVoice", "change");
+$("#saveWorkshop1").click();
+await new Promise((r) => setTimeout(r, 300));
+ok("改聲線套用後，舊的對話從畫面清掉", !$("#messages").textContent.includes("換聲線前講的一句話"));
+ok("...並說明為什麼是新的對話", $("#messages").textContent.includes("中途換聲線"), $("#messages").textContent.slice(0, 80));
+$t.setConnectedVoice("");
+$("#agentVoice").value = "sage";
+fire("#agentVoice", "change");
+$("#saveWorkshop1").click();
+await new Promise((r) => setTimeout(r, 300));
+$t.switchStage(2);
+
 // --- 新聊天: drop this conversation, keep the memory ----------------------
 $t.addMessage("user", "阿嬤說了一句話");
 $t.addMessage("assistant", "豆豆回了一句");
@@ -887,7 +908,7 @@ const beforeFacts = JSON.stringify($t.workspace.memory.facts);
 await $t.startNewChat();
 ok("新聊天 empties the transcript",
    document.querySelectorAll("#messages .message.user, #messages .message.assistant").length === 0);
-ok("...and says what survived", $("#messages").textContent.includes("記憶"));
+ok("...and says a new conversation began", $("#messages").textContent.includes("新的對話開始了"));
 ok("...but never touches the memory", JSON.stringify($t.workspace.memory.facts) === beforeFacts);
 ok("...nor the day's proactive budget", $t.workspace.proactive_state.sent_today === 3);
 

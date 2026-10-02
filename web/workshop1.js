@@ -341,10 +341,13 @@ async function applyWorkshop1() {
   collectWorkshop1();
   // OpenAI forbids swapping the voice on a live session once the model has
   // produced audio, so a voice change can only take effect on a new connection.
+  // The new connection has no memory of the old one, so the screen starts over
+  // too: a transcript still on screen would look like 豆豆 remembers it.
   const voiceChanged = Boolean(previousVoice) && previousVoice !== workspace.profile.agent.voice;
   if (voiceChanged) {
+    const voice = workspace.profile.agent.voice;
     disconnectRealtime();
-    notify(`聲線改成 ${workspace.profile.agent.voice}，正在重新連線（講到一半不能換聲音，這是 OpenAI 的規定）。`);
+    await startNewChat(`聲線改成 ${voice}。OpenAI 不允許同一段對話中途換聲線，所以重新連線，這是一段新的對話：豆豆不記得剛才聊過什麼。`);
   }
   await connectRealtime();
   if (dataChannel?.readyState === "open") {

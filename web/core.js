@@ -1184,7 +1184,7 @@ function finalizeVoiceDraft() {
  *  exactly what Workshop 2 is about — and 每日上限 is a day's budget, not a
  *  conversation's. This is also why it is not just a page reload: F5 rebuilds the
  *  whole workspace, this only drops the transcript. */
-async function startNewChat() {
+async function startNewChat(note = "") {
   if (isDodoSpeaking()) interruptResponse();
   disconnectRealtime();
   finalizeVoiceDraft();
@@ -1192,7 +1192,10 @@ async function startNewChat() {
   document.getElementById("userVoiceDraft")?.removeAttribute("id");
   startResponseTracking();
   $("#messages").innerHTML = "";
-  addMessage("system", "新的對話開始了。豆豆的記憶、建檔與主動設定都還在，只有這一段對話從頭來過。");
+  // 第一堂沒有記憶與建檔，講「記憶還在」會讓人以為有。
+  addMessage("system", note || (currentStage === 2
+    ? "新的對話開始了。豆豆的記憶、建檔與主動設定都還在，只有這一段對話從頭來過。"
+    : "新的對話開始了。設定都還在，只有這一段對話從頭來過。"));
   if (!apiConfigured) {
     setState("listening", "請先完成系統設定");
     return;

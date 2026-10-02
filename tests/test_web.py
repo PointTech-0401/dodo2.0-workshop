@@ -488,6 +488,8 @@ def test_voice_is_part_of_the_project_and_needs_a_reconnect_to_change() -> None:
     apply_fn = script.split("async function applyWorkshop1() {")[1].split("\n}")[0]
     assert "previousVoice !== workspace.profile.agent.voice" in apply_fn
     assert "disconnectRealtime();" in apply_fn
+    # The reconnect forgets the conversation, so the screen starts a new one too.
+    assert "await startNewChat(`聲線改成" in apply_fn
 
     # Only real built-in voices survive validation, on both sides.
     assert 'REALTIME_VOICES.some(([id]) => id === value)' in script
