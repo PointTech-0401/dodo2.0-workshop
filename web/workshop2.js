@@ -987,7 +987,7 @@ function deleteMemoryEntry(layer, index) {
   const removed = memoryEntryText({ ...entries[index], source: null });
   workspace.memory[field] = entries.filter((_, position) => position !== index);
   saveProject();
-  renderMemoryViewer();
+  refreshDerivedViews();
   rebuildWorkshop2Prompt();
   pushMemoryToSession();
   notify(`已從 ${title} 刪除「${removed}」，並更新豆豆的記憶。AI 記得的事，人隨時可以改掉。`);
@@ -999,6 +999,7 @@ function deleteMemoryEntry(layer, index) {
 function syncIntakeAfterMemoryChange() {
   renderRows("symptom", caregiverEntries("events"));
   renderIntakeHints();
+  refreshDerivedViews();
   // Only the symptom rows moved, so only their slice of the baseline moves with
   // them. Re-freezing the whole tab would quietly adopt a row the student typed
   // and never applied. `facts` needs no patch: a caregiver A fact is locked
@@ -1649,7 +1650,7 @@ async function runTodaySummary() {
     const written = upsertMemory("C", "今日摘要", result.summary, undefined, { source: "system" });
     saveProject();
     rebuildWorkshop2Prompt();
-    renderMemoryViewer();
+    refreshDerivedViews();
     pushMemoryToSession();
     $("#todaySummary").textContent = `已寫進 C 跨日摘要：「${result.summary}」`;
     addMessage("tool", `update_memory（今日摘要）：${describeMemoryWrite(written, "今日摘要", result.summary)}`);
@@ -1740,8 +1741,23 @@ async function speakProactive(event, time) {
   return "spoken";
 }
 
+/** Everything drawn from `workspace` rather than from the fields: the memory
+ *  list, 主動對話's symptom hint and budget lines, the band, the pending list.
+ *  套用, a load, a memory write, a delete and 今日摘要 all change `workspace`;
+ *  each one ends here, so no other tab waits for an F5 to catch up. */
+function refreshDerivedViews() {
+  renderMemoryViewer();
+  suggestTriggerTopic();
+  renderDeclineState();
+  renderPolicyPreview();
+  renderTriggerHints();
+  renderScheduleList();
+  renderProactiveLiveState();
+}
+
 async function applyWorkshop2() {
   collectWorkshop2();
+  refreshDerivedViews();
   await connectRealtime();
   const live = dataChannel?.readyState === "open";
   if (live) {
@@ -1876,6 +1892,7 @@ globalThis.W2 = {
   loadReferenceIntake,
   renderProactiveEventOptions,
   renderMemoryViewer,
+  refreshDerivedViews,
   renderPolicyPreview,
   renderTriggerHints,
   renderProactiveLiveState,

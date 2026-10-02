@@ -1492,7 +1492,7 @@ def test_layer_c_is_grown_from_the_conversation_not_typed() -> None:
     summary = script.split("async function runTodaySummary() {")[1].split("\n}\n")[0]
     # Written through the one memory helper, so C's 重寫 rule applies to it too.
     assert 'upsertMemory("C", "今日摘要", result.summary, undefined, { source: "system" })' in summary
-    assert "renderMemoryViewer();" in summary and "pushMemoryToSession();" in summary
+    assert "refreshDerivedViews();" in summary and "pushMemoryToSession();" in summary
 
     # TOOL and SYSTEM rows are workshop instrumentation, not things anyone said.
     transcript = script.split("function chatTranscript() {")[1].split("\n}\n")[0]

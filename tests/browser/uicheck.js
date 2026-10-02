@@ -929,6 +929,27 @@ ok("both panels have a sticky header", document.querySelectorAll(".lab-sticky").
 ok("the tab bar is inside it", document.querySelectorAll(".lab-sticky .tab-bar").length === 2);
 ok("the intro paragraphs are gone", document.querySelectorAll(".layer-intro").length === 0);
 
+// --- 套用 redraws everything that reads `workspace`, not only the form -----
+// Loading the reference 建檔 and pressing 套用 used to leave the memory list
+// (A／B／C) and 主動對話's symptom hint as they were until an F5.
+$('.tab-button[data-tab="tabW2Intake"]').click();
+$t.workspace.memory = { facts: [], events: [], summaries: [] };
+W2.renderMemoryViewer();
+$("#proactiveEventType").value = "health";
+$("#proactiveTopic").value = "";
+$("#loadReferenceIntake").click();
+await new Promise((r) => setTimeout(r, 200));
+$("#confirmOk").click();
+await new Promise((r) => setTimeout(r, 300));
+$("#saveWorkshop2").click();
+await new Promise((r) => setTimeout(r, 300));
+ok("套用 shows the new 建檔 in the memory list at once",
+   $("#memoryViewer").textContent.includes("望春風") && $("#memoryViewer").textContent.includes("膝蓋"),
+   $("#memoryViewer").textContent.slice(0, 80));
+ok("...and 主動對話 picks up her latest symptom at once",
+   $("#topicHint").textContent.includes("睡眠") && $("#proactiveTopic").value.includes("睡眠"),
+   $("#topicHint").textContent);
+
 // --- 問豆豆 must not answer behind the 訪談稿 --------------------------------
 // The overlay covers the chat, and 建檔 is filled with it open, so the answer
 // used to land where nobody could see it and the button looked dead. Last in

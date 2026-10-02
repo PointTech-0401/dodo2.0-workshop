@@ -288,7 +288,7 @@ export function slide({ eyebrow, num, total, title, lede, body, foot, accent = C
       <h1 style="margin: 0; max-width: 1310px; color: ${C.ink}; font: 700 52px/1.16 ${SERIF}; letter-spacing: -.025em; text-wrap: pretty;">${title}</h1>
       ${lede ? `<p style="margin: 0; max-width: 1200px; color: ${C.inkSoft}; font: 23px/1.62 ${SANS}; text-wrap: pretty;">${lede}</p>` : ''}
     </div>
-    <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
+    <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: flex-start; gap: 22px; min-height: 0;">
       ${body}
     </div>
     ${foot ? `<div style="display: flex; align-items: center; gap: 14px; padding-top: 16px; border-top: 1px solid ${C.line};">

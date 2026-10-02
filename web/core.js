@@ -661,9 +661,7 @@ function loadFields() {
   W2.renderProactiveEventOptions();
   // Last: both previews read every field above, Workshop 2's included.
   W1.rebuildSystemPrompt();
-  W2.renderMemoryViewer();
-  W2.renderPolicyPreview();
-  W2.renderTriggerHints();
+  W2.refreshDerivedViews();
   W1.updateTurnFields();
   // Whatever was just loaded is what a connection will send, so nothing is
   // pending yet — this is the baseline every 套用 button is measured against.
