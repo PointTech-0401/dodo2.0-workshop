@@ -629,6 +629,16 @@ $('.tab-button[data-tab="tabW2Live"]').click();
 // --- 待提醒項目: the time field finally means something --------------------
 $("#scheduleAuto").checked = false; fire("#scheduleAuto", "change");
 ok("the pending list starts empty", $("#scheduleList").textContent.includes("沒有待提醒項目"));
+// 「內容」 is what 豆豆 will say; with nothing in it there is nothing to say.
+$("#proactiveTopic").value = "  ";
+$("#scheduleTime").value = "23:59";
+$("#addSchedule").click();
+ok("沒填內容不能加入待提醒", $("#scheduleList").textContent.includes("沒有待提醒項目")
+   && $t.workspace.scheduled.length === 0);
+const decisionsBefore = $("#messages").textContent.split("主動決策").length;
+$("#triggerProactive").click();
+await new Promise((r) => setTimeout(r, 300));
+ok("...自己編一個狀況也不會跑規則", $("#messages").textContent.split("主動決策").length === decisionsBefore);
 $("#proactiveTopic").value = "16:00 回診，要帶健保卡";
 $("#proactiveEventType").value = "reminder";
 $("#scheduleTime").value = "23:59";

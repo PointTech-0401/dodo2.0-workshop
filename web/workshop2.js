@@ -1439,13 +1439,24 @@ function fillScheduleInOneMinute() {
   renderTriggerHints();
 }
 
+/** 豆豆要講什麼全靠「內容」，空白就沒有話可以講，所以兩種開口方式都先擋下。 */
+function requiredTopic() {
+  const topic = $("#proactiveTopic").value.trim();
+  if (!topic) {
+    notify("請先填「內容」：要豆豆說什麼。");
+    $("#proactiveTopic").focus();
+  }
+  return topic;
+}
+
 function addSchedule() {
   const time = $("#scheduleTime").value;
   if (!time) {
     notify("請先選一個提醒時間。");
     return;
   }
-  const topic = $("#proactiveTopic").value.trim();
+  const topic = requiredTopic();
+  if (!topic) return;
   // A minute that is already over never happens today. The current minute still
   // counts as due, so 「現在」 fires on the next tick rather than expiring.
   const expired = time < nowHhmm();
@@ -1585,13 +1596,12 @@ function switchTriggerMode(mode) {
 /** 自己編一個狀況: the typed time and numbers, the REAL decline. A message that
  *  gets through is really spoken and really recorded, like a scheduled one. */
 async function triggerProactive() {
+  const topic = requiredTopic();
+  if (!topic) return;
   collectWorkshop2();
   const policy = workspace.profile.proactive_policy;
   const time = $("#proactiveNow").value || "12:00";
-  const event = {
-    type: $("#proactiveEventType").value,
-    topic: $("#proactiveTopic").value.trim(),
-  };
+  const event = { type: $("#proactiveEventType").value, topic };
   const decision = await decideProactive(policy, {
     time,
     type: event.type,
