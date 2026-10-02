@@ -146,6 +146,9 @@ ok("H 真正的答案留給前後對照",
 // --- I. 豆豆's face follows what it is doing, and flinches when cut off -----
 const { sendText, setChannel } = globalThis.__n;
 const face = () => document.querySelector("#dodoAvatar").dataset.state;
+// The state bar's lit step (收聽中／思考中／回應中) and the line under it.
+const bar = () => document.querySelector(".state-list li.is-current")?.dataset.state;
+const barNote = () => document.querySelector("#connectionNote").textContent;
 const sent = [];
 setChannel({ readyState: "open", send: (data) => sent.push(JSON.parse(data).type), close: () => {} });
 await fire({ type: "response.done", response: { output: [] } });
@@ -159,15 +162,17 @@ await sendText("等一下");
 ok("I 打字插話：被打斷", face() === "interrupted" && sent.includes("response.cancel"), `${face()} ${sent.join(",")}`);
 await new Promise((r) => setTimeout(r, 1500));
 ok("I 一下子之後回到現在的狀態", face() === "thinking", face());
-// Voice output: the bar goes back to 收聽中 at response.done, the face keeps
-// talking until the audio buffer actually stops.
+// Voice output: response.done arrives while the audio still has seconds to play.
+// The face and the bar both follow the sound, so neither says 收聽中 yet.
 setSetup({ completed: true, inputMode: "text", outputMode: "voice" });
 await fire({ type: "output_audio_buffer.started" });
 await fire({ type: "response.done", response: { output: [] } });
 await new Promise((r) => setTimeout(r, 600));
 ok("I 聲音還在播：還在講話", face() === "speaking", face());
+ok("I 聲音還在播：狀態列也是回應中，不是收聽中", bar() === "speaking", `${bar()} ${barNote()}`);
 await fire({ type: "output_audio_buffer.stopped" });
 ok("I 播完：聆聽", face() === "listening", face());
+ok("I 播完：狀態列回到收聽中", bar() === "listening" && barNote() === "等待下一段文字", `${bar()} ${barNote()}`);
 await fire({ type: "output_audio_buffer.started" });
 await fire({ type: "output_audio_buffer.cleared" });
 ok("I 她開口把聲音切掉（VAD 插話）：被打斷", face() === "interrupted", face());

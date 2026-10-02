@@ -672,7 +672,7 @@ $("#scheduleAuto").checked = false;
 const nowText = new Date().toTimeString().slice(0, 5);
 $("#proactiveEventType").value = "reminder";
 $("#proactiveTopic").value = "該吃藥了";
-$("#scheduleTime").value = nowText;
+$("#scheduleTime").value = new Date().toTimeString().slice(0, 5);
 $("#scheduleAuto").checked = true;
 $("#addSchedule").click();
 await new Promise((r) => setTimeout(r, 600));
@@ -700,7 +700,7 @@ $("#elderWake").value = "23:58"; fire("#elderWake", "input");
 $("#saveWorkshop2").click();
 $("#proactiveEventType").value = "chat";
 $("#proactiveTopic").value = "今天天氣不錯";
-$("#scheduleTime").value = nowText;
+$("#scheduleTime").value = new Date().toTimeString().slice(0, 5);
 $("#addSchedule").click();
 await new Promise((r) => setTimeout(r, 600));
 ok("her 作息 can block a due 閒聊 outright",

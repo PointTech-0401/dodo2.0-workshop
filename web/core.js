@@ -498,11 +498,25 @@ async function normalizeWorkspace(raw) {
 }
 
 function setState(name, note) {
-  $$(".state-list li").forEach((item) => item.classList.toggle("is-current", item.dataset.state === name));
-  if (note) $("#connectionNote").textContent = note;
+  if (note) stateNote = note;
   avatarStateName = name;
   syncAvatar();
   refreshComposerLock();
+}
+
+// The bar follows the sound, like the face: `response.done` asks for 收聽中
+// while WebRTC still has seconds of 豆豆's voice to play, and a bar saying
+// 收聽中 under a talking face is wrong. Once the buffer stops, the 收聽中 that
+// was asked for shows, with its own note.
+let stateNote = "";
+const PLAYING_NOTE = "Dodo 正在用耳機回應";
+
+function renderStateBar() {
+  const playing = audioPlaying && avatarStateName === "listening";
+  const shown = playing ? "speaking" : avatarStateName;
+  $$(".state-list li").forEach((item) => item.classList.toggle("is-current", item.dataset.state === shown));
+  const note = playing ? PLAYING_NOTE : stateNote;
+  if (note) $("#connectionNote").textContent = note;
 }
 
 // 第二堂：豆豆還沒回答完（還在產生、聲音還在播、或工具還在跑）就不能送下一句，
@@ -529,6 +543,7 @@ let interruptedUntil = 0;
 let interruptedTimer;
 
 function syncAvatar() {
+  renderStateBar();
   const avatar = $("#dodoAvatar");
   if (!avatar) return;
   let state = avatarStateName;
@@ -1503,6 +1518,7 @@ function disconnectRealtime() {
   audioPlaying = false;
   toolCallsRunning = false;
   refreshComposerLock();
+  syncAvatar();
   connectedVoice = "";
   startResponseTracking();
   if (dataChannel) dataChannel.close();
