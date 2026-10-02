@@ -97,68 +97,76 @@
       "title": "12 · 三種回合判斷"
     },
     {
-      "file": "OutputLength.dc.html",
+      "file": "TurnCompare.dc.html",
       "x": 0,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "13 · 一次講多長"
+      "title": "13 · VAD 與 Push-to-talk 比較"
+    },
+    {
+      "file": "OutputLength.dc.html",
+      "x": 1760,
+      "y": 3420,
+      "w": 1600,
+      "h": 900,
+      "title": "14 · 一次講多長"
     },
     {
       "file": "LabOne.dc.html",
-      "x": 1760,
-      "y": 3420,
-      "w": 1600,
-      "h": 900,
-      "title": "14 · 實作一"
-    },
-    {
-      "file": "Preamble.dc.html",
       "x": 3520,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "15 · 工具前開場"
+      "title": "15 · 實作一"
     },
     {
-      "file": "VoiceVsPrompt.dc.html",
+      "file": "Preamble.dc.html",
       "x": 5280,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "16 · 聲線與 Prompt"
+      "title": "16 · 工具前開場"
     },
     {
-      "file": "LabVoice.dc.html",
+      "file": "VoiceVsPrompt.dc.html",
       "x": 0,
       "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "17 · 實作二"
+      "title": "17 · 聲線與 Prompt"
     },
     {
-      "file": "LabTwo.dc.html",
+      "file": "LabVoice.dc.html",
       "x": 1760,
       "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "18 · 實作三"
+      "title": "18 · 實作二"
     },
     {
-      "file": "PromptRequest.dc.html",
+      "file": "LabTwo.dc.html",
       "x": 3520,
       "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "19 · Prompt 的限制"
+      "title": "19 · 實作三"
     },
     {
-      "file": "Summary.dc.html",
+      "file": "PromptRequest.dc.html",
       "x": 5280,
       "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "20 · 總結"
+      "title": "20 · Prompt 的限制"
+    },
+    {
+      "file": "Summary.dc.html",
+      "x": 0,
+      "y": 5700,
+      "w": 1600,
+      "h": 900,
+      "title": "21 · 總結"
     }
   ],
   "launch": {

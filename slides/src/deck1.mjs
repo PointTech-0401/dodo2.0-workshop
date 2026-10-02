@@ -96,7 +96,7 @@ add('WebRTC.dc.html', 'WebRTC', (n, t) => slide({
   body: row([
     steps([
       '瀏覽器寫一份連線說明書（SDP）：要傳聲音，也要開一條傳事件的通道。',
-      '說明書交給本機後端，後端補上 API Key，轉給 OpenAI。',
+      '說明書交給本機後端，後端補上 API Key，連同 Prompt 和設定一起轉給 OpenAI。',
       'OpenAI 回一份說明書：好，照這樣連。',
       '連上之後，聲音和事件直接在瀏覽器和 OpenAI 之間傳，不經後端。',
     ], { accent: A, size: 22, gap: 14 }),
@@ -113,7 +113,7 @@ add('WebRTC.dc.html', 'WebRTC', (n, t) => slide({
       })}
     </div>`,
   ], { gap: 32 }),
-  foot: '打字模式也走同一條連線，只是不送麥克風的聲音。',
+  foot: '打字模式也走同一條連線：一樣會開聲音通道（只收不送），沒有聲音通道 OpenAI 不接受連線。',
 }));
 
 add('TurnFlow.dc.html', '一句話的處理流程', (n, t) => slide({
@@ -170,23 +170,29 @@ const OUTPUT_LENGTH = (n, t) => slide({
 
 add('WhenInstructions.dc.html', 'Prompt 送出時機', (n, t) => slide({
   eyebrow: EB, num: n, total: t, accent: A,
-  title: 'Prompt 送出的時機',
+  title: 'Prompt 什麼時候送到 OpenAI',
   lede: '對應流程圖的第 ① 步。',
   body: stack([
     row([
       card({
-        grow: true, accent: C.green, kicker: '連線時送出',
-        title: '第一句話就是設定好的角色',
-        body: '之後按「套用」會再更新一次。',
+        grow: true, accent: C.green, kicker: '建立連線時',
+        title: '跟著連線請求一起送',
+        body: 'Prompt 和連線說明書一起交給後端，後端一併轉給 OpenAI。所以第一句話就已經是豆豆。',
       }),
       card({
-        grow: true, accent: C.danger, kicker: '連線後才補送',
-        title: '第一個回合可能用預設人格',
-        body: '例如直接用英文回答。',
+        grow: true, accent: A, kicker: '按「套用」',
+        title: '從事件通道送新設定',
+        body: '不用重新連線，剛才聊的也還在。下一次回答開始照新的 Prompt，已經講完的話不會重講。',
+      }),
+      card({
+        grow: true, accent: C.apricot, kicker: '改了聲線再套用',
+        title: '斷線重連',
+        body: 'OpenAI 不允許同一段對話中途換聲線，所以重新連線，新連線帶著新的 Prompt；剛才聊的不會記得。',
       }),
     ]),
-    band('驗證方式：連線後問「你叫什麼？我叫什麼？」', { accent: C.apricot }),
+    band('為什麼不等連上再送？連上到補送之間的第一個回答，可能是 OpenAI 預設的人格，例如直接用英文回答。', { accent: C.apricot }),
   ], { gap: 26 }),
+  foot: '驗證方式：連線後問「你叫什麼？我叫什麼？」',
 }));
 
 add('TurnModes.dc.html', '三種回合判斷', (n, t) => slide({
@@ -216,6 +222,28 @@ add('TurnModes.dc.html', '三種回合判斷', (n, t) => slide({
     ]),
     band('插話時中斷回答的是回合偵測，不是 Prompt。', { accent: C.apricot }),
   ], { gap: 26 }),
+}));
+
+add('TurnCompare.dc.html', 'VAD 與 Push-to-talk 比較', (n, t) => slide({
+  eyebrow: EB, num: n, total: t, accent: A,
+  title: 'VAD 與 Push-to-talk 比較',
+  body: table(
+    [
+      { label: '', w: '200px' },
+      { label: 'SEMANTIC VAD', w: '1fr' },
+      { label: 'SERVER VAD', w: '1fr' },
+      { label: 'PUSH-TO-TALK', w: '1fr' },
+    ],
+    [
+      ['怎樣算講完', '模型看你講出的字，判斷這句完整了沒', '安靜超過設定的時間（800 毫秒）', '你放開按鈕'],
+      ['誰決定', 'OpenAI', 'OpenAI', '你'],
+      ['講到一半停一下', '多半會等你講完', '可能搶著回答', '不會，按著就一直聽'],
+      ['旁邊有人講話', '可能被當成你在講', '可能被當成你在講', '沒按就不收音'],
+      ['插話打斷', '一開口就停（勾了「你一開口，就讓 Dodo 停下正在講的話」）', '同左', '按下按鈕時停'],
+      ['適合', '講話慢、句子中間會停的長輩', '安靜的地方、要反應快', '吵的地方，例如教室'],
+    ],
+    { accent: A, size: 21, pad: 13 },
+  ),
 }));
 
 add('OutputLength.dc.html', '一次講多長', OUTPUT_LENGTH);
