@@ -11,6 +11,7 @@ from dodo_workshop.prompt_sections import (
     compose_memory_context,
     compose_rules_section,
     compose_taboo_section,
+    elder_address,
 )
 
 
@@ -213,7 +214,7 @@ def compose_workshop2_prompt(workspace: dict[str, Any]) -> str:
     # Both knobs defaulted once, here: `compose_rules_section` is a pure renderer
     # and the schema defaults are this module's business, not the text's.
     policy = {**DEFAULT_PROACTIVE_POLICY, **(profile.get("proactive_policy") or {})}
-    address = str(elder.get("address") or agent.get("address") or "長者")
+    address = elder_address(elder, str(agent.get("address") or ""))
     replacements = {"{AGENT_NAME}": str(agent.get("name") or "豆豆"), "{USER_ADDRESS}": address}
 
     blocks = workshop2_blocks_for(profile)
@@ -243,6 +244,8 @@ def compose_full_instructions(workspace: dict[str, Any]) -> str:
 
     profile = workspace.get("profile") or {}
     agent = {**(profile.get("agent") or {}), "prompt_blocks": dict(DEFAULT_PROMPT_BLOCKS)}
+    # The persona calls her what the 建檔 calls her, so the two halves agree.
+    agent["address"] = elder_address(profile.get("elder_profile") or {}, str(agent.get("address") or ""))
     parts = [
         compose_agent_prompt(agent),
         compose_workshop2_prompt(workspace),
@@ -435,6 +438,15 @@ def normalize_workspace(value: dict[str, Any] | None) -> dict[str, Any]:
     workspace["memory"] = _normalize_memory(workspace.get("memory"))
     _migrate_elder_profile(profile["elder_profile"], workspace["memory"])
     profile["workshop2_blocks"] = workshop2_blocks_for(profile)
+    # 第二堂的自訂: the student's own four 對話規範 boxes, kept next to the three
+    # presets the same way `agent.custom` is. Optional; anything else goes.
+    custom2 = profile.get("workshop2_custom")
+    if isinstance(custom2, dict):
+        profile["workshop2_custom"] = {
+            "blocks": workshop2_blocks_for({"workshop2_blocks": custom2.get("blocks")})
+        }
+    else:
+        profile.pop("workshop2_custom", None)
     return workspace
 
 

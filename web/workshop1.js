@@ -316,7 +316,7 @@ function updateTurnFields() {
   $("#silenceDurationField").hidden = mode !== "server_vad";
   const explanations = {
     semantic_vad: "聽你話的意思判斷你講完了沒；適合講話慢、句子中間會停頓的人。要有耳麥才試得出真正效果。",
-    server_vad: "看你安靜了幾毫秒就算講完；門檻太短會被搶話，太長它就慢半拍。要有耳麥才試得出真正效果。",
+    server_vad: "看你安靜了幾毫秒就算講完；門檻太短會被搶話，太長豆豆就慢半拍。要有耳麥才試得出真正效果。",
     push_to_talk: "完全不猜。按著才錄音，放開按鈕才送出去，現場最好控制。",
   };
   $("#turnModeNotice").textContent = explanations[mode];

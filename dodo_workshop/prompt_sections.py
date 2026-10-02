@@ -89,16 +89,24 @@ def _appointment_text(appointment: dict[str, Any]) -> str:
     return f"{text}（{note}）" if note else text
 
 
+def elder_address(elder: dict[str, Any], fallback: str = "") -> str:
+    """What 豆豆 calls her. The 稱呼 she asked for; with none, 姓＋小姐 (邱小姐),
+    never the full name, which stays out of the Prompt."""
+
+    address = str(elder.get("address") or "").strip()
+    if address:
+        return address
+    name = str(elder.get("name") or "").strip()
+    if name:
+        return f"{name[0]}小姐"
+    return fallback or "長者"
+
+
 def compose_elder_section(elder: dict[str, Any], address: str) -> str:
-    """`# 長者資料`, generated from the 建檔. The emergency phone never enters the
-    prompt: it is the caregiver's, not 豆豆's."""
+    """`# 長者資料`, generated from the 建檔. 姓名、房號 and the emergency phone
+    never enter the prompt: they are the caregiver's, not 豆豆's."""
 
     lines = [f"稱呼：{address}"]
-    name, room = str(elder.get("name") or "").strip(), str(elder.get("room") or "").strip()
-    if name:
-        lines.append(f"姓名：{name}" + (f"（房號 {room}）" if room else ""))
-    elif room:
-        lines.append(f"房號：{room}")
     lines.append(f"居住城市：{elder.get('city') or '未提供'}（問天氣沒有指定城市時用這個）")
     for label, key in (("語言", "language"), ("背景", "background")):
         if str(elder.get(key) or "").strip():

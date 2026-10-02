@@ -235,6 +235,9 @@ let responseActive = false;
 // gap is why typed barge-in appeared to do nothing — by the time the student
 // reacted to the voice, responseActive was already false.
 let audioPlaying = false;
+// True while the browser runs the tools of a finished response. responseActive
+// is already false then, but the answer has not been asked for yet.
+let toolCallsRunning = false;
 // True once the browser has refused playback, so the prompt is only shown once.
 let audioBlocked = false;
 let panelResizePointerId = null;
@@ -499,6 +502,21 @@ function setState(name, note) {
   if (note) $("#connectionNote").textContent = note;
   avatarStateName = name;
   syncAvatar();
+  refreshComposerLock();
+}
+
+// 第二堂：豆豆還沒回答完（還在產生、聲音還在播、或工具還在跑）就不能送下一句，
+// 每多送一句就多一輪計費。第一堂不鎖：打字插話正是那一堂要教的。
+function composerLocked() {
+  return currentStage === 2 && (isDodoSpeaking() || toolCallsRunning);
+}
+
+function refreshComposerLock() {
+  const button = $("#chatForm .send-button");
+  if (!button) return;
+  const locked = composerLocked();
+  button.disabled = locked;
+  button.title = locked ? "等豆豆說完再送出" : "";
 }
 
 // --- 豆豆's face -------------------------------------------------------------
@@ -658,7 +676,10 @@ function loadFields() {
  *  subject, and an edited one would only blur what the second lesson changes. */
 function composeInstructions(source, stage = currentStage) {
   if (stage === 1) return W1.buildSystemPrompt(source.profile.agent);
-  const persona = W1.buildSystemPrompt({ ...source.profile.agent, prompt_blocks: W1.DEFAULT_PROMPT_BLOCKS });
+  // The persona calls her what the 建檔 calls her, so the two halves agree.
+  const agent = source.profile.agent || {};
+  const address = W2.addressFor(source.profile.elder_profile || {}, String(agent.address || ""));
+  const persona = W1.buildSystemPrompt({ ...agent, address, prompt_blocks: W1.DEFAULT_PROMPT_BLOCKS });
   return [persona, W2.buildWorkshop2Prompt(source)]
     .filter((part) => part.trim())
     .join("\n\n");
@@ -687,7 +708,7 @@ function switchStage(stage) {
   // The face is for hearing 豆豆 get cut off, which is a first-lesson thing;
   // the second lesson is typed and read.
   $("#dodoAvatar").hidden = !isFirst;
-  $("#conversationTitle").textContent = isFirst ? "讓 Dodo 聽完，再回答" : "再讓它記得你，適時主動關心";
+  $("#conversationTitle").textContent = isFirst ? "讓 Dodo 聽完，再回答" : "再讓豆豆記得你，適時主動關心";
   // 第二堂的標題長一倍，預設字級一定會折行。`.is-long` 讓它縮到剛好一行。用
   // container query 而不是 vw，因為聊天區的寬度是拖曳出來的，不是視窗寬度。
   $("#conversationTitle").classList.toggle("is-long", !isFirst);
@@ -701,6 +722,7 @@ function switchStage(stage) {
   // serve` can switch with a session already open, and then it is told at once.
   const changed = currentStage !== shown;
   currentStage = shown;
+  refreshComposerLock();
   if (changed && dataChannel?.readyState === "open") {
     dataChannel.send(JSON.stringify({ type: "session.update", session: realtimeSessionUpdate() }));
   }
@@ -767,7 +789,7 @@ function refreshApiUi() {
   }
   $("#weatherToolStatus").textContent = weatherConfigured
     ? "天氣 API Key 已設定，可直接詢問即時天氣。"
-    : "請按右上角「系統設定」填天氣 API Key。工具還是會留著，讓你看得到它長什麼樣子。";
+    : "請按右上角「系統設定」填天氣 API Key。工具還是會留著，讓你看得到工具長什麼樣子。";
   $("#modelStatus").textContent = apiConfigured
     ? `Realtime · ${bootstrapData.realtime_model} · 自動連線`
     : "尚未連接 Realtime";
@@ -1066,14 +1088,19 @@ async function finishOnboarding() {
   await connectRealtime();
 }
 
+/** Returns whether the message was actually sent. */
 async function sendText(message) {
   if (!apiConfigured) {
     addMessage("system", "目前沒有連接 OpenAI 模型。請先點右上角「系統設定」。");
     showOnboarding(true);
-    return;
+    return false;
+  }
+  if (composerLocked()) {
+    notify("豆豆還在回答，等豆豆說完再送出。");
+    return false;
   }
   const connected = await connectRealtime();
-  if (!connected) return;
+  if (!connected) return false;
   // Typing is a barge-in too: `interrupt_response` only covers voice input via
   // VAD, so without this a typed message queued up behind 豆豆's current answer.
   interruptResponse();
@@ -1084,18 +1111,31 @@ async function sendText(message) {
     item: { type: "message", role: "user", content: [{ type: "input_text", text: message }] },
   }));
   sendResponseCreate();
+  return true;
 }
 
 function sendResponseCreate() {
   dataChannel.send(JSON.stringify(responseCreateEvent()));
   responseActive = true;
+  refreshComposerLock();
 }
 
 /** Same send, with one-off instructions for a proactive turn. Kept separate so
- *  the normal path stays parameterless. */
-function sendProactiveResponse(instructions) {
+ *  the normal path stays parameterless.
+ *
+ *  The brief goes into the conversation as a system item first. A bare
+ *  response.create continues from the conversation's tail: when her last line
+ *  was a question (「我兒子叫啥」), 豆豆 answered it a second time instead of
+ *  opening the scheduled topic. Kept in the conversation, not out-of-band, so
+ *  her reply to the proactive line is read against what 豆豆 just asked. */
+function sendProactiveResponse(brief, instructions) {
+  dataChannel.send(JSON.stringify({
+    type: "conversation.item.create",
+    item: { type: "message", role: "system", content: [{ type: "input_text", text: brief }] },
+  }));
   dataChannel.send(JSON.stringify(responseCreateEvent(instructions)));
   responseActive = true;
+  refreshComposerLock();
 }
 
 /** Is 豆豆 still producing sound or text this instant? Covers both halves:
@@ -1122,6 +1162,7 @@ function interruptResponse() {
   audioPlaying = false;
   finalizeVoiceDraft();
   showInterrupted();
+  refreshComposerLock();
   return true;
 }
 
@@ -1363,6 +1404,7 @@ async function handleRealtimeEvent(event) {
   if (event.type === "output_audio_buffer.started") {
     audioPlaying = true;
     syncAvatar();
+    refreshComposerLock();
   }
   if (["output_audio_buffer.stopped", "output_audio_buffer.cleared"].includes(event.type)) {
     audioPlaying = false;
@@ -1370,6 +1412,7 @@ async function handleRealtimeEvent(event) {
     // 豆豆 (VAD barge-in), and it echoes our own clear after a typed one.
     if (event.type === "output_audio_buffer.cleared") showInterrupted();
     else syncAvatar();
+    refreshComposerLock();
   }
   if (event.type === "conversation.item.input_audio_transcription.delta") {
     userVoiceDraft += event.delta || "";
@@ -1425,17 +1468,22 @@ async function handleRealtimeEvent(event) {
     markNarrationFromResponse(event.response);
     const calls = (event.response?.output || []).filter((item) => item.type === "function_call");
     if (calls.length) {
+      toolCallsRunning = true;
       setState("thinking", "Dodo 正在使用天氣工具");
-      for (const call of calls) {
-        const output = await executeRealtimeTool(call);
-        dataChannel?.send(JSON.stringify({
-          type: "conversation.item.create",
-          item: {
-            type: "function_call_output",
-            call_id: call.call_id,
-            output: JSON.stringify(output),
-          },
-        }));
+      try {
+        for (const call of calls) {
+          const output = await executeRealtimeTool(call);
+          dataChannel?.send(JSON.stringify({
+            type: "conversation.item.create",
+            item: {
+              type: "function_call_output",
+              call_id: call.call_id,
+              output: JSON.stringify(output),
+            },
+          }));
+        }
+      } finally {
+        toolCallsRunning = false;
       }
       // Guarded on responseActive: if the student typed while the tool fetch was
       // in flight, their message already started a response (which sees the
@@ -1452,6 +1500,8 @@ async function handleRealtimeEvent(event) {
 function disconnectRealtime() {
   responseActive = false;
   audioPlaying = false;
+  toolCallsRunning = false;
+  refreshComposerLock();
   connectedVoice = "";
   startResponseTracking();
   if (dataChannel) dataChannel.close();
@@ -1731,14 +1781,14 @@ async function initialize() {
   applyMode();
   refreshApiUi();
   restoreLabPanelWidth();
+  W2.fillScheduleInOneMinute();
   $("#proactiveNow").value = new Date().toTimeString().slice(0, 5);
-  $("#scheduleTime").value = new Date().toTimeString().slice(0, 5);
   W2.switchTriggerMode("schedule");
   W2.renderScheduleList();
   W2.renderProactiveLiveState();
   W2.renderTriggerHints();
   // The 待提醒 list is only worth setting a time on if something watches the
-  // clock for it. 5s so a demo set to a past minute reacts while people look.
+  // clock for it. 5s so an item set one minute ahead reacts while people look.
   W2.startScheduler();
 
   // Restore the stage the student was last on. The old rule read the progress
@@ -1825,6 +1875,11 @@ function bindEvents() {
     const input = $("#chatInput");
     const message = input.value.trim();
     if (!message) return;
+    // Keep what she typed when the send is refused, so nothing has to be retyped.
+    if (composerLocked()) {
+      notify("豆豆還在回答，等豆豆說完再送出。");
+      return;
+    }
     input.value = "";
     sendText(message);
   });

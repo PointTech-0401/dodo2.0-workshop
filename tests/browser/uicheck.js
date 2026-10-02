@@ -61,7 +61,9 @@ globalThis.__t = {
   // §7.1 #8: the band's own window maths, pinned against the server's below.
   buildScheduleWindows: W2.buildScheduleWindows, windowContains: W2.windowContains,
   // 新聊天 and addMessage are core top-level bindings, reachable only from in here.
-  startNewChat, addMessage,
+  startNewChat, addMessage, switchStage, composerLocked,
+  // A reply in flight, without a session: what the 第二堂 send lock looks at.
+  setReplying: (value) => { responseActive = value; refreshComposerLock(); },
   get workspace() { return workspace; },
 };
 // eval() never fires DOMContentLoaded, so start the app by hand — fire and
@@ -574,27 +576,36 @@ ok("the band's schedule is the server's schedule",
    === JSON.stringify({ quiet: serverRun.schedule.quiet, dnd: serverRun.schedule.dnd }),
    `browser ${JSON.stringify(mine.quiet)} / server ${JSON.stringify(serverRun.schedule.quiet)}`);
 
-// --- 觸發主動: one event block, two modes, no A/B headings -----------------
+// --- 主動對話: two modes, one decline signal --------------------------------
+// The what-if checkbox is gone: 「她剛說不想聊」 on 主動規則 is the one decline,
+// and both modes read it.
 ok("觸發主動 opens on the real-clock mode",
    shown("triggerModeSchedule") && !shown("triggerModeManual"));
 ok("...and the note says which clock decides", $("#triggerModeNote").textContent.includes("真實時鐘"));
 $('[data-trigger-mode="manual"]').click();
-ok("switching to 假設 mode swaps the fields",
+ok("switching to 自己編一個狀況 swaps the fields",
    shown("triggerModeManual") && !shown("triggerModeSchedule"));
 ok("...and the note follows the switch", $("#triggerModeNote").textContent.includes("假設"));
 ok("...but the pending list never hides with it", shown("scheduleList"));
+ok("there is no what-if decline checkbox", !$("#proactiveDeclined"));
+ok("...the decline note points at 主動規則", $("#manualDeclineNote").textContent.includes("主動規則"));
+$("#proactiveSinceLast").value = "5"; fire("#proactiveSinceLast", "input");
+ok("a typed 距上次 says which way it goes", $("#manualSinceHint").textContent.includes("會被擋下"));
+$("#proactiveSinceLast").value = "60"; fire("#proactiveSinceLast", "input");
+ok("...both ways", $("#manualSinceHint").textContent.includes("會通過"));
+ok("a typed time names her 作息", /安靜|不打擾|睡眠時段/.test($("#manualNowHint").textContent), $("#manualNowHint").textContent);
 $('[data-trigger-mode="schedule"]').click();
 ok("switching back restores the schedule fields",
    shown("triggerModeSchedule") && !shown("triggerModeManual"));
-
-// --- the manual trigger's fields carry the rule they are measured against --
-ok("距上次 names the cooldown it must beat", $("#sinceLastHint").textContent.includes("30 分鐘"));
-$("#proactiveSinceLast").value = "5"; fire("#proactiveSinceLast", "input");
-ok("...and says which way this value goes", $("#sinceLastHint").textContent.includes("會被擋下"));
-$("#proactiveSinceLast").value = "999"; fire("#proactiveSinceLast", "input");
-ok("...both ways", $("#sinceLastHint").textContent.includes("會通過"));
+const plusOne = new Date(Date.now() + 60000).toTimeString().slice(0, 5);
+$("#scheduleTime").value = "";
+$("#scheduleInOneMinute").click();
+ok("「1 分鐘後」 fills in now + 1 minute", $("#scheduleTime").value === plusOne,
+   `${$("#scheduleTime").value} vs ${plusOne}`);
+ok("距上次 names the cooldown it must beat", $("#sinceLastHint").textContent.includes("間隔 30 分鐘"),
+   $("#sinceLastHint").textContent);
 ok("今日已發送 names the daily limit", $("#sentTodayHint").textContent.includes("每日上限"));
-ok("模擬現在時間 names her 作息, not a quiet-hours field",
+ok("the time hint measures that time against her 作息, not a quiet-hours field",
    /安靜|不打擾|睡眠時段/.test($("#nowHint").textContent), $("#nowHint").textContent);
 
 // --- 主動規則 → 主動對話: rules on one tab, the place they run on the other --
@@ -607,7 +618,7 @@ ok("主動規則 holds the two knobs and her day",
 $("[data-goto-live]").click();
 ok("...and points at the tab that runs them", shown("tabW2Live") && !shown("tabW2Policy"));
 ok("真的開口 and 今日摘要 moved with it",
-   !$("#triggerProactive").closest(".tab-panel").hidden
+   !$("#addSchedule").closest(".tab-panel").hidden && !$("#triggerProactive").closest(".tab-panel").hidden
    && !$("#runTodaySummary").closest(".tab-panel").hidden);
 $("[data-goto-policy]").click();
 ok("...and the way back works too", shown("tabW2Policy") && !shown("tabW2Live"));
@@ -618,10 +629,10 @@ $("#scheduleAuto").checked = false; fire("#scheduleAuto", "change");
 ok("the pending list starts empty", $("#scheduleList").textContent.includes("沒有待提醒項目"));
 $("#proactiveTopic").value = "16:00 回診，要帶健保卡";
 $("#proactiveEventType").value = "reminder";
-$("#scheduleTime").value = "16:00";
+$("#scheduleTime").value = "23:59";
 $("#addSchedule").click();
 ok("adding a reminder creates a row", $("#scheduleList").querySelectorAll(".schedule-row").length === 1);
-ok("the row shows its time and topic", $("#scheduleList").textContent.includes("16:00")
+ok("the row shows its time and topic", $("#scheduleList").textContent.includes("23:59")
    && $("#scheduleList").textContent.includes("要帶健保卡"));
 // 刪除 used to be pushed onto a line of its own by the status cell's column span.
 ok("刪除 rides on the row itself, with no reason line yet", (() => {
@@ -638,6 +649,21 @@ ok("...and from the saved project", (() => {
   const stored = JSON.parse(localStorage.getItem("dodo-workshop.project") || "{}");
   return (stored.scheduled || []).length === 0;
 })());
+
+// --- a minute that is already over never happens --------------------------
+// 10:50 and a 09:50 reminder: it is added as 已過期 and nothing runs for it.
+$("#scheduleAuto").checked = true;
+$("#proactiveEventType").value = "chat";
+$("#proactiveTopic").value = "早就過了";
+$("#scheduleTime").value = "00:00";
+$("#addSchedule").click();
+await new Promise((r) => setTimeout(r, 600));
+const expiredRow = $t.workspace.scheduled.at(-1);
+ok("a past time is added as 已過期", expiredRow?.status === "expired"
+   && $("#scheduleList").textContent.includes("已過期"), expiredRow?.status);
+ok("...and never runs the rules", !$("#messages").textContent.includes("待提醒觸發"));
+$t.workspace.scheduled.length = 0;
+$("#scheduleAuto").checked = false;
 
 // --- a due reminder fires against the real clock, once ---------------------
 // The complaint this answers: setting a time did nothing when that time arrived.
@@ -694,7 +720,8 @@ ok("...and the TOOL sentence says it out loud",
 // what stays put as about what moves.
 $('.tab-button[data-tab="tabW2Prompt"]').click();
 const ruleButtons = () => [...$("#rulePresets").querySelectorAll("[data-rule-preset]")];
-ok("三組規範範例 are on the tab", ruleButtons().length === 3,
+ok("三組規範範例 and 自訂 are on the tab",
+   ruleButtons().map((b) => b.dataset.rulePreset).join(",") === "companion,verbose,clinical,custom",
    ruleButtons().map((b) => b.dataset.rulePreset).join(","));
 const beforePreset = {
   blocks: $("#promptMemoryUse").value + $("#promptAttitudeChat").value,
@@ -702,7 +729,7 @@ const beforePreset = {
   address: $("#elderAddress").value,
   cooldown: $("#cooldown").value,
 };
-ruleButtons().find((b) => b.dataset.rulePreset === "brief").click();
+ruleButtons().find((b) => b.dataset.rulePreset === "verbose").click();
 ok("a preset rewrites all four blocks",
    WORKSHOP2_BLOCK_SELECTORS.every((selector) => $(selector).value.length > 0)
    && $("#promptMemoryUse").value + $("#promptAttitudeChat").value !== beforePreset.blocks);
@@ -724,6 +751,21 @@ ok("...with no dot left behind", !$('.tab-button[data-tab="tabW2Prompt"]').class
 ruleButtons().find((b) => b.dataset.rulePreset === "companion").click();
 ok("陪伴型 is byte-identical to the shipped defaults",
    $("#promptMemoryUse").value === bootstrap.default_workspace.profile.workshop2_blocks.memory_use);
+// 自訂, the same way 第一堂 keeps it: one edit is remembered, trying a preset
+// does not lose it, and the 自訂 button brings it back.
+const customButton = () => ruleButtons().find((b) => b.dataset.rulePreset === "custom");
+$("#promptAttitudeChat").value = "我自己寫的閒聊規範";
+fire("#promptAttitudeChat", "input");
+ok("an edit makes 自訂 the active version",
+   customButton().classList.contains("is-active") && !customButton().disabled
+   && $t.workspace.profile.workshop2_custom?.blocks?.attitude_chat === "我自己寫的閒聊規範");
+ruleButtons().find((b) => b.dataset.rulePreset === "clinical").click();
+ok("...trying a preset keeps it",
+   $t.workspace.profile.workshop2_custom?.blocks?.attitude_chat === "我自己寫的閒聊規範"
+   && !customButton().classList.contains("is-active"));
+customButton().click();
+ok("...and 自訂 brings it back", $("#promptAttitudeChat").value === "我自己寫的閒聊規範"
+   && customButton().classList.contains("is-active"));
 $("#revertWorkshop2").click();
 
 // 同一句話前後對照 needs a live session, which this harness never has — so what
@@ -813,13 +855,9 @@ $("#proactiveEventType").value = "chat";
 fire("#proactiveEventType", "change");
 ok("閒聊 gets no symptom hint at all", $("#topicHint").textContent === "");
 
-// --- 累積量那兩格: a readout first, a hypothesis only once it is typed in ---
-// The bug this pins: the fields used to sit at their HTML defaults (999 / 0)
-// after every reload, while `proactive_state` knew perfectly well that 豆豆 had
-// already spoken three times today. They are labelled 目前的累積量, so they have
-// to start out saying what the state says.
+// --- 今天已經找過她幾次: the real record, read-only ------------------------
 // `day` has to be today's key, or proactiveState()'s midnight rollover zeroes
-// sent_today before the fields ever see it.
+// sent_today before the hints ever see it.
 const nowForBudget = new Date();
 const pad = (n) => String(n).padStart(2, "0");
 $t.workspace.proactive_state = {
@@ -829,23 +867,15 @@ $t.workspace.proactive_state = {
   declined_until: null,
 };
 W2.loadFields();
-ok("累積量 seeds itself from proactive_state, not from the HTML default",
-   $("#proactiveSentToday").value === "3" && $("#proactiveSinceLast").value === "7",
-   `${$("#proactiveSinceLast").value} / ${$("#proactiveSentToday").value}`);
-ok("...and says it is following the real record",
-   $("#budgetFollowNote").textContent.includes("跟著") && $("#resyncBudget").hidden);
-// Typing turns them into 🧪's what-if, and the tick must stop overwriting them.
-$("#proactiveSentToday").value = "0"; fire("#proactiveSentToday", "input");
-ok("typing in one makes them a hypothesis",
-   !$("#resyncBudget").hidden && $("#budgetCard").classList.contains("is-hypothetical"));
-W2.syncBudgetFields();
-ok("...which a later sync must not overwrite", $("#proactiveSentToday").value === "0");
-$("#resyncBudget").click();
-ok("回到真實數值 puts the state back", $("#proactiveSentToday").value === "3");
-ok("...and drops the hypothesis marker",
-   $("#resyncBudget").hidden && !$("#budgetCard").classList.contains("is-hypothetical"));
-// The two fields feed the manual trigger only; the scheduler reads the state.
-ok("only the 🧪 trigger reads the fields",
+W2.renderTriggerHints();
+ok("the budget hints read proactive_state",
+   $("#sinceLastHint").textContent.includes("7 分鐘前") && $("#sentTodayHint").textContent.includes("講了 3 則"),
+   `${$("#sinceLastHint").textContent} / ${$("#sentTodayHint").textContent}`);
+ok("...and say which way each rule goes right now",
+   $("#sinceLastHint").textContent.includes("會被擋下") && $("#sentTodayHint").textContent.includes("會通過"));
+ok("...with nothing to type into on the card itself",
+   $("#budgetCard").querySelectorAll("input").length === 0 && !$("#resyncBudget"));
+ok("only 自己編一個狀況 reads the typed numbers; the scheduler reads the state",
    /minutes_since_last: Number\(\$\("#proactiveSinceLast"\)\.value\)/.test(script)
    && /minutes_since_last: minutesSinceLastProactive\(\)/.test(script));
 
@@ -876,6 +906,23 @@ ok("a spoken 閒聊 counts toward 今日已發送", $t.workspace.proactive_state
 // 第二堂 is done once 豆豆 has actually spoken first; the day run that used to
 // set this is gone.
 ok("speaking first marks 第二堂 complete", $t.workspace.progress.workshop_2_completed === true);
+
+// --- 第二堂: no new message while 豆豆 is still answering ------------------
+// Every send is another paid turn; 第一堂 keeps typed barge-in, which is its lesson.
+$t.switchStage(2);
+$t.setReplying(true);
+ok("第二堂 locks 送出 while a reply is in flight",
+   $t.composerLocked() && $("#chatForm .send-button").disabled);
+$("#chatInput").value = "再問一句";
+$("#chatForm").dispatchEvent(new win.Event("submit", { bubbles: true, cancelable: true }));
+ok("...and keeps what she typed instead of sending it", $("#chatInput").value === "再問一句");
+$t.switchStage(1);
+ok("第一堂 never locks: typing over 豆豆 is that lesson",
+   !$t.composerLocked() && !$("#chatForm .send-button").disabled);
+$t.setReplying(false);
+$t.switchStage(2);
+ok("the lock lifts when the reply is done", !$t.composerLocked() && !$("#chatForm .send-button").disabled);
+$("#chatInput").value = "";
 
 // --- the header block stays put while the fields scroll -------------------
 ok("both panels have a sticky header", document.querySelectorAll(".lab-sticky").length === 2);

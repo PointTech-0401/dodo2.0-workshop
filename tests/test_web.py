@@ -864,24 +864,29 @@ def test_proactive_can_actually_speak_first() -> None:
         encoding="utf-8"
     )
 
-    assert 'id="triggerProactive"' in page
-    assert 'fetch("/api/proactive-decide"' in script
+    # Two ways to speak first: the real clock, or a typed what-if. The decline
+    # has no what-if of its own: both read 主動規則's 「她剛說不想聊」 button.
+    assert 'id="triggerProactive"' in page and 'data-trigger-mode="manual"' in page
+    assert 'id="proactiveDeclined"' not in page
     assert "async function triggerProactive()" in script
+    assert 'fetch("/api/proactive-decide"' in script
+    # No emoji on the two mode buttons.
+    assert "⏰" not in page and "🧪" not in page
     # Response-level instructions REPLACE the session's, so the persona has to
     # travel with the proactive brief.
     assert "function proactiveTurnInstructions(event, time)" in script
     assert "if (instructions) response.instructions = instructions;" in script
-    # A proactive message must not talk over 豆豆's current sentence. The guard
-    # lives in the speak path both the manual button and the 待提醒 scheduler use,
-    # so a scheduled reminder cannot interrupt what a manual one may not.
+    # A proactive message must not talk over 豆豆's current sentence.
     speak = script.split("async function speakProactive(event, time) {")[1].split("\n}\n")[0]
     assert "if (isDodoSpeaking())" in speak
-    assert "sendProactiveResponse(proactiveTurnInstructions(" in speak
+    # The event goes into the conversation as its own item before the response:
+    # a bare response.create answered her last question a second time.
+    assert "sendProactiveResponse(proactiveBrief(event, time), proactiveTurnInstructions(event, time));" in speak
+    send = script.split("function sendProactiveResponse(brief, instructions) {")[1].split("\n}\n")[0]
+    assert 'role: "system"' in send and send.index("conversation.item.create") < send.index("responseCreateEvent(")
     # The type travels with it: a spoken 重要提醒 moves the interval clock but
     # does not spend 每日上限 (uicheck.js drives both cases).
     assert "recordProactiveSpoken(event.type);" in speak
-    trigger = script.split("async function triggerProactive() {")[1].split("\n}\n")[0]
-    assert "await speakProactive(event, time)" in trigger
     # The dead endpoint nothing ever called is gone.
     assert "/api/proactive-message" not in server
     assert "/api/proactive-message" not in script
@@ -1107,6 +1112,9 @@ def test_scheduled_reminders_fire_on_the_real_clock() -> None:
     # so the schema-1 spellings silently handed `choose_event` its defaults
     # (「24 小時沒講話、今天還沒講過」) and every gate passed for the wrong reason.
     assert "minutes_since_last: minutesSinceLastProactive()" in fire
+    trigger = script.split("async function triggerProactive() {")[1].split("\n}\n")[0]
+    assert "await speakProactive(event, time)" in trigger
+    assert "user_declined: isDeclinedNow()," in trigger
     assert "sent_today: proactiveState().sent_today" in fire
     assert "minutes_since_last_message" not in script and "messages_today" not in script
     # 「她剛說不想聊」 writes real state with an expiry, so a scheduled item DOES
@@ -1456,7 +1464,7 @@ def test_the_proactive_half_is_rules_then_the_place_they_run() -> None:
     for heading in ("一、真的開口", "二、產生今日摘要"):
         assert heading in live and heading not in rules, heading
     # Nothing on 主動規則 can make 豆豆 speak, and the two knobs stay with it.
-    assert 'id="triggerProactive"' in live and 'id="addSchedule"' in live
+    assert 'id="addSchedule"' in live and 'id="scheduleInOneMinute"' in live and 'id="triggerProactive"' in live
     assert 'id="runTodaySummary"' in live and 'id="runTodaySummary"' not in rules
     assert 'id="cooldown"' in rules and 'id="dailyLimit"' in rules
     # Each half points at the other, so neither reads as the whole story.

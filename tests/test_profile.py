@@ -198,12 +198,13 @@ def test_the_prompt_opens_with_the_four_attitude_blocks() -> None:
 
 
 def test_the_elder_section_is_generated_from_the_care_file() -> None:
-    """Everything here was typed into 建檔 — except the phone, deliberately withheld."""
+    """Everything here was typed into 建檔 — except 姓名、房號 and the phone,
+    deliberately withheld: they are for the caregiver, not for 豆豆."""
 
     prompt = reference_prompt()
 
     assert "# 長者資料\n稱呼：秀蘭阿嬤" in prompt
-    assert "姓名：邱秀蘭（房號 305）" in prompt
+    assert "邱秀蘭" not in prompt and "305" not in prompt and "姓名" not in prompt
     assert "她會的事（可以請教）：煮麵" in prompt
     assert "作息：05:00 起床、21:30 就寢" in prompt
     assert "不打擾時段：早餐 06:30–07:00、午餐 11:00–11:30、午睡 12:30–14:00、歌唱班 15:00–16:00（週二、四）" in prompt
@@ -471,3 +472,37 @@ def test_the_students_own_version_survives_a_round_trip() -> None:
     # No 自訂 is no key at all, not an empty one.
     assert "custom" not in normalize_workspace(None)["profile"]["agent"]
     assert "custom" not in normalize_workspace({"schema_version": 2, "profile": {"agent": {"custom": "x"}}})["profile"]["agent"]
+
+
+def test_the_students_own_workshop2_rules_survive_a_round_trip() -> None:
+    """第二堂的「自訂」：學生自己改的四格對話規範，跟三個範例放在一起，存檔、載入都要帶著。"""
+
+    blocks = {**WORKSHOP2_PROMPT_BLOCKS, "attitude_chat": "我自己寫的閒聊規範"}
+    workspace = normalize_workspace({"schema_version": 2, "profile": {"workshop2_custom": {"blocks": blocks}}})
+
+    assert workspace["profile"]["workshop2_custom"] == {"blocks": blocks}
+    assert normalize_workspace(workspace) == workspace
+    # Missing boxes fill in from the defaults, like any older file.
+    partial = normalize_workspace(
+        {"schema_version": 2, "profile": {"workshop2_custom": {"blocks": {"attitude_chat": "只改這格"}}}}
+    )["profile"]["workshop2_custom"]["blocks"]
+    assert partial["attitude_chat"] == "只改這格"
+    assert partial["memory_use"] == WORKSHOP2_PROMPT_BLOCKS["memory_use"]
+    # No 自訂 is no key at all; the 自訂 never changes what is sent.
+    assert "workshop2_custom" not in normalize_workspace(None)["profile"]
+    assert "workshop2_custom" not in normalize_workspace({"schema_version": 2, "profile": {"workshop2_custom": "x"}})["profile"]
+    assert workspace["profile"]["workshop2_blocks"] == WORKSHOP2_PROMPT_BLOCKS
+
+
+def test_without_a_chosen_address_she_is_called_by_surname() -> None:
+    """沒填稱呼時叫「邱小姐」，不是全名；人格那一半也跟著叫同一個稱呼。"""
+
+    workspace = copy.deepcopy(normalize_workspace(None))
+    workspace["profile"]["elder_profile"]["name"] = "邱秀蘭"
+    workspace["profile"]["elder_profile"]["address"] = ""
+    workspace["profile"]["agent"]["address"] = "王奶奶"
+
+    full = compose_full_instructions(workspace)
+    assert "# 長者資料\n稱呼：邱小姐" in full
+    assert "陪伴 邱小姐" in full
+    assert "邱秀蘭" not in full and "王奶奶" not in full

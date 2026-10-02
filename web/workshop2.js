@@ -64,19 +64,20 @@ const RULE_PRESETS = [
     blocks: null,
   },
   {
-    id: "brief",
-    label: "話少型",
-    hint: "能不開口就不開口；開口只講一件事，不追問",
+    id: "verbose",
+    label: "囉嗦型",
+    hint: "話很多：每件事都多講幾句、多問幾句、多叮嚀",
     blocks: {
       memory_use: `記憶分三層，用 read_memory 讀、用 update_memory 寫，寫入時指定 layer：
 A 重要事實（layer=A）：過敏、慢性病、醫囑、緊急聯絡人、長期偏好。同一個 key 可以並存多筆。標［護理員］的你不能改也不能刪。
 B 近期事件（layer=B）：這幾天的身體與心情。同一件事新的取代舊的：她說好多了就用 mode="replace" 換掉。
 C 跨日摘要：由系統整理，不要自己寫。
 不保存：密碼、卡號、帳號、驗證碼；第三人的健康；對任何人的評價。也不要在對話中複誦。
-寫記憶不要說出來打斷她。只有她問起、或那件事正好要用到時才提記憶，其他時候記住就好。`,
-      attitude_reminder: `一句話：稱呼＋時間＋要做的事。不解釋、不叮嚀、不加關心語。說完就結束，不接話題。`,
-      attitude_health: `只問一句「今天還好嗎」，等她回答。她說好了就用 update_memory 換掉那一筆；她說不好，聽完回一句就好，不追問、不給建議。她沒有要講就不要再問。`,
-      attitude_chat: `除非她先開口，否則不主動閒聊。真的要開口就講一句，講完等她。她沒有接話就結束，不要再找話題。`,
+她問你記得什麼，就把記得的事一件一件全部講出來，每一件都多補充幾句、順便問她現在怎麼樣。
+讀或寫記憶之前，先用一句話說明你正要做什麼（這句開場叫 preamble）。`,
+      attitude_reminder: `先叫她的稱呼，講時間和要做的事，再說明為什麼要做、忘了會怎樣。講完再叮嚀一次，順便問她今天過得好不好。`,
+      attitude_health: `先問感覺，再接著問什麼時候開始、跟昨天比怎麼樣、有沒有跟護理師說。最後叮嚀她要多注意、慢慢來。她說好了，就用 update_memory 把那一筆換掉，再多陪她聊幾句。`,
+      attitude_chat: `從她的興趣起頭，一次可以聊好幾件事，每一件都多講幾句自己的想法，再接著問她兩三個問題。她回答了就順著再問下去，不要讓話題停下來。碰到「不主動提起」清單裡的事，等她自己開口。`,
     },
   },
   {
@@ -110,6 +111,8 @@ const INTAKE_SCALARS = [
   ["#elderLanguage", "language"], ["#elderBackground", "background"],
   ["#elderWake", "wake_time"], ["#elderBed", "bed_time"],
 ];
+// 這一堂只有秀蘭阿嬤，所以姓名填好、不給改；稱呼留給學生照訪談稿 §5 填。
+const FIXED_ELDER_NAME = "邱秀蘭";
 const FACT_TAGS = ["interest", "preference", "medical_note"];
 const SYMPTOM_TAGS = ["symptom", "note"];
 const ROW_KINDS = {
@@ -244,7 +247,9 @@ function mergeCaregiver(existing, rows) {
 }
 
 function writeIntake({ elder, facts, events }) {
-  INTAKE_SCALARS.forEach(([selector, field]) => { $(selector).value = elder[field] || ""; });
+  INTAKE_SCALARS.forEach(([selector, field]) => {
+    $(selector).value = field === "name" ? FIXED_ELDER_NAME : elder[field] || "";
+  });
   $("#elderExpertise").value = (elder.expertise || []).join("、");
   renderRows("routine", elder.routines);
   renderRows("medication", elder.medications);
@@ -275,7 +280,7 @@ function renderIntakeHints() {
     ? `${meds} 筆用藥會變成重要提醒，不受間隔與上限限制，也不算今天的次數。`
     : "還沒有用藥：豆豆不會有任何重要提醒可以講。";
   $("#hintSymptoms").textContent = symptoms
-    ? `${symptoms} 筆症狀會變成健康關心的題材：豆豆會挑時間問「還好嗎」，她說好了就換掉那一筆。標「短期念頭」的不會被拿去問，它們是閒聊的材料。`
+    ? `${symptoms} 筆症狀會變成健康關心的題材：豆豆會挑時間問「還好嗎」，她說好了就換掉那一筆。標「短期念頭」的不會被拿去問，短期念頭是閒聊的材料。`
     : "還沒有症狀：豆豆沒有健康關心可以問。";
   $("#hintTaboos").textContent = `${taboos} 個禁區會進 Prompt 的「# 不主動提起」；${declined} 句決定不記，不會進任何地方。`;
 }
@@ -391,6 +396,7 @@ registerApplyGroup("workshop2", {
       read: () => workshop2BlocksFromFields(),
       write: (blocks) => {
         WORKSHOP2_BLOCKS.forEach(([key, , selector]) => { $(selector).value = blocks[key] ?? ""; });
+        syncCustomRulePreset();
       },
     },
     tabW2Policy: {
@@ -433,13 +439,10 @@ function loadFields() {
   WORKSHOP2_BLOCKS.forEach(([key, , selector]) => {
     $(selector).value = workspace.profile.workshop2_blocks?.[key] ?? "";
   });
+  syncCustomRulePreset();
   // The two knobs are the whole of proactive_policy now.
   $("#cooldown").value = proactive.interval_minutes;
   $("#dailyLimit").value = proactive.daily_limit;
-  // 累積量那兩格是 proactive_state 的顯示，不是常數：F5 之後它們以前一律停在
-  // HTML 的 999／0，就算今天真的已經送了三則。
-  budgetFieldsFollowState = true;
-  syncBudgetFields();
   renderDeclineState();
   scheduleIntakeCheck();
 }
@@ -451,28 +454,74 @@ function workshop2BlocksFromFields() {
   ]));
 }
 
+// Same idea as 第一堂's 人格版本: the three presets are the system's and never
+// change. Whatever the four boxes hold that is not one of them is the student's
+// 自訂, kept in `profile.workshop2_custom` the moment it exists, so trying a
+// preset to compare never costs them their own version.
+const CUSTOM_RULE_PRESET = "custom";
+
 /** 陪伴型 is whatever profile.py ships, so the preset list cannot drift from the
  *  defaults. Called once at boot, after bootstrap has arrived. */
 function renderRulePresets() {
   RULE_PRESETS[0].blocks = structuredClone(bootstrapData.default_workspace.profile.workshop2_blocks);
   $("#rulePresets").innerHTML = RULE_PRESETS.map((preset) =>
-    `<button type="button" class="preset-button" data-rule-preset="${preset.id}" title="${escapeHtml(preset.hint)}">${escapeHtml(preset.label)}<small>${escapeHtml(preset.hint)}</small></button>`).join("");
+    `<button type="button" class="preset-button" data-rule-preset="${preset.id}" title="${escapeHtml(preset.hint)}">${escapeHtml(preset.label)}<small>${escapeHtml(preset.hint)}</small></button>`).join("")
+    + `<button type="button" class="preset-button preset-custom" data-rule-preset="${CUSTOM_RULE_PRESET}" title="你自己改過的版本：改一個字就會記在這裡，換去試別的範例也不會不見">自訂<small>還沒改過</small></button>`;
   $$("#rulePresets .preset-button").forEach((button) => {
     button.addEventListener("click", () => applyRulePreset(button.dataset.rulePreset));
   });
+  syncCustomRulePreset();
 }
 
-/** Load one 規範範例 into the four textareas. Touches nothing else — not 建檔,
- *  not the two 主動 numbers — which is the claim the tab is making: same data,
- *  different way of speaking. Nothing reaches the session until 套用. */
+/** Which version the four boxes show right now. */
+function currentRulePresetId() {
+  const blocks = workshop2BlocksFromFields();
+  const match = RULE_PRESETS.find((preset) => preset.blocks
+    && WORKSHOP2_BLOCKS.every(([key]) => String(preset.blocks[key] ?? "").trim() === blocks[key]));
+  return match ? match.id : CUSTOM_RULE_PRESET;
+}
+
+/** Record the boxes as 自訂 when they are not a preset, then light up the button
+ *  for whatever is on screen. Called on every edit, load and revert. */
+function syncCustomRulePreset() {
+  if (!RULE_PRESETS[0].blocks) return; // before bootstrap: nothing to compare with
+  const active = currentRulePresetId();
+  if (active === CUSTOM_RULE_PRESET) {
+    const custom = { blocks: workshop2BlocksFromFields() };
+    if (JSON.stringify(custom) !== JSON.stringify(workspace.profile.workshop2_custom)) {
+      workspace.profile.workshop2_custom = custom;
+      saveProject();
+    }
+  }
+  $$("#rulePresets .preset-button").forEach((button) => {
+    const on = button.dataset.rulePreset === active;
+    button.classList.toggle("is-active", on);
+    button.setAttribute("aria-pressed", String(on));
+  });
+  const customButton = $(`#rulePresets [data-rule-preset="${CUSTOM_RULE_PRESET}"]`);
+  if (!customButton) return;
+  const saved = workspace.profile.workshop2_custom;
+  customButton.disabled = !saved;
+  customButton.querySelector("small").textContent = saved ? "你改過的版本" : "還沒改過";
+}
+
+/** Load one 規範範例, or the student's 自訂, into the four textareas. Touches
+ *  nothing else — not 建檔, not the two 主動 numbers — which is the claim the tab
+ *  is making: same data, different way of speaking. Nothing reaches the session
+ *  until 套用. */
 function applyRulePreset(id) {
-  const preset = RULE_PRESETS.find((item) => item.id === id);
+  const saved = workspace.profile.workshop2_custom;
+  const preset = id === CUSTOM_RULE_PRESET
+    ? saved && { label: "自訂", blocks: saved.blocks }
+    : RULE_PRESETS.find((item) => item.id === id);
   if (!preset) return;
   WORKSHOP2_BLOCKS.forEach(([key, , selector]) => { $(selector).value = preset.blocks[key] ?? ""; });
   rebuildWorkshop2Prompt();
+  syncCustomRulePreset();
   // Assigning .value fires no input event, so 套用 has to be told by hand.
   refreshApplyState();
-  notify(`已載入「${preset.label}」規範範例。建檔完全沒有動；按「套用」才會生效。`);
+  const what = id === CUSTOM_RULE_PRESET ? "你的自訂版本" : `「${preset.label}」規範範例`;
+  notify(`已載入${what}。建檔完全沒有動；按「套用」才會生效。`);
 }
 
 // --- 同一句話，前後對照 ----------------------------------------------------
@@ -514,7 +563,10 @@ async function askCompare() {
   if (compareTurns.length >= 2) compareTurns = [compareTurns[1]];
   renderCompareResult("正在問豆豆…");
   try {
-    sendText(question);
+    if (!(await sendText(question))) {
+      renderCompareResult("豆豆還在回答，等豆豆說完再按一次。");
+      return;
+    }
     const answer = await awaitDodoReply();
     if (!answer) {
       renderCompareResult("等不到回答。看一下聊天室發生什麼事，再按一次。");
@@ -652,14 +704,20 @@ function appointmentText(appointment) {
   return note ? `${text}（${note}）` : text;
 }
 
-/** `# 長者資料`, generated from the 建檔. The emergency phone never enters the
- *  prompt: it is the caregiver's, not 豆豆's. */
+/** What 豆豆 calls her: the 稱呼 she asked for; with none, 姓＋小姐 (邱小姐),
+ *  never the full name. Mirrors `elder_address`. */
+function addressFor(elder = {}, fallback = "") {
+  const address = clean(elder.address);
+  if (address) return address;
+  const name = clean(elder.name);
+  if (name) return `${name[0]}小姐`;
+  return fallback || "長者";
+}
+
+/** `# 長者資料`, generated from the 建檔. 姓名、房號 and the emergency phone
+ *  never enter the prompt: they are the caregiver's, not 豆豆's. */
 function composeElderSection(elder, address) {
   const lines = [`稱呼：${address}`];
-  const name = clean(elder.name);
-  const room = clean(elder.room);
-  if (name) lines.push(`姓名：${name}${room ? `（房號 ${room}）` : ""}`);
-  else if (room) lines.push(`房號：${room}`);
   lines.push(`居住城市：${elder.city || "未提供"}（問天氣沒有指定城市時用這個）`);
   [["語言", "language"], ["背景", "background"]].forEach(([label, key]) => {
     if (clean(elder[key])) lines.push(`${label}：${clean(elder[key])}`);
@@ -718,7 +776,7 @@ function buildWorkshop2Prompt(source) {
   const agent = profile.agent || {};
   const elder = profile.elder_profile || {};
   const policy = { ...DEFAULT_PROACTIVE_POLICY, ...(profile.proactive_policy || {}) };
-  const address = String(elder.address || agent.address || "長者");
+  const address = addressFor(elder, String(agent.address || ""));
   const replacements = { "{AGENT_NAME}": String(agent.name || "豆豆"), "{USER_ADDRESS}": address };
   const defaults = bootstrapData?.default_workspace?.profile?.workshop2_blocks || {};
   const blocks = profile.workshop2_blocks || {};
@@ -951,10 +1009,11 @@ function syncIntakeAfterMemoryChange() {
 
 /** Whoever 豆豆 is talking to, by name. */
 function elderAddress() {
-  return $("#elderAddress")?.value.trim()
-    || workspace?.profile?.elder_profile?.address
-    || $("#agentAddress")?.value.trim()
-    || "長者";
+  const elder = workspace?.profile?.elder_profile || {};
+  return addressFor(
+    { address: $("#elderAddress")?.value || elder.address, name: $("#elderName")?.value || elder.name },
+    $("#agentAddress")?.value.trim() || "",
+  );
 }
 
 const pad2 = (value) => String(value).padStart(2, "0");
@@ -1073,7 +1132,7 @@ function declineExpiry(now = new Date()) {
 }
 
 /** Whether she has declined and it has not expired yet. This is the `user_declined`
- *  a *real* trigger sends; the 🧪 checkbox is a hypothesis for the manual one. */
+ *  every scheduled item sends. */
 function isDeclinedNow() {
   const until = proactiveState().declined_until;
   return Boolean(until) && new Date(until).getTime() > Date.now();
@@ -1191,31 +1250,57 @@ function renderBlockingRuleNow(schedule, policy, intervalCap) {
     : `<strong>現在閒聊過得去。</strong>${tighter}`;
 }
 
-/** The manual trigger's fields are the only inputs to 間隔 and 每日上限; 安靜與
- *  不打擾 come from 建檔 instead. These hints bring both numbers here and say
- *  which way each comparison goes. */
+/** 間隔 and 每日上限 read the real record; 安靜與不打擾 come from 建檔. These
+ *  hints bring all of it next to the time being scheduled and say which way
+ *  each comparison goes right now. */
 function renderTriggerHints() {
   const policy = proactivePolicyFromFields();
   const schedule = scheduleNow();
 
+  // The time being scheduled, measured against her 作息 — so a 健康關心 set
+  // inside her 午睡 says so before it is added, not a minute later.
+  const at = $("#scheduleTime").value || nowHhmm();
+  const minute = parseHhmm(at) ?? 12 * 60;
+  const dnd = schedule.dnd.find((window) => windowContains(window, minute));
+  if (windowContains(schedule.quiet, minute)) {
+    $("#nowHint").textContent = `${at} 落在她的安靜時段（${formatMinutes(schedule.quiet.start)}–${formatMinutes(schedule.quiet.end)}），只有重要提醒過得去。`;
+  } else if (dnd) {
+    $("#nowHint").textContent = `${at} 她在${dnd.label}（${formatMinutes(dnd.start)}–${formatMinutes(dnd.end)}），只有重要提醒過得去。`;
+  } else {
+    $("#nowHint").textContent = schedule.quiet
+      ? `${at} 不在安靜或不打擾時段，這一關會通過。`
+      : `建檔還沒填睡眠時段，所以沒有安靜時段，這一關一律通過。`;
+  }
+
+  const sinceLast = minutesSinceLastProactive();
+  const sinceText = proactiveState().last_spoken_at ? `上一次是 ${sinceLast} 分鐘前` : "今天還沒主動找過她";
+  $("#sinceLastHint").textContent = `間隔 ${policy.interval_minutes} 分鐘：${sinceText} → 健康關心和閒聊現在${sinceLast < policy.interval_minutes ? "會被擋下" : "會通過"}。`;
+
+  const sentToday = proactiveState().sent_today;
+  $("#sentTodayHint").textContent = `每日上限 ${policy.daily_limit} 則：今天講了 ${sentToday} 則 → ${sentToday >= policy.daily_limit ? "會被擋下" : "會通過"}。重要提醒不算次數，所以這一關管不到重要提醒。`;
+
+  renderManualHints(policy, schedule);
+}
+
+/** 自己編一個狀況: the same comparisons, against the numbers typed in. */
+function renderManualHints(policy, schedule) {
   const now = $("#proactiveNow").value || "12:00";
   const minute = parseHhmm(now) ?? 12 * 60;
   const dnd = schedule.dnd.find((window) => windowContains(window, minute));
   if (windowContains(schedule.quiet, minute)) {
-    $("#nowHint").textContent = `${now} 落在她的安靜時段（${formatMinutes(schedule.quiet.start)}–${formatMinutes(schedule.quiet.end)}），只有重要提醒過得去。`;
+    $("#manualNowHint").textContent = `${now} 落在她的安靜時段，只有重要提醒過得去。`;
   } else if (dnd) {
-    $("#nowHint").textContent = `${now} 她在${dnd.label}（${formatMinutes(dnd.start)}–${formatMinutes(dnd.end)}），只有重要提醒過得去。`;
+    $("#manualNowHint").textContent = `${now} 她在${dnd.label}，只有重要提醒過得去。`;
   } else {
-    $("#nowHint").textContent = schedule.quiet
-      ? `${now} 不在安靜或不打擾時段，這一關會通過。`
-      : `建檔還沒填睡眠時段，所以沒有安靜時段，這一關一律通過。`;
+    $("#manualNowHint").textContent = schedule.quiet ? `${now} 不在安靜或不打擾時段，會通過。` : "建檔還沒填睡眠時段，一律通過。";
   }
-
   const sinceLast = Number($("#proactiveSinceLast").value) || 0;
-  $("#sinceLastHint").textContent = `對上間隔 ${policy.interval_minutes} 分鐘：小於 ${policy.interval_minutes} 就會被擋下。現在填 ${sinceLast} → ${sinceLast < policy.interval_minutes ? "會被擋下" : "會通過"}。`;
-
+  $("#manualSinceHint").textContent = `間隔 ${policy.interval_minutes} 分鐘 → ${sinceLast < policy.interval_minutes ? "會被擋下" : "會通過"}`;
   const sentToday = Number($("#proactiveSentToday").value) || 0;
-  $("#sentTodayHint").textContent = `對上每日上限 ${policy.daily_limit} 則：達到 ${policy.daily_limit} 就會被擋下。現在填 ${sentToday} → ${sentToday >= policy.daily_limit ? "會被擋下" : "會通過"}。重要提醒不算次數，所以這一關管不到它。`;
+  $("#manualSentHint").textContent = `每日上限 ${policy.daily_limit} 則 → ${sentToday >= policy.daily_limit ? "會被擋下" : "會通過"}`;
+  $("#manualDeclineNote").innerHTML = isDeclinedNow()
+    ? "「她剛說不想聊」<strong>現在有按</strong>：閒聊和健康關心會被擋下。要取消，回主動規則第 2 條再按一次。"
+    : "「她剛說不想聊」現在沒有按。要試這一條，到主動規則按第 2 條的按鈕。";
 }
 
 /** 健康關心 speaks about a symptom she actually has, so the content comes from
@@ -1256,8 +1341,13 @@ function todayKey() {
   return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
 }
 
-/** Real spend so far today, as opposed to the manual trigger's what-if numbers.
- *  Rolls over at midnight so 每日上限 means one day. */
+/** HH:MM of the wall clock, `minutesAhead` from now. */
+function nowHhmm(minutesAhead = 0) {
+  const at = new Date(Date.now() + minutesAhead * 60000);
+  return `${pad2(at.getHours())}:${pad2(at.getMinutes())}`;
+}
+
+/** Real spend so far today. Rolls over at midnight so 每日上限 means one day. */
 function proactiveState() {
   if (!workspace.proactive_state || typeof workspace.proactive_state !== "object") {
     workspace.proactive_state = { last_spoken_at: null, sent_today: 0, day: "", declined_until: null };
@@ -1276,45 +1366,7 @@ function minutesSinceLastProactive() {
   return Math.max(0, Math.floor((Date.now() - new Date(state.last_spoken_at).getTime()) / 60000));
 }
 
-// 累積量那兩格有兩個身分：平常是 `proactive_state` 的顯示，被改過之後才是 🧪 的假設。
-// 預設「跟著真實紀錄」，學生一動手就停止跟隨（否則每 5 秒的 tick 會把他打的字洗掉），
-// 按「把上面兩格改回真實數值」再跟回去。
-//
-// ⚠️ 這兩格**只餵手動觸發**：`fireScheduledItem()` 讀的是 `proactive_state`，不是欄位。
-// 跟隨機制的用途是讓「顯示」這個身分名副其實：以前重新整理之後它們一律停在
-// HTML 的 999／0，就算 proactive_state 記著今天已經送了三則也一樣。
-let budgetFieldsFollowState = true;
-
-/** Write the real accumulated numbers into the two fields, while they are still
- *  following. Assigning `.value` fires no input event, so this never counts as
- *  the student editing them. */
-function syncBudgetFields() {
-  if (budgetFieldsFollowState) {
-    $("#proactiveSinceLast").value = minutesSinceLastProactive();
-    $("#proactiveSentToday").value = proactiveState().sent_today;
-    renderTriggerHints();
-  }
-  renderBudgetFollowState();
-}
-
-function renderBudgetFollowState() {
-  $("#budgetFollowNote").textContent = budgetFieldsFollowState
-    ? "上面兩格正跟著這一行走。"
-    : "上面兩格已經改成你的假設，不再跟著這一行。";
-  $("#resyncBudget").hidden = budgetFieldsFollowState;
-  $("#budgetCard").classList.toggle("is-hypothetical", !budgetFieldsFollowState);
-}
-
-function resyncBudgetFields() {
-  budgetFieldsFollowState = true;
-  syncBudgetFields();
-  notify("上面兩格已經改回真實的數字。");
-}
-
-/** One place records the cost of an actual proactive message, so the manual
- *  button and the scheduler can never disagree about the budget. After 豆豆 really
- *  speaks the two fields snap back to reality and resume following: a hypothesis
- *  that survived a real send would be a lie about what just happened.
+/** One place records the cost of an actual proactive message.
  *
  *  A 重要提醒 moves the interval clock (she was just spoken to) but never spends
  *  the daily budget, exactly as simulate_day() treats it. */
@@ -1325,8 +1377,6 @@ function recordProactiveSpoken(type) {
   // 第二堂 is done the first time 豆豆 actually opens its mouth first: the rules
   // let it through and it spoke. There is no score to reach.
   workspace.progress.workshop_2_completed = true;
-  budgetFieldsFollowState = true;
-  syncBudgetFields();
   saveProject();
   renderTriggerHints();
   renderProactiveLiveState();
@@ -1343,7 +1393,7 @@ function scheduledItems() {
   return workspace.scheduled;
 }
 
-const SCHEDULE_STATUS_LABELS = { pending: "等待中", spoken: "已說出", blocked: "被擋下" };
+const SCHEDULE_STATUS_LABELS = { pending: "等待中", spoken: "已說出", blocked: "被擋下", expired: "已過期" };
 // The three types schema 2 decides between — same set as bootstrap's
 // `event_types`, shortened for the list's narrow column.
 const SCHEDULE_KIND_LABELS = { reminder: "提醒", health: "健康", chat: "閒聊" };
@@ -1357,7 +1407,7 @@ function renderScheduleList() {
     return;
   }
   $("#scheduleList").innerHTML = items.map((item) => {
-    const due = item.status === "pending" && item.time <= `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+    const due = item.status === "pending" && item.time <= nowHhmm();
     const status = due ? "時間已到" : SCHEDULE_STATUS_LABELS[item.status] || item.status;
     // One line: 時間・類型・內容・狀態・×. The reason only takes a second line
     // when there is one — that sentence names the rule that blocked it, which
@@ -1381,6 +1431,13 @@ function nextScheduleId() {
   return `s${scheduleSeq}`;
 }
 
+/** 「1 分鐘後」: the demo's only clock is the real one, so the quickest honest
+ *  way to see an item fire is to set it a minute ahead. */
+function fillScheduleInOneMinute() {
+  $("#scheduleTime").value = nowHhmm(1);
+  renderTriggerHints();
+}
+
 function addSchedule() {
   const time = $("#scheduleTime").value;
   if (!time) {
@@ -1388,6 +1445,9 @@ function addSchedule() {
     return;
   }
   const topic = $("#proactiveTopic").value.trim();
+  // A minute that is already over never happens today. The current minute still
+  // counts as due, so 「現在」 fires on the next tick rather than expiring.
+  const expired = time < nowHhmm();
   scheduledItems().push({
     // Not derived from list length: delete-then-add would otherwise reuse an id
     // that is still on the list, and 刪除 would take out both rows.
@@ -1395,14 +1455,16 @@ function addSchedule() {
     type: $("#proactiveEventType").value,
     topic,
     time,
-    status: "pending",
-    reason: "",
+    status: expired ? "expired" : "pending",
+    reason: expired ? `加入時已經過了 ${time}，這一筆不會發生。` : "",
   });
   saveProject();
   renderScheduleList();
-  notify(`已加入 ${time} 的「${PROACTIVE_EVENT_LABELS[$("#proactiveEventType").value] || ""}」提醒${topic ? `：${topic}` : ""}。到時間會自己跑一次規則。`);
-  // Fire straight away when the chosen time has already passed, instead of
-  // making the room wait up to 5 seconds to see anything happen.
+  const label = PROACTIVE_EVENT_LABELS[$("#proactiveEventType").value] || "";
+  notify(expired
+    ? `${time} 已經過了，這一筆標成「已過期」，不會發生。按「1 分鐘後」排一個還沒到的時間。`
+    : `已加入 ${time} 的「${label}」提醒${topic ? `：${topic}` : ""}。到時間會自己跑一次規則。`);
+  // The current minute is due already; do not make the room wait 5 seconds.
   tickScheduler();
 }
 
@@ -1415,9 +1477,8 @@ function deleteSchedule(id) {
   if (removed) notify(`已刪除 ${removed.time} 的待提醒項目。`);
 }
 
-/** One scheduled item, decided and (if allowed) spoken. Uses the REAL clock and
- *  the REAL accumulated spend — that is the difference from the manual trigger,
- *  and the reason the time field now means something. */
+/** One scheduled item, decided and (if allowed) spoken, on the REAL clock and
+ *  the REAL accumulated spend. */
 async function fireScheduledItem(item) {
   const now = new Date();
   const time = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
@@ -1428,10 +1489,10 @@ async function fireScheduledItem(item) {
     type: item.type,
     minutes_since_last: minutesSinceLastProactive(),
     sent_today: proactiveState().sent_today,
-    // The REAL decline, not the 🧪 checkbox beside the manual trigger: 「她剛說
-    // 不想聊」 writes state with an expiry, so this is a signal a scheduled item
-    // should respect. A 吃藥提醒 still gets through — `choose_event` clears
-    // reminders before it ever looks at this — and that asymmetry is the lesson.
+    // 「她剛說不想聊」 writes state with an expiry, so this is a signal a
+    // scheduled item should respect. A 吃藥提醒 still gets through —
+    // `choose_event` clears reminders before it ever looks at this — and that
+    // asymmetry is the lesson.
     user_declined: isDeclinedNow(),
   });
   if (!decision) {
@@ -1467,9 +1528,8 @@ async function fireScheduledItem(item) {
 async function tickScheduler() {
   renderScheduleList();
   renderProactiveLiveState();
-  // 距上次 grows with the clock, so a field that claims to show it has to be
-  // redrawn here too — but only while it is still following.
-  syncBudgetFields();
+  // 距上次 grows with the clock, so the hints that quote it are redrawn here too.
+  renderTriggerHints();
   // A decline expires by itself, and so does the band's 現在 marker. Decisions
   // read isDeclinedNow() fresh so they were always right, but nothing redrew the
   // display — leaving the button claiming she still refuses long after she
@@ -1477,7 +1537,7 @@ async function tickScheduler() {
   renderDeclineState();
   renderPolicyPreview();
   if (!$("#scheduleAuto").checked || schedulerBusy) return;
-  const nowText = `${pad2(new Date().getHours())}:${pad2(new Date().getMinutes())}`;
+  const nowText = nowHhmm();
   const order = Object.keys(bootstrapData?.event_types || {});
   const rank = (item) => {
     const index = order.indexOf(item.type);
@@ -1501,20 +1561,12 @@ function startScheduler() {
 }
 
 // =====================================================================
-// 觸發主動 had three stacked blocks: a shared 事件 form with no heading of its
-// own, then A and B. The only real difference between A and B is which clock
-// decides, so that became the switch and the headings went away.
+// Two ways to make 豆豆 speak first. The only real difference is which clock
+// and which numbers decide, so that is the switch.
 // =====================================================================
 const TRIGGER_MODE_NOTES = {
   schedule: "看<strong>真實時鐘</strong>，也看她今天真的被找過幾次。時間一到，瀏覽器代替後台推一次事件，走同一套七條規則。每一筆只會發生一次。",
-  manual: "現在幾點、她有沒有剛說不想聊，全部是<strong>你假設的</strong>；加上面那兩格的數字，一次一次去戳規則的邊界，例如「如果現在是凌晨三點呢」。不影響下面的待提醒清單。",
-};
-
-// 上面那張累積量卡在兩種模式下的意義不一樣，講清楚是哪一種才不會有人在 ⏰ 模式下
-// 填了數字卻發現它不算數。
-const BUDGET_MODE_NOTES = {
-  schedule: "⏰ 排一個真的時間：規則看的是下面那一行真實紀錄。上面兩格在這個模式下<strong>只是顯示</strong>，改了不影響判斷。",
-  manual: "🧪 自己編一個狀況：規則看的就是<strong>上面兩格</strong>，你填什麼它就信什麼。",
+  manual: "現在幾點、上一次是多久以前、今天講了幾則，都是<strong>你假設的</strong>，按一次就馬上跑規則，例如「如果現在是晚上九點四十五呢」。「她剛說不想聊」一樣看主動規則的按鈕。不影響下面的待提醒清單。",
 };
 
 function switchTriggerMode(mode) {
@@ -1526,8 +1578,36 @@ function switchTriggerMode(mode) {
     document.getElementById(button.getAttribute("aria-controls")).hidden = !isActive;
   });
   $("#triggerModeNote").innerHTML = TRIGGER_MODE_NOTES[target];
-  $("#budgetModeNote").innerHTML = BUDGET_MODE_NOTES[target];
-  renderBudgetFollowState();
+  renderTriggerHints();
+}
+
+/** 自己編一個狀況: the typed time and numbers, the REAL decline. A message that
+ *  gets through is really spoken and really recorded, like a scheduled one. */
+async function triggerProactive() {
+  collectWorkshop2();
+  const policy = workspace.profile.proactive_policy;
+  const time = $("#proactiveNow").value || "12:00";
+  const event = {
+    type: $("#proactiveEventType").value,
+    topic: $("#proactiveTopic").value.trim(),
+  };
+  const decision = await decideProactive(policy, {
+    time,
+    type: event.type,
+    minutes_since_last: Number($("#proactiveSinceLast").value) || 0,
+    sent_today: Number($("#proactiveSentToday").value) || 0,
+    user_declined: isDeclinedNow(),
+  });
+  if (!decision) return;
+
+  $("#proactiveDecision").textContent = decision.should_speak
+    ? `✓ 主動開口：${decision.reason}`
+    : `× 保持安靜：${decision.reason}`;
+  addMessage(
+    "tool",
+    `主動決策（${event.type} @ ${time}）：${decision.should_speak ? "主動開口" : "保持安靜"} — ${decision.reason}`,
+  );
+  if (decision.should_speak) await speakProactive(event, time);
 }
 
 // =====================================================================
@@ -1591,20 +1671,25 @@ const PROACTIVE_TURN_NOTES = {
   chat: "從她的興趣或她會的事起頭，可以請教她。不要製造壓力，也不要連續追問。",
 };
 
-function proactiveTurnInstructions(event, time) {
+/** The event itself. Sent twice on purpose: as a system item in the
+ *  conversation (so 豆豆 answers the event, not her last question) and at the
+ *  end of this turn's instructions. */
+function proactiveBrief(event, time) {
   return [
-    realtimeInstructions(),
-    [
-      "# 這一次主動開口",
-      `現在是 ${time}。你要「主動」開啟對話，不是回答問題，對方還沒說話。`,
-      `事件類型：${event.type}`,
-      `事件內容（這一句就是要講的題目，照它講）：${event.topic || "（未填寫）"}`,
-      // Fixed at 2 (spec §2.3): 每則句數 stopped being a field, so `policy` no
-      // longer carries it — reading it from there would print `undefined`.
-      `最多 ${MAX_MESSAGE_SENTENCES} 句，直接說出口，不要說明你為什麼現在開口。`,
-      PROACTIVE_TURN_NOTES[event.type] || PROACTIVE_TURN_NOTES.chat,
-    ].join("\n"),
-  ].filter((part) => part.trim()).join("\n\n");
+    "# 這一次主動開口",
+    `現在是 ${time}。這一則是你「主動」開啟的新話題，不是回答她前面說的話；前面的問題已經回答過了，不要再回答一次。`,
+    `事件類型：${event.type}`,
+    `事件內容（這一句就是要講的題目，照這一句講）：${event.topic || "（未填寫）"}`,
+    // Fixed at 2 (spec §2.3): 每則句數 stopped being a field, so `policy` no
+    // longer carries it — reading it from there would print `undefined`.
+    `最多 ${MAX_MESSAGE_SENTENCES} 句，直接說出口，不要說明你為什麼現在開口。`,
+    PROACTIVE_TURN_NOTES[event.type] || PROACTIVE_TURN_NOTES.chat,
+  ].join("\n");
+}
+
+function proactiveTurnInstructions(event, time) {
+  return [realtimeInstructions(), proactiveBrief(event, time)]
+    .filter((part) => part.trim()).join("\n\n");
 }
 
 /** Ask the server's `choose_event`. Returns null on
@@ -1624,14 +1709,12 @@ async function decideProactive(policy, scenario) {
     if (!response.ok) throw new Error(decision.detail || "主動決策失敗。");
     return decision;
   } catch (error) {
-    $("#proactiveDecision").textContent = error.message || "無法連接本機服務。";
+    notify(error.message || "無法連接本機服務。");
     return null;
   }
 }
 
-/** Let 豆豆 actually open its mouth, and charge the budget for it. Shared by the
- *  manual button and the scheduler, so a scheduled 16:00 提醒 costs exactly what
- *  a hand-triggered one costs.
+/** Let 豆豆 actually open its mouth, and charge the budget for it.
  *
  *  Returns "spoken", "busy" (talking right now — worth retrying) or
  *  "unavailable" (no session — waiting will not help). The scheduler needs the
@@ -1645,43 +1728,16 @@ async function speakProactive(event, time) {
   if (!(await connectRealtime())) return "unavailable";
   // A proactive message must not talk over 豆豆's current sentence.
   if (isDodoSpeaking()) {
-    notify("豆豆正在說話，等它說完再觸發主動關心。");
+    notify("豆豆正在說話，等豆豆說完再觸發主動關心。");
     return "busy";
   }
   setState("thinking", "豆豆正在主動開口");
-  sendProactiveResponse(proactiveTurnInstructions(event, time));
+  sendProactiveResponse(proactiveBrief(event, time), proactiveTurnInstructions(event, time));
   // The rules only mean something if speaking feeds them: the next attempt now
   // runs into the cooldown and (unless it was a 重要提醒) the daily budget,
   // exactly as it would live.
   recordProactiveSpoken(event.type);
   return "spoken";
-}
-
-async function triggerProactive() {
-  collectWorkshop2();
-  const policy = workspace.profile.proactive_policy;
-  const time = $("#proactiveNow").value || "12:00";
-  const event = {
-    type: $("#proactiveEventType").value,
-    topic: $("#proactiveTopic").value.trim(),
-  };
-  const decision = await decideProactive(policy, {
-    time,
-    type: event.type,
-    minutes_since_last: Number($("#proactiveSinceLast").value) || 0,
-    sent_today: Number($("#proactiveSentToday").value) || 0,
-    user_declined: $("#proactiveDeclined").checked,
-  });
-  if (!decision) return;
-
-  $("#proactiveDecision").textContent = decision.should_speak
-    ? `✓ 主動開口：${decision.reason}`
-    : `× 保持安靜：${decision.reason}`;
-  addMessage(
-    "tool",
-    `主動決策（${event.type} @ ${time}）：${decision.should_speak ? "主動開口" : "保持安靜"} — ${decision.reason}`,
-  );
-  if (decision.should_speak) await speakProactive(event, time);
 }
 
 async function applyWorkshop2() {
@@ -1723,6 +1779,8 @@ function init() {
     renderPolicyPreview();
     renderTriggerHints();
   });
+  // An edit to any of the four 規範 boxes is what turns them into 自訂.
+  bindFieldEvents(WORKSHOP2_BLOCKS.map(([, , selector]) => selector), syncCustomRulePreset);
   // List rows are re-rendered only on add／remove, so the listeners live on the
   // containers and the row being typed into never moves under the cursor.
   Object.values(ROW_KINDS).forEach(({ container }) => {
@@ -1771,25 +1829,16 @@ function init() {
   $$("[data-goto-live]").forEach((element) => element.addEventListener("click", () => switchTab("tabW2Live")));
   $("#declineChat").addEventListener("click", () => (isDeclinedNow() ? clearDecline() : declineChat()));
   $("#proactiveEventType").addEventListener("change", suggestTriggerTopic);
+  // The hints measure each typed time and number against the rules.
+  bindFieldEvents(["#scheduleTime", "#proactiveNow", "#proactiveSinceLast", "#proactiveSentToday"], renderTriggerHints);
   $$("[data-trigger-mode]").forEach((button) => {
     button.addEventListener("click", () => switchTriggerMode(button.dataset.triggerMode));
   });
-  // The manual trigger's own fields are half of every comparison in the hints.
-  bindFieldEvents(["#proactiveNow", "#proactiveSinceLast", "#proactiveSentToday"], renderTriggerHints);
-  // Typing in either budget field turns it from a readout into a hypothesis.
-  // Only a real `input`/`change` from the student counts — syncBudgetFields()
-  // assigns `.value` directly, which fires neither.
-  ["#proactiveSinceLast", "#proactiveSentToday"].forEach((selector) => {
-    ["input", "change"].forEach((event) => $(selector).addEventListener(event, () => {
-      budgetFieldsFollowState = false;
-      renderBudgetFollowState();
-    }));
-  });
-  $("#resyncBudget").addEventListener("click", resyncBudgetFields);
+  $("#triggerProactive").addEventListener("click", triggerProactive);
+  $("#scheduleInOneMinute").addEventListener("click", fillScheduleInOneMinute);
 
   $("#saveWorkshop2").addEventListener("click", applyWorkshop2);
   $("#runTodaySummary").addEventListener("click", runTodaySummary);
-  $("#triggerProactive").addEventListener("click", triggerProactive);
   $("#addSchedule").addEventListener("click", addSchedule);
   $("#scheduleAuto").addEventListener("change", () => {
     notify($("#scheduleAuto").checked
@@ -1817,6 +1866,7 @@ globalThis.W2 = {
   collect: collectWorkshop2,
   buildWorkshop2Prompt,
   rebuildWorkshop2Prompt,
+  addressFor,
   renderInterview,
   renderRulePresets,
   applyRulePreset,
@@ -1829,8 +1879,8 @@ globalThis.W2 = {
   renderPolicyPreview,
   renderTriggerHints,
   renderProactiveLiveState,
-  syncBudgetFields,
   renderScheduleList,
+  fillScheduleInOneMinute,
   switchTriggerMode,
   startScheduler,
   // Read by core's executeRealtimeTool, which owns the Realtime tool loop.

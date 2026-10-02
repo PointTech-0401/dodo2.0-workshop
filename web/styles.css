@@ -53,7 +53,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 /* container-type 讓 h1.is-long 能照「聊天區實際寬度」縮放。拖曳分隔線會改變這個
    寬度，vw 追不到，cqi 追得到。 */
 .conversation-panel { container-type: inline-size; position: relative; min-width: 0; display: flex; flex-direction: column; padding: 38px 42px 28px; background: var(--white); }
-/* wrap 是給拖到最窄的那一格用的：13 個字的標題不折行，就一定有一個寬度容不下
+/* wrap 是給拖到最窄的那一格用的：14 個字的標題不折行，就一定有一個寬度容不下
    「標題＋按鈕」同一行。到那個寬度按鈕自己掉下去（`margin-left:auto` 讓它留在右邊），
    標題才不必縮到看不清楚。 */
 .panel-heading { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 20px; }
@@ -65,12 +65,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .eyebrow { color: var(--blue); }
 h1, h2, h3, p { overflow-wrap: anywhere; }
 h1 { max-width: 660px; margin: 0; font-family: Georgia, "Microsoft JhengHei UI", serif; font-size: clamp(29px, 4vw, 53px); line-height: 1.08; letter-spacing: -.03em; }
-/* 第二堂標題 13 個字，不折行，字級照聊天區實際寬度縮。212px ＝「＋ 新聊天」按鈕
-   （約 102px）＋ flex gap（20px）＋ 90px 餘裕；下限 21px 是聊天區縮到 grid 允許的
+/* 第二堂標題 14 個字，不折行，字級照聊天區實際寬度縮。212px ＝「＋ 新聊天」按鈕
+   （約 102px）＋ flex gap（20px）＋ 90px 餘裕；下限 19px 是聊天區縮到 grid 允許的
    最小寬度（360px）時，一行仍放得下的字級。
    別動 `overflow-wrap: anywhere`：改成 normal 會讓標題的 min-content 撐住 grid 的
    `minmax(360px, 1fr)`，整條分隔線就拖不動了。 */
-h1.is-long { max-width: none; white-space: nowrap; font-size: clamp(21px, calc((100cqi - 212px) / 13), 53px); }
+h1.is-long { max-width: none; white-space: nowrap; font-size: clamp(19px, calc((100cqi - 212px) / 14), 53px); }
 .model-status { margin: 12px 0 0; color: var(--ink-soft); font-size: 12px; }
 h2 { margin: 0 0 24px; font-size: 27px; line-height: 1.25; }
 h3 { margin: 0 0 8px; font-size: 18px; }
@@ -256,6 +256,8 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .intake-section label:first-child { margin-top: 0; }
 .intake-section input, .intake-section textarea, .intake-section select { width: 100%; margin-top: 4px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
 .intake-section textarea { resize: vertical; line-height: 1.55; }
+/* 姓名 is fixed for 秀蘭阿嬤: shown, not editable. */
+.intake-section input[readonly] { background: var(--paper); color: var(--ink-soft); cursor: default; }
 .intake-section label small { display: block; margin-top: 3px; color: var(--ink-soft); font-size: 10px; line-height: 1.45; }
 .field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 9px; }
 .field-grid label, .field-row label { margin-top: 0 !important; }
@@ -376,7 +378,7 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
    button stretched to a grid row's height renders as a giant circle. */
 .schedule-add { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
 .schedule-add label { flex: 1 1 200px; min-width: 0; }
-.schedule-add .secondary-button { flex: 0 0 auto; align-self: flex-start; margin-top: 24px; }
+.schedule-add :where(.secondary-button, .primary-button) { flex: 0 0 auto; align-self: flex-start; margin-top: 24px; }
 
 /* 待提醒項目 — the list the real clock is checked against. */
 .schedule-clock { margin: 8px 0 6px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
@@ -390,25 +392,16 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .schedule-row.is-due { border-left-color: var(--blue); background: var(--sky); }
 .schedule-row.is-spoken { border-left-color: var(--blue); }
 .schedule-row.is-blocked { background: transparent; color: var(--ink-soft); }
+.schedule-row.is-expired { background: transparent; color: var(--ink-soft); border-left-style: dashed; }
 .live-state { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
 
 /* One event block feeding both modes, and a switch named after the only thing
    that really separates them: which clock decides. */
 .event-card, .compare-card { margin-bottom: 14px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--white); }
-/* 累積量卡：兩種觸發方式共用的兩個數字。⏰ 模式下它們不參與判斷，就淡出來說清楚。 */
+/* 累積量卡：間隔與每日上限看的真實紀錄，只能看。 */
 .budget-card { border-left: 3px solid var(--blue); }
-.budget-card .budget-mode-note { margin: 10px 0 0; padding: 8px 10px; background: var(--sky); color: var(--ink-soft); font-size: 12px !important; line-height: 1.55; }
 .budget-card .budget-live { margin: 8px 0 0; color: var(--ink-soft); font-size: 12px !important; line-height: 1.55; }
-.budget-card .budget-live small { display: block; margin-top: 2px; font-size: 11px !important; line-height: 1.45; }
-/* 被改成假設之後才變色：「這兩格現在說的不是系統的紀錄」要看得出來。 */
-.budget-card.is-hypothetical { border-left-color: var(--apricot); }
-.budget-card.is-hypothetical .field-row input { background: #fdf4e6; }
-.budget-card .budget-resync { margin-top: 4px; padding: 4px 9px !important; font-size: 11px !important; }
-/* 「假設她剛剛拒絕聊天」 gets its own line under 模擬現在時間, three points larger:
-   it is the one input in this tab people miss. The extra selector beats the
-   blanket `.lab-panel :where(label)` 14px further down the file. */
-.trigger-mode .declined-toggle { margin: 2px 0 14px; font-size: 17px !important; font-weight: 700; }
-.trigger-mode .declined-toggle input { margin-top: 4px !important; width: 17px !important; height: 17px; }
+.budget-card .budget-hint { margin: 4px 0 0; color: var(--ink-soft); font-size: 12px !important; line-height: 1.55; }
 /* 問句 takes the room; the button sits beside it rather than under it. */
 .compare-card .field-row { grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
 .compare-card label { margin-bottom: 0 !important; }
@@ -419,10 +412,16 @@ body.is-resizing-panels { cursor: col-resize; user-select: none; }
 .compare-note { margin: 9px 0 0; color: var(--ink-soft); line-height: 1.5; }
 .event-card .field-row { gap: 10px; }
 .event-card label { margin-bottom: 0 !important; }
-.mode-switch { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: var(--white); }
-.mode-button { flex: 1 1 0; padding: 8px 10px; border: 0; border-radius: 999px; background: transparent; color: var(--ink-soft); font-weight: 700; }
-.mode-button:hover { color: var(--blue); }
-.mode-button.is-active { background: var(--sky); color: var(--ink); }
+/* 兩種開口方式。以前是一條淡色膠囊，看起來像一般標籤，常被當成只有一個選項；
+   現在兩顆都是看得出來能按的大按鈕，選中的整顆填滿。 */
+.lab-panel .mode-label { margin: 4px 0 6px; color: var(--ink); font-size: 13px !important; font-weight: 700; }
+.mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mode-switch .mode-button { display: grid; gap: 3px; padding: 11px 12px; border: 2px solid var(--blue); border-radius: 10px; background: var(--white); color: var(--blue); font-size: 15px !important; font-weight: 800; text-align: center; cursor: pointer; }
+.mode-switch .mode-button small { color: var(--ink-soft); font-size: 11px !important; font-weight: 400; }
+.mode-switch .mode-button:hover { background: var(--sky); }
+.mode-switch .mode-button.is-active { background: var(--blue); color: var(--white); box-shadow: 0 3px 0 rgba(21, 50, 74, .18); }
+.mode-switch .mode-button.is-active small { color: rgba(255, 253, 248, .85); }
+.trigger-mode .manual-decline { margin: 10px 0 0; color: var(--ink-soft); font-size: 12px !important; line-height: 1.55; }
 .trigger-mode { margin-top: 14px; }
 .trigger-mode:focus-visible { outline: none; }
 /* Clock and the auto-trigger switch on one line — they used to take two. */
@@ -503,7 +502,6 @@ legend { margin-bottom: 10px; font-weight: 800; }
 .preview-label small { display: block; margin-top: 2px; color: var(--ink-soft); font-size: 10px; font-weight: 400; letter-spacing: 0; text-transform: none; }
 /* 沒有這一條，說明句裡的 <strong> 會被 `.lab-panel :where(strong)` 拉回 14px。 */
 .preview-label small :where(strong, b) { font-size: inherit !important; font-weight: 700; }
-.budget-card .budget-mode-note :where(strong, b) { font-size: inherit !important; }
 
 /* 「她剛說不想聊」 writes state with an expiry, so the button has to say when it
    wears off — otherwise it reads as a permanent mute. */
