@@ -6,7 +6,7 @@ import { w2Architecture } from './diagrams.mjs';
 import { installSlide, apiKeySlide } from './prework.mjs';
 
 const A = C.green;
-const EB = 'WORKSHOP 02 · 會記得、會主動，也知道何時閉嘴';
+const EB = 'WORKSHOP 02 · 會記得、會主動，也知道何時該安靜';
 const S = [];
 const add = (file, title, make) => S.push({ file, title, make });
 // Slide order follows the timetable: the results (X 類、重點回顧) come after
@@ -15,8 +15,8 @@ const add = (file, title, make) => S.push({ file, title, make });
 add('Main.dc.html', '封面', () => cover({
   eyebrow: 'SESSION 02 · 165 分鐘',
   number: '02',
-  title: '會記得、會主動，也知道何時閉嘴',
-  sub: '幫一位長者建檔、讓豆豆記得她，並決定它什麼時候可以開口',
+  title: '會記得、會主動，<br>也知道何時該安靜',
+  sub: '幫一位長者建檔、讓豆豆記得她，並決定豆豆什麼時候可以開口',
   meta: ['三層記憶 A / B / C', '一份訪談稿', '主動規則', '紅隊挑戰', '記憶清單'],
   accent: A,
   halo: C.mint,
@@ -43,16 +43,16 @@ add('Timetable.dc.html', '課程流程', (n, t) => slide({
     [{ label: '段落', w: '240px' }, { label: '內容', w: '1fr' }],
     [
       ['前置作業', '安裝、貼上金鑰、連線檢查'],
-      ['專案架構', '哪些在本機算、哪些送到 OpenAI'],
-      ['誰能寫入記憶', '護理員、豆豆、系統；兩個角色'],
+      ['專案架構', '哪些在本機算、哪些送到 OpenAI；dodo 跟這堂課的關係'],
+      ['誰能寫入記憶', '護理員、豆豆、系統'],
       ['訪談稿', '秀蘭阿嬤的三段話'],
       ['<strong style="color: #15324a;">實作一</strong>', '建檔，每一區問豆豆一句'],
-      ['紅隊測試', '嘗試讓它記下不該記的內容'],
+      ['紅隊測試', '嘗試讓豆豆記下不該記的內容'],
       ['記憶的規則', '三層記憶、護理員鎖、關鍵字過濾'],
       ['對話規範', '更換規範範例，比較同一句話的回答'],
       ['<strong style="color: #15324a;">實作二</strong>', '主動規則：七條規則與兩個數字'],
       ['<strong style="color: #15324a;">實作三</strong>', '主動對話'],
-      ['倫理問題', '規則已處理的，與需要人判斷的'],
+      ['對豆豆的規範', '規則已處理的，與需要人判斷的'],
     ],
     { accent: A, size: 19, pad: 9 },
   ),
@@ -68,29 +68,49 @@ add('ProjectMap.dc.html', '專案架構', (n, t) => slide({
   body: w2Architecture,
 }));
 
+add('Dodo.dc.html', 'dodo 與這堂課', (n, t) => slide({
+  eyebrow: EB, num: n, total: t, accent: A,
+  title: '為什麼要建檔、設計主動聊天',
+  lede: '豆豆是住在機器人裡的 AI 孫女，陪長照機構的長者。第一堂讓豆豆會講話，這一堂讓豆豆認識她。',
+  body: row([
+    card({
+      grow: true, accent: A, kicker: '為什麼建檔',
+      title: '不認識她，就聊不到她在意的事',
+      body: '叫得出名字、知道幾點吃藥、哪些事不能提，都要先有人寫下來。用藥由護理員寫，豆豆只能讀不能改。',
+    }),
+    card({
+      grow: true, accent: C.blue, kicker: '為什麼要主動',
+      title: '長者不會主動叫豆豆',
+      body: '一般科技產品不叫就不說話。豆豆沒人說話時會自己找話題：新聞、天氣、昨天說的頭暈。',
+    }),
+    card({
+      grow: true, accent: C.danger, kicker: '但主動要有規則',
+      title: '說不說交給程式規範',
+      body: '例如晚上 10 點到早上 8 點不打擾。',
+    }),
+  ]),
+}));
+
 add('WhoWrites.dc.html', '誰能寫入記憶', (n, t) => slide({
   eyebrow: EB, num: n, total: t, accent: A,
   title: '誰能寫入記憶',
-  body: stack([
-    row([
-      card({
-        grow: true, accent: A, kicker: '護理員',
-        title: '建檔表單',
-        body: '醫囑、作息、用藥、興趣。豆豆只能讀取，不能修改。',
-      }),
-      card({
-        grow: true, accent: C.blue, kicker: '豆豆',
-        title: '對話中的近況',
-        body: '例如「我膝蓋好多了」。',
-      }),
-      card({
-        grow: true, accent: C.apricot, kicker: '系統',
-        title: '今日摘要',
-        body: '由當天的對話整理成一筆 C 層記憶。',
-      }),
-    ]),
-    band('填表時，你是護理員；按「問豆豆這一區」、輸入紅隊句子、回答豆豆時，你是秀蘭阿嬤。', { accent: C.apricot }),
-  ], { gap: 26 }),
+  body: row([
+    card({
+      grow: true, accent: A, kicker: '護理員',
+      title: '建檔表單',
+      body: '醫囑、作息、用藥、興趣。豆豆只能讀取，不能修改。',
+    }),
+    card({
+      grow: true, accent: C.blue, kicker: '豆豆',
+      title: '對話中的近況',
+      body: '例如「我膝蓋好多了」。',
+    }),
+    card({
+      grow: true, accent: C.apricot, kicker: '系統',
+      title: '今日摘要',
+      body: '由當天的對話整理成一筆 C 層記憶。',
+    }),
+  ]),
 }));
 
 add('HerWords.dc.html', '訪談稿', (n, t) => slide({
@@ -116,7 +136,7 @@ add('LabIntake.dc.html', '實作一：建檔 1–3 區', (n, t) => slide({
   body: table(
     INTAKE_COLS,
     [
-      ['1 基本資料', '稱呼填「秀蘭阿嬤」，其他欄位照訪談稿', '她自己說的，不要叫她邱女士（§5）'],
+      ['1 基本資料', '姓名已填好。稱呼填「秀蘭阿嬤」，其他欄位照訪談稿', '她自己說的，不要叫她邱女士（§5）'],
       ['2 作息', '起床 05:00、就寢 21:30。早餐、午餐、午睡、歌唱班（二、四）、晚餐、八點檔，勾「不打擾」。走廊運動要填，<strong>不勾</strong>', '「躺著不算起來」；走廊運動時她醒著，可以聊（§1）'],
       ['3 用藥與回診', '血壓藥、血糖藥 07:00；安眠藥半顆 21:00；回診 2026-10-09 09:00；緊急聯絡人邱志明（兒子），電話留空', '早餐 06:30，吃完才吃藥；電話不會進 Prompt（§1、§2）'],
     ],
@@ -133,7 +153,7 @@ add('LabIntakeMore.dc.html', '實作一：建檔 4–6 區', (n, t) => slide({
     [
       ['4 興趣與偏好', '興趣至少 4 筆；醫囑 2 筆：「少甜、少油、多喝水」「膝蓋不要蹲」', '醫囑是長期的事實，豆豆改不動（§1、§3）'],
       ['5 近期狀況', '膝蓋、頭暈、睡眠標「症狀」；想吃鹹粥標「短期念頭」', '只有症狀會變成健康關心（§1、§2）'],
-      ['6 禁區與不記', '禁區：先生、兒子多久來一次、膝蓋不會好了。不記：阿桂的病、存摺印章、照服員粗心，每一句都寫理由', '別人的病、財物、對人的評價，不進陪伴 AI 的記憶（§2、§4、§5）'],
+      ['6 禁區與不記', '禁區：先生、兒子多久來一次、膝蓋不會好了。不記：阿桂的病、存摺印章、照服員粗心', '別人的病、財物、對人的評價，不進陪伴 AI 的記憶（§2、§4、§5）'],
     ],
     { accent: A, size: 23, pad: 16 },
   ),
@@ -215,7 +235,7 @@ add('MemoryViewer.dc.html', '記憶清單', (n, t) => slide({
 add('PromptLayer.dc.html', '對話規範', (n, t) => slide({
   eyebrow: EB, num: n, total: t, accent: A,
   title: '對話規範',
-  lede: '載入「話少型」問「你記得我什麼？」，再換「陪伴型」問同一句。建檔內容不變。',
+  lede: '陪伴型先問「你記得我什麼？」，再換「囉嗦型」問同一句。建檔內容不變。',
   body: row([
     stack([
       card({
@@ -228,7 +248,7 @@ add('PromptLayer.dc.html', '對話規範', (n, t) => slide({
     `<div style="flex: 0 0 700px;">${table(
       [{ label: '自動產生的段落', w: '330px' }, { label: '來源', w: '1fr' }],
       [
-        [code('# 長者資料', 20), '建檔 › 基本資料、作息、用藥與回診（不含電話）'],
+        [code('# 長者資料', 20), '建檔 › 基本資料、作息、用藥與回診（不含姓名、房號、電話）'],
         [code('# 目前記得的事（三層記憶）', 20), '建檔 › 興趣、近期狀況，加上豆豆記的'],
         [code('# 不主動提起', 20), '建檔 › 只能她自己提'],
         [code('# 主動訊息的程式規則', 20), '主動規則的兩個數字＋建檔 › 作息'],
@@ -266,19 +286,19 @@ add('ProactiveRules.dc.html', '實作二：主動規則', (n, t) => slide({
 add('LiveTalk.dc.html', '實作三：主動對話', (n, t) => slide({
   eyebrow: EB, num: n, total: t, accent: A,
   title: '實作三：主動對話',
-  lede: '使用「🧪 自己編一個狀況試一次」：時間 10:00，上方兩格填 60 與 0；第 2 步前再填一次 60。',
+  lede: '切到「自己編一個狀況」：假裝現在幾點填 10:00，上一次主動找她填 60、今日已發送填 0。',
   body: stack([
     row([
       steps([
         '健康關心，內容改成「關心她的膝蓋」→ 回答「我膝蓋好多了」→ 到建檔確認症狀已更新。',
-        '閒聊「請教她怎麼煮麵」；勾選「假裝她剛剛說了不想聊」後再試一次 → 被擋下。',
-        '取消勾選，時間改 21:45：閒聊被擋下；<strong>重要提醒照常送出</strong>。',
+        '閒聊「請教她怎麼煮麵」；到主動規則按「她剛說不想聊」，回來再試一次 → 被擋下。',
+        '取消「她剛說不想聊」，時間改 21:45：閒聊被擋下；<strong>重要提醒照常送出</strong>。',
         '示範：在 Prompt 寫「半夜也要聊」，21:45 的閒聊仍被擋下。',
       ], { accent: A, size: 21, gap: 13 }),
       `<div style="flex: 0 0 470px; display: flex; flex-direction: column; gap: 14px;">
         <span style="color: ${A}; font: 800 15px/1 ${SANS}; letter-spacing: .16em;">這一頁的範圍</span>
         ${bullets([
-          '沒有後台排程；由你排一筆，瀏覽器每 5 秒檢查一次時鐘。',
+          '「排一個真的時間」照真的時鐘跑：按「1 分鐘後」再加入；過去的時間會標成「已過期」。',
           '類型只影響是否計入當天次數；內容來自你填的文字。',
           '通過規則後，豆豆會在對話中主動開口。',
         ], { accent: C.apricot, size: 20, gap: 13 })}
@@ -288,9 +308,9 @@ add('LiveTalk.dc.html', '實作三：主動對話', (n, t) => slide({
   ], { gap: 22 }),
 }));
 
-add('Dilemmas.dc.html', '倫理問題', (n, t) => slide({
+add('Dilemmas.dc.html', '對豆豆的規範', (n, t) => slide({
   eyebrow: EB, num: n, total: t, accent: A,
-  title: '倫理問題',
+  title: '對豆豆的規範',
   body: stack([
     row([
       `<div style="flex: 1.15 1 0; display: flex; flex-direction: column; gap: 14px;">
@@ -331,7 +351,7 @@ add('ThreeIdeas.dc.html', '重點回顧', (n, t) => slide({
     card({
       grow: true, accent: A, kicker: '分工',
       title: '程式決定是否開口，模型決定怎麼說',
-      body: '21:45 的兩則事件；Prompt 叫它半夜也聊，照樣被擋。',
+      body: '21:45 的兩則事件；Prompt 叫豆豆半夜也聊，照樣被擋。',
     }),
     card({
       grow: true, accent: C.blue, kicker: '安靜時段',

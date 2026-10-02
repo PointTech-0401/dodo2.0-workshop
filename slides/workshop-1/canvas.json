@@ -25,124 +25,140 @@
       "title": "03 · 課程流程"
     },
     {
-      "file": "ProjectMap.dc.html",
+      "file": "Install.dc.html",
       "x": 5280,
       "y": 0,
       "w": 1600,
       "h": 900,
-      "title": "04 · 專案架構"
+      "title": "04 · 前置作業：安裝"
     },
     {
-      "file": "Install.dc.html",
+      "file": "ApiKeys.dc.html",
       "x": 0,
       "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "05 · 前置作業：安裝"
+      "title": "05 · 前置作業：API Key 與連線檢查"
     },
     {
-      "file": "ApiKeys.dc.html",
+      "file": "ProjectMap.dc.html",
       "x": 1760,
       "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "06 · 前置作業：API Key 與連線檢查"
+      "title": "06 · 專案架構"
     },
     {
-      "file": "ThreeLayers.dc.html",
+      "file": "Dodo.dc.html",
       "x": 3520,
       "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "07 · 三個層次"
+      "title": "07 · dodo 與這堂課"
     },
     {
-      "file": "TurnFlow.dc.html",
+      "file": "WebRTC.dc.html",
       "x": 5280,
       "y": 1140,
       "w": 1600,
       "h": 900,
-      "title": "08 · 系統流程"
+      "title": "08 · WebRTC"
+    },
+    {
+      "file": "TurnFlow.dc.html",
+      "x": 0,
+      "y": 2280,
+      "w": 1600,
+      "h": 900,
+      "title": "09 · 一句話的處理流程"
+    },
+    {
+      "file": "ThreeThings.dc.html",
+      "x": 1760,
+      "y": 2280,
+      "w": 1600,
+      "h": 900,
+      "title": "10 · 語音 AI 的三件事"
+    },
+    {
+      "file": "WhenInstructions.dc.html",
+      "x": 3520,
+      "y": 2280,
+      "w": 1600,
+      "h": 900,
+      "title": "11 · Prompt 送出時機"
+    },
+    {
+      "file": "TurnModes.dc.html",
+      "x": 5280,
+      "y": 2280,
+      "w": 1600,
+      "h": 900,
+      "title": "12 · 三種回合判斷"
     },
     {
       "file": "OutputLength.dc.html",
       "x": 0,
-      "y": 2280,
+      "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "09 · 回答長度"
-    },
-    {
-      "file": "WhenInstructions.dc.html",
-      "x": 1760,
-      "y": 2280,
-      "w": 1600,
-      "h": 900,
-      "title": "10 · Prompt 送出時機"
-    },
-    {
-      "file": "TurnModes.dc.html",
-      "x": 3520,
-      "y": 2280,
-      "w": 1600,
-      "h": 900,
-      "title": "11 · 三種回合判斷"
+      "title": "13 · 一次講多長"
     },
     {
       "file": "LabOne.dc.html",
-      "x": 5280,
-      "y": 2280,
-      "w": 1600,
-      "h": 900,
-      "title": "12 · 實作一"
-    },
-    {
-      "file": "Preamble.dc.html",
-      "x": 0,
-      "y": 3420,
-      "w": 1600,
-      "h": 900,
-      "title": "13 · 工具前開場"
-    },
-    {
-      "file": "VoiceVsPrompt.dc.html",
       "x": 1760,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "14 · 聲線與 Prompt"
+      "title": "14 · 實作一"
     },
     {
-      "file": "LabVoice.dc.html",
+      "file": "Preamble.dc.html",
       "x": 3520,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "15 · 實作二"
+      "title": "15 · 工具前開場"
     },
     {
-      "file": "LabTwo.dc.html",
+      "file": "VoiceVsPrompt.dc.html",
       "x": 5280,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "16 · 實作三"
+      "title": "16 · 聲線與 Prompt"
     },
     {
-      "file": "PromptRequest.dc.html",
+      "file": "LabVoice.dc.html",
       "x": 0,
       "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "17 · Prompt 的限制"
+      "title": "17 · 實作二"
     },
     {
-      "file": "DoneCriteria.dc.html",
+      "file": "LabTwo.dc.html",
       "x": 1760,
       "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "18 · 完成標準"
+      "title": "18 · 實作三"
+    },
+    {
+      "file": "PromptRequest.dc.html",
+      "x": 3520,
+      "y": 4560,
+      "w": 1600,
+      "h": 900,
+      "title": "19 · Prompt 的限制"
+    },
+    {
+      "file": "Summary.dc.html",
+      "x": 5280,
+      "y": 4560,
+      "w": 1600,
+      "h": 900,
+      "title": "20 · 總結"
     }
   ],
   "launch": {

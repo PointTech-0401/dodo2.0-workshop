@@ -14,7 +14,17 @@ export const MONO = "Consolas,'Noto Sans TC',monospace";
 
 const FONTS = 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&amp;family=Noto+Serif+TC:wght@500;700;900&amp;display=swap';
 
+// Every CSS font size on every slide is this much larger than the number written
+// in the decks and in the helpers below (2026-10-02: whole deck +2px). SVG
+// `font-size="…"` attributes are left alone: the diagram geometry and
+// check-diagrams.mjs are measured in those units.
+export const FONT_BUMP = 2;
+const bumpFonts = (html) => html
+  .replace(/(font:\s*(?:\d{3}\s+)?)(\d+(?:\.\d+)?)px/g, (_, lead, n) => `${lead}${Number(n) + FONT_BUMP}px`)
+  .replace(/(font-size:\s*)(\d+(?:\.\d+)?)px/g, (_, lead, n) => `${lead}${Number(n) + FONT_BUMP}px`);
+
 function shell(inner, accent) {
+  inner = bumpFonts(inner);
   return `<!doctype html>
 <html>
 <head>
@@ -164,7 +174,7 @@ export function dnode({
 export function dzone({ x, y, w, h, label, colour = C.inkSoft, fill = ZONE_WARM }) {
   return `<g>
     <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="${fill}" stroke="${colour}" stroke-width="1" stroke-dasharray="8 7" opacity=".9"></rect>
-    <text x="${x}" y="${y - 13}" fill="${colour}" font-size="14" font-weight="800" letter-spacing="1.8">${label}</text>
+    ${label ? `<text x="${x}" y="${y - 13}" fill="${colour}" font-size="14" font-weight="800" letter-spacing="1.8">${label}</text>` : ''}
   </g>`;
 }
 

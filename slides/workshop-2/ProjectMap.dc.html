@@ -17,16 +17,16 @@
   <div style="position: absolute; left: 0; top: 0; width: 12px; height: 900px; background: #287653;"></div>
   <div style="position: absolute; inset: 0; display: flex; flex-direction: column; gap: 30px; padding: 58px 88px 52px 108px;">
     <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 32px; padding-bottom: 18px; border-bottom: 1px solid #cfd9dc;">
-      <span style="color: #287653; font: 800 16px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .18em;">WORKSHOP 02 · 會記得、會主動，也知道何時閉嘴</span>
-      <span style="color: #4d6475; font: 700 15px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">06 / 19</span>
+      <span style="color: #287653; font: 800 18px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .18em;">WORKSHOP 02 · 會記得、會主動，也知道何時該安靜</span>
+      <span style="color: #4d6475; font: 700 17px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">06 / 20</span>
     </div>
     <div style="display: flex; flex-direction: column; gap: 13px;">
-      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 52px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">專案架構</h1>
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 54px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">專案架構</h1>
       
     </div>
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
       <figure style="margin: 0; display: flex; flex-direction: column; gap: 14px;">
-  <svg viewBox="0 0 1400 490" role="img" aria-label="專案架構圖：規則判斷都在本機完成，要 Key 的步驟才離開這台電腦" style="display: block; width: 100%; height: auto; font-family: 'Noto Sans TC','Microsoft JhengHei UI',sans-serif;">
+  <svg viewBox="0 0 1400 490" role="img" aria-label="專案架構圖：規則判斷都在本機完成；API Key 只在本機後端，連線經後端代理，之後瀏覽器直連 OpenAI" style="display: block; width: 100%; height: auto; font-family: 'Noto Sans TC','Microsoft JhengHei UI',sans-serif;">
     <defs>
       <marker id="w2arch-ink" viewBox="0 0 12 12" refX="10.6" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
         <path d="M 1.6 1.4 L 11 6 L 1.6 10.6 Z" fill="#3f5a70"></path>
@@ -43,7 +43,7 @@
     </defs>
     <g>
     <rect x="8" y="138" width="845" height="330" rx="12" fill="#f5f0e6" stroke="#287653" stroke-width="1" stroke-dasharray="8 7" opacity=".9"></rect>
-    <text x="8" y="125" fill="#287653" font-size="14" font-weight="800" letter-spacing="1.8">本機 · 不需要 API KEY</text>
+    <text x="8" y="125" fill="#287653" font-size="14" font-weight="800" letter-spacing="1.8">這台電腦</text>
   </g>
     <g>
     <rect x="958" y="138" width="434" height="330" rx="12" fill="#edf3f6" stroke="#4d6475" stroke-width="1" stroke-dasharray="8 7" opacity=".9"></rect>
@@ -56,7 +56,7 @@
     <text x="62" y="222" fill="#15324a" font-size="19" font-weight="700">web/workshop2.js</text>
     <text x="62" y="250" fill="#4d6475" font-size="15.5">建檔六區</text>
     <text x="62" y="272" fill="#4d6475" font-size="15.5">記憶清單</text>
-    <text x="62" y="294" fill="#4d6475" font-size="15.5">讓它開口的表單</text>
+    <text x="62" y="294" fill="#4d6475" font-size="15.5">讓豆豆開口的表單</text>
   </g>
     <g>
     <rect x="515" y="170" width="300" height="150" rx="8" fill="#fffdf8" stroke="#287653" stroke-width="1.6"></rect>
@@ -65,7 +65,7 @@
     <text x="537" y="222" fill="#15324a" font-size="19" font-weight="700">dodo_workshop/</text>
     <text x="537" y="250" fill="#4d6475" font-size="15.5">proactive.py 說不說</text>
     <text x="537" y="272" fill="#4d6475" font-size="15.5">intake.py 建檔</text>
-    <text x="537" y="294" fill="#4d6475" font-size="15.5">profile.py 組 Prompt</text>
+    <text x="537" y="294" fill="#4d6475" font-size="15.5">profile.py 預設文字、整理存檔</text>
   </g>
     <g>
     <rect x="515" y="372" width="300" height="76" rx="8" fill="#fffdf8" stroke="#cfd9dc" stroke-width="1"></rect>
@@ -85,12 +85,16 @@
     <path d="M 350 245 L 505 245" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w2arch-ink)" marker-start="url(#w2arch-ink)"></path>
     <text x="427" y="214" text-anchor="middle" fill="#15324a" font-size="15.5" font-weight="600">① 事件與你的規則</text>
     <text x="427" y="233" text-anchor="middle" fill="#15324a" font-size="15.5" font-weight="600">送去跑規則</text>
+    <text x="427" y="268" text-anchor="middle" fill="#15324a" font-size="15.5" font-weight="600">建立連線也走這條</text>
+    <path d="M 825 245 L 980 245" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w2arch-ink)"></path>
+    <text x="902" y="214" text-anchor="middle" fill="#15324a" font-size="15.5" font-weight="600">② 補上 Key</text>
+    <text x="902" y="233" text-anchor="middle" fill="#15324a" font-size="15.5" font-weight="600">代理連線</text>
     <path d="M 190 160 C 190 52, 1140 52, 1140 160" fill="none" stroke="#c07f2c" stroke-width="1.9" stroke-linecap="round" marker-end="url(#w2arch-apricot)" marker-start="url(#w2arch-apricot)"></path>
-    <text x="665" y="62" text-anchor="middle" fill="#a8722a" font-size="15.5" font-weight="700">② 要 Key 的步驟才出網路，Prompt 整份送去</text>
+    <text x="665" y="62" text-anchor="middle" fill="#a8722a" font-size="15.5" font-weight="700">③ 連線建好後，瀏覽器直連 OpenAI，Prompt 整份送去</text>
     <path d="M 665 330 L 665 362" fill="none" stroke="#3f5a70" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#w2arch-ink)"></path>
     <text x="683" y="352" text-anchor="start" fill="#15324a" font-size="15.5" font-weight="600">讀她的資料</text>
   </svg>
-  <figcaption style="color: #4d6475; font: 19px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">建檔與長條圖都在這台電腦上算完，不需要 API Key。要 Key 的步驟會把整份 Prompt（含她的用藥與症狀）送到 OpenAI；今日摘要則由後端把對話另外送給文字模型。</figcaption>
+  <figcaption style="color: #4d6475; font: 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">建檔與長條圖都在這台電腦上算完，不需要 API Key。Key 只存在本機後端（Terminal）：連線經後端代理，之後瀏覽器直連 OpenAI。整份 Prompt（含她的用藥與症狀）都會送到 OpenAI；今日摘要由後端另外送給文字模型。</figcaption>
 </figure>
     </div>
     

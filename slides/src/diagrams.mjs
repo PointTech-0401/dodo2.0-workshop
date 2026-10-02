@@ -26,22 +26,22 @@ export const w1Architecture = diagram({
     dnode({
       x: 40, y: 170, w: 300, h: 150, tone: 'sky', accent: C.blue,
       kicker: '瀏覽器', title: 'web/ 前端',
-      lines: ['第一堂、第二堂的畫面', '組 Prompt、建立連線', '處理工具呼叫'],
+      lines: ['第一堂的畫面', '組 Prompt、建立連線', '處理工具呼叫'],
     }),
     dnode({
       x: 515, y: 170, w: 300, h: 150, tone: 'white', accent: C.green, emph: true,
       kicker: '本機 PYTHON 後端', title: 'dodo_workshop/web.py',
-      lines: ['API Key 只留在這裡', 'profile.py 組 Prompt', 'weather.py 代查天氣'],
+      lines: ['API Key 只留在這裡', 'profile.py 預設文字、整理存檔', 'weather.py 代查天氣'],
     }),
     dnode({
       x: 515, y: 372, w: 220, h: 76, tone: 'white', accent: C.inkSoft,
-      title: 'runtime/ · scenarios/', titleSize: 16,
-      lines: ['自動存檔 · 訪談稿'],
+      title: 'runtime/',
+      lines: ['自動存檔'],
     }),
     dnode({
       x: 990, y: 170, w: 300, h: 150, tone: 'white', accent: C.apricot,
       kicker: 'OPENAI REALTIME', title: 'gpt-realtime-2',
-      lines: ['gpt-4o-transcribe', 'near_field · sage'],
+      lines: ['gpt-4o-transcribe', 'near_field · 聲線自選'],
     }),
     dnode({
       x: 990, y: 372, w: 300, h: 76, tone: 'white', accent: C.apricot,
@@ -64,44 +64,55 @@ export const w1Architecture = diagram({
 
 /* ---------- Workshop 1 · 系統流程 ---------- */
 
+// Three lanes (OpenAI · 瀏覽器 · 本機後端), browser in the middle so every hop
+// in a turn is between neighbours. Only the connection's 後端 → OpenAI hop has
+// to pass the browser lane, and it arcs over the top to do it.
+const LANE = { openai: 38, browser: 530, backend: 1022 };
+const FLOW_NODE = { w: 340, h: 84 };
+
 export const w1Flow = diagram({
   id: 'w1flow',
   w: 1400,
-  h: 470,
-  label: '系統流程圖：連線只發生一次，之後每個回合視需不需要工具，產生一個或兩個 response',
-  caption: 'Prompt 在第 ① 步就跟著連線請求送出，所以第一句話已經是豆豆。需要工具時，開場白和工具呼叫在同一次回覆裡，正式回答要等下一次回覆。',
+  h: 562,
+  label: '一句話的處理流程：OpenAI、瀏覽器、本機後端三方之間怎麼傳。連線只發生一次，之後聲音與文字由瀏覽器直連 OpenAI，查天氣時才經過後端',
+  caption: '連線只發生一次（①–③），之後聲音和文字直連 OpenAI；查天氣才經過後端，結果送回後的下一個回覆才是正式回答。',
   children: [
-    dlabel(0, 30, '連線 · 只發生一次', { colour: C.inkSoft, size: 14, weight: 800 }),
-    dnode({ x: 8, y: 48, w: 286, h: 112, n: 1, accent: C.blue, title: '開啟畫面', lines: ['core.js 準備 WebRTC 連線'] }),
-    dnode({ x: 374, y: 48, w: 286, h: 112, n: 2, accent: C.blue, title: '送到本機後端', lines: ['連線請求與 Prompt 一起送'] }),
-    dnode({ x: 740, y: 48, w: 286, h: 112, n: 3, accent: C.green, title: '後端補上 API Key', lines: ['轉送 /v1/realtime/calls'] }),
-    dnode({ x: 1106, y: 48, w: 286, h: 112, n: 4, accent: C.apricot, title: '連線建立', lines: ['第一句話就已經是豆豆'] }),
-    dflow('w1flow', [[302, 104], [366, 104]]),
-    dflow('w1flow', [[668, 104], [732, 104]]),
-    dflow('w1flow', [[1034, 104], [1098, 104]]),
+    dzone({ x: 8, y: 58, w: 400, h: 472, label: '', fill: ZONE_COOL }),
+    dzone({ x: 500, y: 58, w: 400, h: 472, label: '' }),
+    dzone({ x: 992, y: 58, w: 400, h: 472, label: '' }),
+    dlabel(8, 552, 'OPENAI REALTIME', { colour: C.inkSoft, size: 14, weight: 800 }),
+    dlabel(500, 552, '瀏覽器', { colour: C.inkSoft, size: 14, weight: 800 }),
+    dlabel(992, 552, '本機後端', { colour: C.inkSoft, size: 14, weight: 800 }),
 
-    dlabel(0, 216, '之後 · 每一個回合', { colour: C.inkSoft, size: 14, weight: 800 }),
-    dnode({ x: 8, y: 250, w: 286, h: 112, n: 5, accent: C.blue, title: '使用者說完', lines: ['VAD 判定或按「送出」'] }),
-    dnode({ x: 374, y: 250, w: 286, h: 112, n: 6, accent: C.blue, title: '模型建立 response', lines: ['決定要不要用工具'] }),
-    dnode({
-      x: 740, y: 190, w: 286, h: 104, tone: 'white', accent: C.green,
-      kicker: '不需要工具', title: '一個 response 結束', lines: ['直接就是正式回答'],
-    }),
-    dnode({
-      x: 740, y: 318, w: 286, h: 118, tone: 'white', accent: C.apricot,
-      kicker: '需要工具', title: '先講開場，同時呼叫工具', titleSize: 18,
-      lines: ['這句開場就是 preamble'],
-    }),
-    dnode({
-      x: 1106, y: 318, w: 286, h: 118, tone: 'paper', accent: C.apricot,
-      kicker: '工具結果回送後', title: '下一個 response', lines: ['才是正式回答'],
-    }),
-    dflow('w1flow', [[302, 306], [366, 306]]),
-    dflow('w1flow', [[668, 306], [700, 306]], { head: false }),
-    dflow('w1flow', [[700, 306], [700, 242], [732, 242]]),
-    dflow('w1flow', [[700, 306], [700, 377], [732, 377]]),
-    dlabel(699, 288, '依模型決定', { anchor: 'middle', size: 14 }),
-    dflow('w1flow', [[1034, 377], [1098, 377]]),
+    dnode({ x: LANE.browser, y: 98, ...FLOW_NODE, n: 1, accent: C.blue, title: '準備連線', lines: ['連線請求與 Prompt 一起送'] }),
+    dnode({ x: LANE.backend, y: 98, ...FLOW_NODE, n: 2, accent: C.green, title: '補上 API Key', lines: ['轉送給 OpenAI'] }),
+    dnode({ x: LANE.openai, y: 98, ...FLOW_NODE, n: 3, accent: C.apricot, title: '連線建立', lines: ['第一句話就已經是豆豆'] }),
+    dflow('w1flow', [[880, 140], [1012, 140]]),
+    dlabelBlock(946, 112, ['連線請求', '＋Prompt'], { step: 17 }),
+    // ② → ③ has to pass the browser lane; it clears every zone border by
+    // rising well above them, and lands on ③ only (the answer is implied).
+    darc('w1flow', [1192, 88], [208, 88], 0, { colour: 'ink', both: false }),
+    dflow('w1flow', [[520, 140], [388, 140]], { colour: 'apricot', both: true }),
+    dlabelBlock(454, 112, ['WebRTC', '直連'], { step: 17, colour: APRICOT_TEXT, weight: 700 }),
+
+    dnode({ x: LANE.browser, y: 202, ...FLOW_NODE, n: 4, accent: C.blue, title: '你說完', lines: ['VAD 判定或按「送出」'] }),
+    dnode({ x: LANE.openai, y: 202, ...FLOW_NODE, n: 5, accent: C.apricot, title: '模型回覆', lines: ['不用工具：這就是正式回答'] }),
+    dflow('w1flow', [[520, 244], [388, 244]], { colour: 'apricot' }),
+    dlabel(454, 234, '聲音或文字', { anchor: 'middle', colour: APRICOT_TEXT, weight: 700 }),
+
+    dnode({ x: LANE.openai, y: 332, ...FLOW_NODE, n: 6, accent: C.apricot, title: '先講開場，呼叫工具', titleSize: 18, lines: ['這句開場就是 preamble'] }),
+    dnode({ x: LANE.browser, y: 332, ...FLOW_NODE, n: 7, accent: C.blue, title: '執行工具', lines: ['天氣交給後端代查'] }),
+    dnode({ x: LANE.backend, y: 332, ...FLOW_NODE, n: 8, accent: C.green, title: '代查天氣', lines: ['用天氣 Key 查 OpenWeatherMap'] }),
+    dflow('w1flow', [[208, 296], [208, 322]]),
+    dlabel(222, 314, '要查天氣時'),
+    dflow('w1flow', [[388, 374], [520, 374]], { colour: 'apricot' }),
+    dlabel(454, 364, '工具呼叫', { anchor: 'middle', colour: APRICOT_TEXT, weight: 700 }),
+    dflow('w1flow', [[880, 374], [1012, 374]], { both: true }),
+    dlabel(946, 364, '查天氣', { anchor: 'middle' }),
+
+    dnode({ x: LANE.openai, y: 436, ...FLOW_NODE, n: 9, accent: C.apricot, tone: 'paper', title: '下一個回覆', lines: ['這才是正式回答'] }),
+    dflow('w1flow', [[640, 426], [640, 478], [388, 478]], { colour: 'apricot' }),
+    dlabel(652, 458, '送回結果', { colour: APRICOT_TEXT, weight: 700 }),
   ].join('\n    '),
 });
 
@@ -111,21 +122,21 @@ export const w2Architecture = diagram({
   id: 'w2arch',
   w: 1400,
   h: 490,
-  label: '專案架構圖：規則判斷都在本機完成，要 Key 的步驟才離開這台電腦',
-  caption: '建檔與長條圖都在這台電腦上算完，不需要 API Key。要 Key 的步驟會把整份 Prompt（含她的用藥與症狀）送到 OpenAI；今日摘要則由後端把對話另外送給文字模型。',
+  label: '專案架構圖：規則判斷都在本機完成；API Key 只在本機後端，連線經後端代理，之後瀏覽器直連 OpenAI',
+  caption: '建檔與長條圖都在這台電腦上算完，不需要 API Key。Key 只存在本機後端（Terminal）：連線經後端代理，之後瀏覽器直連 OpenAI。整份 Prompt（含她的用藥與症狀）都會送到 OpenAI；今日摘要由後端另外送給文字模型。',
   children: [
-    dzone({ x: 8, y: 138, w: 845, h: 330, label: '本機 · 不需要 API KEY', colour: C.green }),
+    dzone({ x: 8, y: 138, w: 845, h: 330, label: '這台電腦', colour: C.green }),
     dzone({ x: 958, y: 138, w: 434, h: 330, label: '外部服務', fill: ZONE_COOL }),
 
     dnode({
       x: 40, y: 170, w: 300, h: 150, tone: 'sky', accent: C.blue,
       kicker: '瀏覽器', title: 'web/workshop2.js',
-      lines: ['建檔六區', '記憶清單', '讓它開口的表單'],
+      lines: ['建檔六區', '記憶清單', '讓豆豆開口的表單'],
     }),
     dnode({
       x: 515, y: 170, w: 300, h: 150, tone: 'white', accent: C.green, emph: true,
       kicker: '本機 PYTHON 後端', title: 'dodo_workshop/',
-      lines: ['proactive.py 說不說', 'intake.py 建檔', 'profile.py 組 Prompt'],
+      lines: ['proactive.py 說不說', 'intake.py 建檔', 'profile.py 預設文字、整理存檔'],
     }),
     dnode({
       x: 515, y: 372, w: 300, h: 76, tone: 'white', accent: C.inkSoft,
@@ -140,8 +151,11 @@ export const w2Architecture = diagram({
 
     dflow('w2arch', [[350, 245], [505, 245]], { both: true }),
     dlabelBlock(427, 214, ['① 事件與你的規則', '送去跑規則']),
+    dlabel(427, 268, '建立連線也走這條', { anchor: 'middle' }),
+    dflow('w2arch', [[825, 245], [980, 245]]),
+    dlabelBlock(902, 214, ['② 補上 Key', '代理連線']),
     darc('w2arch', [190, 160], [1140, 160], 52),
-    dlabel(665, 62, '② 要 Key 的步驟才出網路，Prompt 整份送去', { anchor: 'middle', colour: APRICOT_TEXT, weight: 700 }),
+    dlabel(665, 62, '③ 連線建好後，瀏覽器直連 OpenAI，Prompt 整份送去', { anchor: 'middle', colour: APRICOT_TEXT, weight: 700 }),
     dflow('w2arch', [[665, 330], [665, 362]]),
     dlabel(683, 352, '讀她的資料'),
   ].join('\n    '),

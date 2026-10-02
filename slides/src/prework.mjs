@@ -43,6 +43,9 @@ export function apiKeySlide({ eyebrow, accent, workshop }) {
   const foot = workshop === 1
     ? '完成後可試「神經模式」：套用後問同一句，再換回「溫柔陪伴」。'
     : '這一堂只用打字。不小心關掉 Terminal：重開 start-w2.bat，選「載入上次的資料」就能接著做。';
+  const check = workshop === 1
+    ? '連線檢查：輸入「你叫什麼？我叫什麼？」，豆豆用中文答出名字與稱呼即完成。'
+    : '連線檢查：輸入「嗨～你是誰？」，豆豆用中文回答自己是誰即完成。';
   return (n, t) => slide({
     eyebrow, num: n, total: t, accent,
     title: '前置作業：API Key 與連線檢查',
@@ -62,7 +65,7 @@ export function apiKeySlide({ eyebrow, accent, workshop }) {
           body: '關掉 Terminal 就消失，重開要再貼一次。不存進瀏覽器，也不寫進任何檔案。設定視窗按 × 或 Esc 關閉時，未儲存的內容不會保留。',
         })}</div>`,
       ], { gap: 34 }),
-      band('連線檢查：輸入「你叫什麼？我叫什麼？」，豆豆用中文答出名字與稱呼即完成。', { accent: C.apricot }),
+      band(check, { accent: C.apricot }),
     ], { gap: 26 }),
     foot,
   });

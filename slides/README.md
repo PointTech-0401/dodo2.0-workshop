@@ -6,7 +6,7 @@
 
 | 路徑 | 是什麼 |
 |---|---|
-| `workshop-1/*.dc.html` · `workshop-2/*.dc.html` | 一張投影片一個檔案（18 / 19 張），`canvas.json` 決定順序與標題 |
+| `workshop-1/*.dc.html` · `workshop-2/*.dc.html` | 一張投影片一個檔案（兩堂各 20 張），`canvas.json` 決定順序與標題 |
 | `workshop-1-listen-then-answer-slides.html` | 放映版：一次一張滿螢幕，方向鍵翻頁 |
 | `workshop-2-remember-and-stay-quiet-slides.html` | 同上 |
 | `workshop-1-listen-then-answer-notes.md` · `workshop-2-remember-and-stay-quiet-notes.md` | 講者備註的列印版，跟放映版裡的備註同一份來源 |
@@ -28,7 +28,7 @@
 node slides/src/deck1.mjs slides/workshop-1
 node slides/src/deck2.mjs slides/workshop-2
 node slides/src/present.mjs slides/workshop-1 slides/workshop-1-listen-then-answer-slides.html "讓 Dodo 聽完，再回答" blue slides/src/notes1.mjs
-node slides/src/present.mjs slides/workshop-2 slides/workshop-2-remember-and-stay-quiet-slides.html "會記得、會主動，也知道何時閉嘴" green slides/src/notes2.mjs
+node slides/src/present.mjs slides/workshop-2 slides/workshop-2-remember-and-stay-quiet-slides.html "會記得、會主動，也知道何時該安靜" green slides/src/notes2.mjs
 ```
 
 改內容請改 `src/deck1.mjs`／`deck2.mjs`，改講者備註請改 `src/notes1.mjs`／`notes2.mjs`（以投影片檔名對應；新增、改名或刪掉投影片卻沒改備註時，`present.mjs` 會直接報錯），改架構圖與流程圖請改 `src/diagrams.mjs`，改共用版面請改 `src/kit.mjs`。直接改產出的 `.dc.html` 會在下次重新產生時被蓋掉。

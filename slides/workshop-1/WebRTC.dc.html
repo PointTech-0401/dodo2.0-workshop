@@ -18,45 +18,47 @@
   <div style="position: absolute; inset: 0; display: flex; flex-direction: column; gap: 30px; padding: 58px 88px 52px 108px;">
     <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 32px; padding-bottom: 18px; border-bottom: 1px solid #cfd9dc;">
       <span style="color: #397d9f; font: 800 18px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .18em;">WORKSHOP 01 · 讓 DODO 聽完，再回答</span>
-      <span style="color: #4d6475; font: 700 17px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">17 / 20</span>
+      <span style="color: #4d6475; font: 700 17px/1 Consolas,'Noto Sans TC',monospace; letter-spacing: .14em;">08 / 20</span>
     </div>
     <div style="display: flex; flex-direction: column; gap: 13px;">
-      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 54px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">實作二：聲音導演</h1>
-      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 25px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">「系統設定」把輸出改成語音，輸入維持打字，戴上耳機。不用麥克風。</p>
+      <h1 style="margin: 0; max-width: 1310px; color: #15324a; font: 700 54px/1.16 'Noto Serif TC',Georgia,serif; letter-spacing: -.025em; text-wrap: pretty;">WebRTC：瀏覽器直接跟 OpenAI 通話</h1>
+      <p style="margin: 0; max-width: 1200px; color: #4d6475; font: 25px/1.62 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">視訊通話用的就是 WebRTC：聲音一邊講一邊送，不用等整段錄完。</p>
     </div>
     <div style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0;">
       <div style="display: flex; gap: 32px; align-items: stretch;"><ol style="display: flex; flex-direction: column; gap: 14px; margin: 0; padding: 0; list-style: none;"><li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #397d9f; font: 800 20px/1 Consolas,'Noto Sans TC',monospace;">1</div>
-      <span style="color: #15324a; font: 24px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">輸入「講一個 30 秒的睡前故事給我聽。」先聽預設的講法。</span>
+      <span style="color: #15324a; font: 24px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">瀏覽器寫一份連線說明書（SDP）：要傳聲音，也要開一條傳事件的通道。</span>
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #397d9f; font: 800 20px/1 Consolas,'Noto Sans TC',monospace;">2</div>
-      <span style="color: #15324a; font: 24px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">只改「個性與聲音」，換成右邊其中一種演法，按「套用」。</span>
+      <span style="color: #15324a; font: 24px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">說明書交給本機後端，後端補上 API Key，轉給 OpenAI。</span>
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #397d9f; font: 800 20px/1 Consolas,'Noto Sans TC',monospace;">3</div>
-      <span style="color: #15324a; font: 24px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">輸入<strong>同一句話</strong>，聽語氣、速度、停頓差在哪。</span>
+      <span style="color: #15324a; font: 24px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">OpenAI 回一份說明書：好，照這樣連。</span>
     </li>
 <li style="display: flex; gap: 18px; align-items: center;">
       <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #397d9f; font: 800 20px/1 Consolas,'Noto Sans TC',monospace;">4</div>
-      <span style="color: #15324a; font: 24px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">分塊不動，只換「Dodo 的聲線」，按「套用」（會重新連線），再問同一句。</span>
-    </li>
-<li style="display: flex; gap: 18px; align-items: center;">
-      <div style="flex-shrink: 0; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #d9edf7; color: #397d9f; font: 800 20px/1 Consolas,'Noto Sans TC',monospace;">5</div>
-      <span style="color: #15324a; font: 24px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">演法和聲線自己搭一組，系統會記成「自訂」。</span>
+      <span style="color: #15324a; font: 24px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">連上之後，聲音和事件直接在瀏覽器和 OpenAI 之間傳，不經後端。</span>
     </li></ol>
-<div style="flex: 0 0 520px; display: flex; flex-direction: column; gap: 16px;">
+<div style="flex: 0 0 500px; display: flex; flex-direction: column; gap: 16px;">
       <div style="display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #f1b879; border-radius: 0 0 4px 4px; background: #f7f2e8;">
-    <span style="color: #f1b879; font: 800 17px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">演法範例</span>
-    <h3 style="margin: 0; color: #15324a; font: 700 32px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">貼進「個性與聲音」</h3>
-    <p style="margin: 0; color: #4d6475; font: 23px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">悄悄話：用氣音、很小聲，像怕吵醒旁邊的人。<br>夜市叫賣：大聲、有精神，尾音拉長。<br>深夜電台 DJ：低沉、慢，每句話中間停一下。<br>廟口講古：抑揚頓挫，講到關鍵處故意停住。</p>
+    <span style="color: #f1b879; font: 800 17px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">音訊</span>
+    <h3 style="margin: 0; color: #15324a; font: 700 32px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">聲音的通道</h3>
+    <p style="margin: 0; color: #4d6475; font: 23px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">你的麥克風聲音進去，豆豆的聲音出來。</p>
+    
+  </div>
+      <div style="display: flex; flex-direction: column; gap: 12px; padding: 30px 30px 32px; border-top: 4px solid #287653; border-radius: 0 0 4px 4px; background: #f7f2e8;">
+    <span style="color: #287653; font: 800 17px/1 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; letter-spacing: .16em;">資料通道 · oai-events</span>
+    <h3 style="margin: 0; color: #15324a; font: 700 32px/1.3 'Noto Serif TC',Georgia,serif; letter-spacing: -.01em; text-wrap: pretty;">事件的通道</h3>
+    <p style="margin: 0; color: #4d6475; font: 23px/1.72 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">打的字、逐字稿、工具呼叫、按「套用」送出的新設定，都走這一條。</p>
     
   </div>
     </div></div>
     </div>
     <div style="display: flex; align-items: center; gap: 14px; padding-top: 16px; border-top: 1px solid #cfd9dc;">
       <span style="flex-shrink: 0; width: 9px; height: 9px; border-radius: 50%; background: #f1b879;"></span>
-      <span style="color: #4d6475; font: 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">聲線換的是音色，分塊換的是演法，兩個各管各的。</span>
+      <span style="color: #4d6475; font: 21px/1.55 'Noto Sans TC','Microsoft JhengHei UI',sans-serif; text-wrap: pretty;">打字模式也走同一條連線，只是不送麥克風的聲音。</span>
     </div>
   </div>
 </div>
