@@ -27,7 +27,7 @@ if (notes) {
 }
 
 // `do` is a sequence the presenter walks through, so it is the one numbered list.
-const NOTE_LISTS = [['say', '可以這樣講', 'ul'], ['do', '操作', 'ol'], ['watch', '容易卡住', 'ul']];
+const NOTE_LISTS = [['say', '照著念', 'ul'], ['do', '操作', 'ol'], ['watch', '容易卡住', 'ul']];
 const QA_LABEL = '被問到就這樣答';
 const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -36,6 +36,8 @@ function noteHtml(n) {
   const parts = [];
   if (n.time) parts.push(`<p class="n-time">${esc(n.time)}</p>`);
   if (n.goal) parts.push(`<p class="n-goal">${esc(n.goal)}</p>`);
+  // A few words to glance at mid-sentence: what this slide must get across.
+  if (n.keys?.length) parts.push(`<p class="n-keys">${n.keys.map((k) => `<span>${esc(k)}</span>`).join('')}</p>`);
   for (const [key, label, tag] of NOTE_LISTS) {
     if (n[key]?.length) parts.push(`<h3>${label}</h3><${tag}>${n[key].map((t) => `<li>${esc(t)}</li>`).join('')}</${tag}>`);
   }
@@ -48,6 +50,7 @@ function noteHtml(n) {
 function noteMd(title, num, n) {
   const lines = [`## ${num} · ${title}${n.time ? `（${n.time}）` : ''}`, ''];
   if (n.goal) lines.push(`> ${n.goal}`, '');
+  if (n.keys?.length) lines.push(`**重點**：${n.keys.join('｜')}`, '');
   for (const [key, label, tag] of NOTE_LISTS) {
     const mark = (i) => (tag === 'ol' ? `${i + 1}.` : '-');
     if (n[key]?.length) lines.push(`**${label}**`, '', ...n[key].map((t, i) => `${mark(i)} ${t}`), '');
@@ -91,6 +94,8 @@ const speakerDoc = `<!doctype html><html lang="zh-Hant"><head><meta charset="utf
   h3, .n-time { margin: 16px 0 4px; color: #f1b879; font: 800 14px/1.2 sans-serif; letter-spacing: .12em; }
   .n-time { color: #8fd0f0; }
   .n-goal { margin: 6px 0 4px; padding: 10px 14px; border-left: 4px solid #8fd0f0; background: rgba(143,208,240,.1); color: #fff; font-weight: 700; font-size: 21px; line-height: 1.5; }
+  .n-keys { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 2px; }
+  .n-keys span { padding: 4px 12px; border-radius: 999px; background: #f1b879; color: #0c1c2b; font-weight: 800; font-size: 19px; }
   ul, ol { margin: 0; padding-left: 24px; } li { margin: 3px 0; }
   dl { margin: 0; } dt { margin-top: 8px; font-weight: 700; } dd { margin: 2px 0 0 24px; color: #a9bccb; }
   footer { margin-top: 22px; color: #8ba3b4; font-size: 13px; }
@@ -426,6 +431,8 @@ const html = `<title>${deckName}</title>
     color: #fff;
     font: 700 19px/1.5 var(--sans);
   }
+  .notes .n-keys { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 2px; }
+  .notes .n-keys span { padding: 3px 10px; border-radius: 999px; background: var(--apricot); color: #0c1c2b; font: 800 15px/1.4 var(--sans); }
   .notes ul, .notes ol { margin: 0; padding-left: 22px; }
   .notes li { margin: 2px 0; }
   .notes dl { margin: 0; }

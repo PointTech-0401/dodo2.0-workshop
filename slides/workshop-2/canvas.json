@@ -105,60 +105,100 @@
       "title": "13 · 三層記憶"
     },
     {
-      "file": "MemoryViewer.dc.html",
+      "file": "ExtMemory.dc.html",
       "x": 1760,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "14 · 記憶清單"
+      "title": "14 · 小實作：三層記憶現場看"
     },
     {
-      "file": "PromptLayer.dc.html",
+      "file": "MemoryViewer.dc.html",
       "x": 3520,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "15 · 對話規範"
+      "title": "15 · 記憶清單"
     },
     {
-      "file": "ProactiveRules.dc.html",
+      "file": "ExtLock.dc.html",
       "x": 5280,
       "y": 3420,
       "w": 1600,
       "h": 900,
-      "title": "16 · 實作二：主動規則"
+      "title": "16 · 小實作：護理員鎖擋不住什麼"
     },
     {
-      "file": "LiveTalk.dc.html",
+      "file": "PromptLayer.dc.html",
       "x": 0,
       "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "17 · 實作三：主動對話"
+      "title": "17 · 對話規範"
     },
     {
-      "file": "Dilemmas.dc.html",
+      "file": "ExtClinical.dc.html",
       "x": 1760,
       "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "18 · 對豆豆的規範"
+      "title": "18 · 小實作：換成照護嚴謹型"
     },
     {
-      "file": "TodaySummary.dc.html",
+      "file": "ExtPrivacy.dc.html",
       "x": 3520,
       "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "19 · 今日摘要"
+      "title": "19 · 小實作：什麼沒送給 OpenAI"
     },
     {
-      "file": "ThreeIdeas.dc.html",
+      "file": "ProactiveRules.dc.html",
       "x": 5280,
       "y": 4560,
       "w": 1600,
       "h": 900,
-      "title": "20 · 重點回顧"
+      "title": "20 · 實作二：主動規則"
+    },
+    {
+      "file": "ExtIntakeError.dc.html",
+      "x": 0,
+      "y": 5700,
+      "w": 1600,
+      "h": 900,
+      "title": "21 · 小實作：建檔填錯會怎樣"
+    },
+    {
+      "file": "LiveTalk.dc.html",
+      "x": 1760,
+      "y": 5700,
+      "w": 1600,
+      "h": 900,
+      "title": "22 · 實作三：主動對話"
+    },
+    {
+      "file": "Dilemmas.dc.html",
+      "x": 3520,
+      "y": 5700,
+      "w": 1600,
+      "h": 900,
+      "title": "23 · 對豆豆的規範"
+    },
+    {
+      "file": "TodaySummary.dc.html",
+      "x": 5280,
+      "y": 5700,
+      "w": 1600,
+      "h": 900,
+      "title": "24 · 今日摘要"
+    },
+    {
+      "file": "ThreeIdeas.dc.html",
+      "x": 0,
+      "y": 6840,
+      "w": 1600,
+      "h": 900,
+      "title": "25 · 重點回顧"
     }
   ],
   "launch": {

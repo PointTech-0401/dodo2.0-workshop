@@ -48,9 +48,9 @@ add('Timetable.dc.html', '課程流程', (n, t) => slide({
       ['訪談稿', '秀蘭阿嬤的三段話'],
       ['<strong style="color: #15324a;">實作一</strong>', '建檔，每一區問豆豆一句'],
       ['紅隊測試', '嘗試讓豆豆記下不該記的內容'],
-      ['記憶的規則', '三層記憶、護理員鎖、關鍵字過濾'],
-      ['對話規範', '更換規範範例，比較同一句話的回答'],
-      ['<strong style="color: #15324a;">實作二</strong>', '主動規則：七條規則與兩個數字'],
+      ['記憶的規則', '三層記憶、護理員鎖、關鍵字過濾；現場看記憶怎麼存、鎖擋不住什麼'],
+      ['對話規範', '更換規範範例比較回答；照護嚴謹型；什麼沒送給 OpenAI'],
+      ['<strong style="color: #15324a;">實作二</strong>', '主動規則：七條規則與兩個數字；建檔填錯的後果'],
       ['<strong style="color: #15324a;">實作三</strong>', '主動對話'],
       ['對豆豆的規範', '規則已處理的，與需要人判斷的'],
     ],
@@ -176,6 +176,9 @@ add('RedTeam.dc.html', '紅隊測試', (n, t) => slide({
   foot: '第 04 句「我膝蓋好多了」在實作三使用。',
 }));
 
+// 加做的帶著做頁，各自接在講解它的那一張後面。右欄卡片共用這個寬度。
+const extNote = (items) => `<div style="flex: 0 0 500px; display: flex; flex-direction: column; gap: 16px;">${items}</div>`;
+
 add('MemoryLayers.dc.html', '三層記憶', (n, t) => slide({
   eyebrow: EB, num: n, total: t, accent: A,
   title: '三層記憶',
@@ -209,6 +212,24 @@ add('MemoryLayers.dc.html', '三層記憶', (n, t) => slide({
   foot: '長期偏好如果放在 B 層，新的一筆會取代舊的。',
 }));
 
+add('ExtMemory.dc.html', '小實作：三層記憶現場看', (n, t) => slide({
+  eyebrow: EB, num: n, total: t, accent: A,
+  title: '小實作：三層記憶現場看',
+  lede: '每打一句，看 TOOL 那一行和建檔最下面的記憶清單。',
+  body: row([
+    steps([
+      '打「我今天想吃芭樂。」',
+      '打「我改想吃柳丁了。」→ TOOL 寫「已取代……（丟掉了：芭樂）」',
+      '打「我也喜歡跳舞。」→ TOOL 寫「現在並存 N 筆」，原本的興趣都還在',
+    ], { accent: A, size: 22, gap: 14 }),
+    extNote(card({
+      accent: C.blue, bg: C.sky, kicker: '對照三層記憶',
+      title: 'B 層取代，A 層並存',
+      body: '想吃的東西是近況，新的換掉舊的；喜歡的事是長期偏好，一直加上去。放哪一層是豆豆選的，結果不一定每次一樣。',
+    })),
+  ], { gap: 32 }),
+}));
+
 add('MemoryViewer.dc.html', '記憶清單', (n, t) => slide({
   eyebrow: EB, num: n, total: t, accent: A,
   title: '記憶清單',
@@ -230,6 +251,27 @@ add('MemoryViewer.dc.html', '記憶清單', (n, t) => slide({
     ], { gap: 30 }),
     band('防護方式：含高風險字眼的直接拒絕、護理員填的 AI 不能改、使用者可以刪除。', { accent: C.apricot }),
   ], { gap: 22 }),
+}));
+
+add('ExtLock.dc.html', '小實作：護理員鎖擋不住什麼', (n, t) => slide({
+  eyebrow: EB, num: n, total: t, accent: A,
+  title: '小實作：護理員鎖擋不住什麼',
+  lede: '醫囑是護理員填的，豆豆不能改、不能刪。那「另外加一筆」呢？',
+  body: stack([
+    row([
+      steps([
+        '打「我其實可以吃甜的，記起來。」',
+        '看 TOOL 那一行：寫「已拒絕」，還是「已新增」？',
+        '到記憶清單看醫囑那兩筆，再看有沒有多一筆相反的。',
+      ], { accent: A, size: 22, gap: 14 }),
+      extNote(card({
+        accent: C.danger, bg: C.paper, kicker: '鎖保證的',
+        title: '原本那筆一定還在',
+        body: '改不了、刪不掉。但豆豆可以在旁邊另外記一筆，程式不會判斷兩筆有沒有衝突。',
+      })),
+    ], { gap: 32 }),
+    band('所以記憶清單要有人看：程式只管誰能改，管不到內容對不對。', { accent: C.apricot }),
+  ], { gap: 26 }),
 }));
 
 add('PromptLayer.dc.html', '對話規範', (n, t) => slide({
@@ -258,6 +300,47 @@ add('PromptLayer.dc.html', '對話規範', (n, t) => slide({
   ], { gap: 32 }),
 }));
 
+add('ExtClinical.dc.html', '小實作：換成照護嚴謹型', (n, t) => slide({
+  eyebrow: EB, num: n, total: t, accent: A,
+  title: '小實作：換成照護嚴謹型',
+  lede: '用「對話規範」的「同一句話，前後對照」。建檔一個字都不動。',
+  body: row([
+    steps([
+      '問句改成「我今天站起來頭有點暈。」，按「問這一句」（現在是陪伴型）。',
+      '載入「照護嚴謹型」，按「套用」，再按一次「問這一句」。',
+      '比兩個回答：誰先問感覺、誰追問什麼時候開始、誰請她找護理員。',
+      '換回「陪伴型」，按「套用」。',
+    ], { accent: A, size: 22, gap: 14 }),
+    extNote(card({
+      accent: C.green, bg: C.sky, kicker: '要看的地方',
+      title: '同一份資料，兩種照顧方式',
+      body: '頭暈本來就在 B 層。規範一換，豆豆從陪她聊，變成確認症狀、把事情交給真人。',
+    })),
+  ], { gap: 32 }),
+}));
+
+add('ExtPrivacy.dc.html', '小實作：什麼沒送給 OpenAI', (n, t) => slide({
+  eyebrow: EB, num: n, total: t, accent: A,
+  title: '小實作：什麼沒送給 OpenAI',
+  lede: '打開「對話規範」最下面的完整 System Prompt，那就是真正送出去的全部內容。',
+  body: stack([
+    row([
+      steps([
+        '在完整 Prompt 裡找：有稱呼、用藥、症狀；沒有姓名、房號、電話。',
+        '建檔把「稱呼」清空，按「套用」，再按「＋ 新聊天」。',
+        '問「你要怎麼叫我？」→ 豆豆叫「邱小姐」。',
+        '稱呼填回「秀蘭阿嬤」，按「套用」。',
+      ], { accent: A, size: 22, gap: 14 }),
+      extNote(card({
+        accent: C.apricot, bg: C.paper, kicker: '兩種資料',
+        title: '豆豆要知道的，只給照護員的',
+        body: '姓名、房號、電話留在建檔，給照護員看。兒子的名字會送出去，因為她問「我兒子叫什麼」時豆豆要答得出來。',
+      })),
+    ], { gap: 32 }),
+    band('要先按「＋ 新聊天」：同一段對話裡，豆豆還記得剛才怎麼叫她。', { accent: C.apricot }),
+  ], { gap: 26 }),
+}));
+
 add('ProactiveRules.dc.html', '實作二：主動規則', (n, t) => slide({
   eyebrow: EB, num: n, total: t, accent: A,
   title: '實作二：主動規則',
@@ -281,6 +364,28 @@ add('ProactiveRules.dc.html', '實作二：主動規則', (n, t) => slide({
       band('這些規則寫在程式裡，不依賴模型遵守 Prompt。', { accent: C.apricot, tone: 'sky' }),
     ], { gap: 18 }),
   ], { gap: 32 }),
+}));
+
+add('ExtIntakeError.dc.html', '小實作：建檔填錯會怎樣', (n, t) => slide({
+  eyebrow: EB, num: n, total: t, accent: A,
+  title: '小實作：建檔填錯會怎樣',
+  lede: '豆豆只知道建檔寫的。故意填錯一次，看後果。',
+  body: stack([
+    row([
+      steps([
+        '刪掉 21:00 的安眠藥，按「套用」，再按「＋ 新聊天」。',
+        '問「我晚上要吃什麼藥？」',
+        '把午睡改成 13:00–15:00，到「主動規則」看長條圖跟著變。',
+        '安眠藥和午睡改回來，按「套用」。',
+      ], { accent: A, size: 22, gap: 14 }),
+      extNote(card({
+        accent: C.danger, bg: C.paper, kicker: '後果',
+        title: '漏一格，晚上就沒人提醒',
+        body: '豆豆不會自己猜她該吃什麼藥；作息填錯，能開口的時段也跟著錯。',
+      })),
+    ], { gap: 32 }),
+    band('做完一定要改回來，不然後面的主動對話和今日摘要會用到錯的建檔。', { accent: C.danger, tone: 'sky' }),
+  ], { gap: 26 }),
 }));
 
 add('LiveTalk.dc.html', '實作三：主動對話', (n, t) => slide({
@@ -336,12 +441,27 @@ add('Dilemmas.dc.html', '對豆豆的規範', (n, t) => slide({
 add('TodaySummary.dc.html', '今日摘要', (n, t) => slide({
   eyebrow: EB, num: n, total: t, accent: A,
   title: '今日摘要',
+  lede: '把今天的對話整理成一兩句，記在 C 層。開新對話之後，豆豆還讀得到。',
   body: stack([
     steps([
-      '「主動對話」分頁按「產生今日摘要」，再到建檔的記憶清單，確認多了一筆標著「系統整理」的。',
-    ], { accent: A, size: 23, gap: 18 }),
-    band('今日摘要是唯一由系統整理出來的記憶（C 層）。再按一次，會蓋掉前一筆。', { accent: C.apricot }),
-  ], { gap: 30 }),
+      '「主動對話」分頁按「產生今日摘要」，到記憶清單找標著「系統整理」的那一筆。',
+      '按「＋ 新聊天」，問「你記得我們剛剛聊了什麼嗎？」→ 對話清掉了，豆豆從摘要回答。',
+      '說「我膝蓋又痛了」，再按一次「產生今日摘要」→ 前一筆整段被蓋掉。',
+    ], { accent: A, size: 22, gap: 12 }),
+    row([
+      card({
+        grow: true, accent: C.blue, bg: C.sky, kicker: '怎麼做出來的',
+        title: '另一個文字模型整理',
+        body: '只拿她和豆豆說的話（TOOL、SYSTEM 不算），後端交給一個文字模型寫成一兩句，寫進 C 層。',
+      }),
+      card({
+        grow: true, accent: C.danger, bg: C.paper, kicker: '靠拜託的',
+        title: '不寫密碼、別人的病',
+        body: '這是寫在給文字模型的指示裡，程式不檢查；記憶的關鍵字過濾也管不到這一筆。',
+      }),
+    ], { gap: 22 }),
+    band('只摘「＋ 新聊天」之後的對話，整筆重寫，前一筆摘到的事會不見。', { accent: C.apricot }),
+  ], { gap: 22 }),
 }));
 
 add('ThreeIdeas.dc.html', '重點回顧', (n, t) => slide({
